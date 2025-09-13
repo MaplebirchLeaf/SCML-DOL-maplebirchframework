@@ -1,0 +1,72 @@
+:: maplebirch test [nosave]
+
+    <!-- 将内部网格居中 -->
+	<div class="d-flex flex-row flex-centre flex-wrap">
+		<!-- 将画布窗口组织成网格 -->
+		<div class="combat-grid d-grid">
+
+			<div class="combat-centre">
+				<!-- 顶行-包含微型视口 -->
+				<div class="combat-close d-flex flex-row justify-content-center">
+					<div class="combat-close-chest">
+						<<selectmodel "combatCloseChest" "divCloseChest">>
+						<<animatemodel "">>
+					</div>
+					<div class="combat-close-penis">
+						<<selectmodel "combatClosePenis" "divClosePenis">>
+						<<animatemodel "">>
+					</div>
+					<div class="combat-close-vagina">
+						<<selectmodel "combatCloseVagina" "divCloseVagina">>
+						<<animatemodel "">>
+					</div>
+					<div class="combat-close-arse">
+						<<selectmodel "combatCloseArse" "divCloseArse">>
+						<<animatemodel "">>
+					</div>
+				</div>
+
+				<!-- 主画布容器。 -->
+				<div class="combat-main d-flex justify-content-center position-relative">
+
+					<<setup-multi-canvas "combatMain" "combatMainPc" "combatMainPc0">>
+
+					<<for $_npcIndex, $_npc range $NPCList>>
+						<<if CombatRenderer.npcTypes.includes($_npc.type)>>
+							<<set _metadata to { index: $_npcIndex }>>
+							<<add-multi-canvas "combatMain" "combatMainNpc" `"combatMainNpc" + $_npcIndex` _metadata>>
+						<</if>>
+					<</for>>
+
+					<<add-multi-canvas "combatMain" "combatMainSwarm" "combatMainSwarm0">>
+
+					<<reset-multi-canvas "combatMain">>
+					<<start-multi-canvas-rendering "combatMain">>
+
+					<<set _animspeed to NpcCombatMapper.getNpcAnimationSpeed()>>
+				</div>
+			</div>
+
+			<<if XrayCombatMapper.isPcBlowjobVisible()>>
+				<div class="combat-xray-penis">
+					<<selectmodel "combatXrayPenis" "divXrayPenis">>
+					<<animatemodel "w-100 mw-256">>
+				</div>
+			<</if>>
+
+			<<if XrayCombatMapper.isPcVaginaVisible()>>
+				<div class="combat-xray-vagina">
+					<<selectmodel "combatXrayVagina" "divXrayVagina">>
+					<<animatemodel "w-100 mw-256">>
+				</div>
+			<</if>>
+
+			<<if XrayCombatMapper.isPcAnusVisible()>>
+				<div class="combat-xray-arse">
+					<<selectmodel "combatXrayArse" "divXrayArse">>
+					<<animatemodel "w-100 mw-256">>
+				</div>
+			<</if>>
+
+		</div>
+	</div>

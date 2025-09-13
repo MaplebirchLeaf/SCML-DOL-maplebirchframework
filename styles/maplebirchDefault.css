@@ -1,0 +1,161 @@
+.maplebirchHint {
+  animation: 210s infinite linear lustful;
+  background: linear-gradient(-90deg, #ffab57, #ffab57, #ffab57, #ffab57, #ffab57, #0dff00);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+#mobileStats>.maplebirchModHintMobile {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAADXUAAA11AFeZeUIAAACtklEQVQ4jZWTWUhUcRSHv/+9d67jTFmaQUqUJRGhkaYlZZKTLSrFRHsSbRpFFC320LRAL2ULVqK2IUSYti9PrUShFbRIiRBUhFZSRouZWjrjvaeHFhEr6DwdzuE7/M6mNo/qK2avUCJDB7LszHXFf5oRHhJJeEwCMweFYTV+FNuyWHmzWgF8LsyV3qvz/1nUWHejWu1u+yIfYhaQk+lBEwuHbcti73hOXLn9V7Agc7SsuXRfaQAORxC3L5Ry68FDlLSTMzUZw+4gwh1EYO8q+QU1FuUKQLE3ReRnVANoM4PxpExhdHQY1yofghIQQbV8prW5oVOubXPIO05mZyZjmI4fMQCHMgkyXLj6DGaiZwBXLt2gl8tJWlw/xOnmzAyPeMcPp0MJ8zLGUPm0DrOHu1PBhqv3VHFZOW3v6tHePyc9KYo3da9AVyink8zEcHQdlK5RWfOMhJHDMN3OHwr2pMWJ7fez0OvBNNxgt4LuZ+a0EZwtuMqstRNx9e4HuqAbClMDTJ3opEgONKbK7xXtSIySYNvP2uwsUC3gbwUrwNnck8wqWgIOJ5jBXK6oIWJcNKePXSSvoqH7issnDBU5uk7kcLZIYZZIYZYcB5GSFVIW319el2SLb2SIdAN3pcZK/UmfNJ/aJHJik0jpGqmaPESuDTBFihfJfhNpKZojvkGqC9xFQumKdMlIH0vtkxeoL00kxEaAgGhBfHW42bc+nzcdbRxs6OSMX87z83liGgZ371URnzQU0+nmk9hY7V/59q2Z8m0HaXJYhIVGQMPbztvYOz1VXtY+ImBboLmISUkmoFsENAvLsjiyMZ+QHpFsffJJAfjidfElREleVZ3q0sKWSTES7OqJpulMWZqBIJzbeZgdd+q7TXpLUrT42/3sfvz6z49Wsny+bJ87pvukf5ovceDv3HdZzRYWiDsbxQAAAABJRU5ErkJggg==') !important;
+    background-position: center;
+    background-size: contain !important;
+    /* 或者使用 contain，根据需求选择 */
+    background-repeat: no-repeat;
+    width: 100%;
+    background-color: transparent !important;
+}
+
+#modversions {
+	position: fixed;
+	right: 3px;
+	bottom: 1px;
+	font-size: 0.6em;
+	color: var(--600);
+	z-index: 1000;
+	background-color: transparent;
+}
+
+#ConsoleCheat details.JSCheatConsole,
+#ConsoleCheat details.TwineCheatConsole {
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--600);
+  margin-top: 0.5rem;
+  background: var(--800);
+}
+
+#ConsoleCheat summary.JSCheatConsole,
+#ConsoleCheat summary.TwineCheatConsole {
+  background: var(--750);
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  color: var(--000);
+}
+
+#ConsoleCheat summary.JSCheatConsole:hover,
+#ConsoleCheat summary.TwineCheatConsole:hover {
+  background: var(--700);
+}
+
+#ConsoleCheat .searchButtons {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  background: var(--850);
+  gap: 0.5rem;
+}
+
+#ConsoleCheat .input-row {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  align-items: center;
+}
+
+#ConsoleCheat input[type="text"] {
+  flex: 1;
+  padding: 0.5rem;
+  background: var(--900);
+  border: 1px solid var(--600);
+  border-radius: 4px;
+  color: var(--000);
+  font-family: monospace;
+  line-height: 1.4;
+  min-width: 0;
+}
+
+#ConsoleCheat input[type="text"]:focus {
+  border-color: var(--blue);
+  outline: none;
+}
+
+#ConsoleCheat button {
+  padding: 0.4rem 0.8rem;
+  background: var(--blue);
+  border: none;
+  border-radius: 4px;
+  color: var(--000);
+  cursor: pointer;
+  font-weight: bold;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+#ConsoleCheat button:hover {
+  background: var(--blue-secondary);
+}
+
+#js-cheat-console-status,
+#twine-cheat-console-status {
+  display: none;
+}
+
+#js-cheat-console-status.visible,
+#twine-cheat-console-status.visible {
+  display: block;
+  padding: 0.5rem;
+  font-family: monospace;
+  font-size: 0.9rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  min-height: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#js-cheat-console-status.success,
+#twine-cheat-console-status.success {
+  color: var(--green);
+  background: rgba(56, 178, 10, 0.1);
+}
+
+#js-cheat-console-status.error,
+#twine-cheat-console-status.error {
+  color: var(--red);
+  background: rgba(236, 53, 53, 0.1);
+}
+
+@media (max-width: 480px) {
+  #ConsoleCheat .searchButtons {
+    padding: 0.5rem;
+    gap: 0.3rem;
+  }
+  
+  #ConsoleCheat .input-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  #ConsoleCheat input[type="text"] {
+    width: 100%;
+    padding: 0.4rem;
+    font-size: 14px;
+    min-width: 60px;
+  }
+  
+  #ConsoleCheat button {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    font-size: 14px;
+  }
+  
+  #js-cheat-console-status.visible,
+  #twine-cheat-console-status.visible {
+    font-size: 0.8rem;
+    padding: 0.4rem;
+  }
+}

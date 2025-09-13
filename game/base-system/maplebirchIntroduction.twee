@@ -1,0 +1,80 @@
+:: Maplebirch Version Update [widget]
+
+<<widget 'maplebirchModHintContent'>>
+  <h1>暂时无内容</h1>
+<</widget>>
+
+<<widget 'maplebirchModHint'>>
+  <span class='searchButtons'>
+    <<textbox '_maplebirchModHintTextbox' ''>>
+    <<set $_Search to maplebirch.lang.autoTranslate('搜索')>>
+    <<set $_Clear to maplebirch.lang.autoTranslate('清除')>>
+    <<button $_Search>>
+      <<run maplebirch.tool.modhint.searchButtonClicked()>>
+    <</button>>
+    <<button $_Clear>>
+      <<run maplebirch.tool.modhint.clearButtonClicked()>>
+    <</button>>
+  </span>
+  <div id='maplebirchModHintContent'>
+    <<maplebirchModHintContent>>
+  </div>
+<</widget>>
+
+<<widget 'titleMaplebirchModHint'>>
+  <<setupTabs>>
+  <div id="overlayTabs" class="tab">
+    <<closeButtonMobile>>
+    <<set $_ModIntro to maplebirch.lang.autoTranslate('模组介绍')>>
+    <<set $_ModSettings to maplebirch.lang.autoTranslate('模组设置')>>
+    <<set $_ModPanel to maplebirch.lang.autoTranslate('角色面板')>>
+    <<button $_ModIntro>>
+      <<toggleTab>>
+      <<replace #customOverlayContent>><<maplebirchModHint>><</replace>>
+    <</button>>
+    <<button $_ModSettings>>
+      <<toggleTab>>
+      <<replace #customOverlayContent>><<maplebirchOptionsInfo>><</replace>>
+    <</button>>
+    <<button $_ModPanel>>
+      <<toggleTab>>
+      <<replace #customOverlayContent>><<maplebirchPanel>><</replace>>
+      <<run maplebirch.trigger('characterRender')>>
+    <</button>>
+  </div>
+  <<closeButton>>
+<</widget>>
+
+<<widget 'maplebirchModHintMobile'>>
+  <<if $maplebirch.options.modHint is 'mobile' && $options.sidebarStats isnot 'disabled'>>
+    <input type="button" class="saveMenuButton maplebirchModHintMobile" value="" onclick="maplebirch.tool.modhint.hintClicked()">
+  <</if>>
+<</widget>>
+
+<<widget "maplebirchModHintDesktop">>
+	<<if $maplebirch.options && $maplebirch.options.modHint is 'desktop'>>
+    <<set $_modHint to maplebirch.lang.autoTranslate('秋枫白桦')>>
+    <<button $_modHint>>
+    	<<maplebirchReplace "maplebirchModHint" "title">>
+    <</button>>
+	<</if>>
+<</widget>>
+
+<<widget "maplebirchPanel">>
+  <div class="maplebirch-inventory-panel">
+    <!-- 状态区域（现在在左侧） -->
+    <div class="maplebirch-status-section">
+      <h2>角色状态</h2>
+      
+      <div class="maplebirch-status-content">
+        <!-- 角色容器（包含角色图片和覆盖层） -->
+        <div id="maplebirch-character-container">
+          <div id="maplebirch-character"></div>
+          <div id="maplebirch-character-overlay"></div>
+        </div>
+
+        
+      </div>
+    </div>
+  </div>
+<</widget>>

@@ -1,0 +1,130 @@
+{
+  "name": "maplebirch",
+  "version": "2.2.3",
+  "styleFileList": [
+    "styles/maplebirchPanel​.css",
+    "styles/maplebirchDefault.css"
+  ],
+  "scriptFileList": [
+    "game/03-JavaScript/maplebirchDefineMacros.js"
+  ],
+  "tweeFileList": [
+    "game/base-system/maplebirchOptions.twee",
+    "maplebirchtest.twee",
+    "game/base-system/maplebirchIntroduction.twee"
+  ],
+  "imgFileList": [],
+  "nickName": {
+    "en": "Maplebirch",
+    "cn": "秋枫白桦",
+    "jp": "秋楓白樺"
+  },
+  "scriptFileList_preload": [
+    "game/03-JavaScript/maplebirchSFcompatible.js"
+  ],
+  "scriptFileList_earlyload": [
+    "scriptEarly/modules/maplebirchTools.js",
+    "scriptEarly/modules/maplebirchVariables.js",
+    "scriptEarly/modules/maplebirchHandling.js",
+    "scriptEarly/modules/maplebirchCharacter.js",
+    "scriptEarly/modules/maplebirchNPCs.js",
+    "scriptEarly/modules/maplebirchCombat.js"
+  ],
+  "scriptFileList_inject_early": [
+    "scriptEarly/maplebirch-core.js",
+    "scriptEarly/maplebirch-modload.js",
+    "scriptEarly/modules/maplebirchTimeState.js"
+  ],
+  "additionFile": [
+    "README.md",
+    "translations/en.json",
+    "translations/cn.json",
+    "translations/jp.json"
+  ],
+  "addonPlugin": [
+    {
+      "modName": "ModdedClothesAddon",
+      "addonName": "ModdedClothesAddon",
+      "modVersion": "^1.1.0",
+      "params": {}
+    },
+    {
+      "modName": "TweeReplacer",
+      "addonName": "TweeReplacerAddon",
+      "modVersion": "1.0.0",
+      "params": []
+    },
+    {
+      "modName": "ModLoader DoL ImageLoaderHook",
+      "addonName": "ImageLoaderAddon",
+      "modVersion": "^2.3.0",
+      "params": []
+    },
+    {
+      "modName": "ReplacePatcher",
+      "addonName": "ReplacePatcherAddon",
+      "modVersion": "1.0.0",
+      "params": {
+        "js": []
+      }
+    },
+    {
+      "modName": "ModdedFeatsAddon",
+      "addonName": "ModdedFeatsAddon",
+      "modVersion": "^1.0.0",
+      "params": {
+        "feats": []
+      }
+    },
+    {
+      "modName": "BeautySelectorAddon",
+      "addonName": "BeautySelectorAddon",
+      "modVersion": "^2.0.0",
+      "params": {
+        "types": []
+      }
+    }
+  ],
+  "dependenceInfo": [
+    {
+      "modName": "ModLoaderGui",
+      "version": ">=1.8.0"
+    },
+    {
+      "modName": "ConflictChecker",
+      "version": ">=1.3.0"
+    },
+    {
+      "modName": "ModLoader DoL ImageLoaderHook",
+      "version": ">=2.23.3"
+    },
+    {
+      "modName": "ImageLoaderHook",
+      "version": "^2.23.3"
+    },
+    {
+      "modName": "BeautySelectorAddon",
+      "version": "^2.8.0"
+    },
+    {
+      "modName": "TweeReplacer",
+      "version": "^1.7.0"
+    },
+    {
+      "modName": "ReplacePatcher",
+      "version": "^1.3.0"
+    },
+    {
+      "modName": "ModdedClothesAddon",
+      "version": "^1.1.0"
+    },
+    {
+      "modName": "ModdedFeatsAddon",
+      "version": "^1.0.0"
+    },
+    {
+      "modName": "GameVersion",
+      "version": ">=0.5.4.9"
+    }
+  ]
+}
