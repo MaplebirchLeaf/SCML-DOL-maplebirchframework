@@ -41,6 +41,12 @@
 </details>
 
 ### 详细内容介绍:
+ **simplebirchFrameworks**兼容支持，可直接使用**simpleFrameworks.addto**指令。
+<details>
+  <summary>点击查看图片</summary>
+  <img width="648" height="1002" alt="image" src="https://github.com/user-attachments/assets/084a92bf-bc7b-47e6-ad1d-e4605caf7661" />
+  <img width="526" height="352" alt="image" src="https://github.com/user-attachments/assets/fc68695e-41c9-4dc2-99fe-42b89088406e" />
+</details>
 
 #### 事件注册
    通过 **`maplebirch.on(eventName, callback, priority = 1, description = '')`** 来注册事件。  
@@ -523,3 +529,4 @@ npc.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
