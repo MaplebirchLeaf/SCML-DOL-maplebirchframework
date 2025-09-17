@@ -1,8 +1,0 @@
-:: Maplebirch Options [widget]
-
-<<widget 'maplebirchOptionsInfo'>>
-  <div class="settingsHeader options"><span class="maplebirchHint"><<= maplebirch.lang.autoTranslate('秋枫白桦拓展')>></span></div>
-  <div class="settingsGrid">
-
-  </div>
-<</widget>>
