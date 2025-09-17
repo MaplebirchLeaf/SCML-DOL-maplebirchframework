@@ -28,6 +28,14 @@
       window: false
     }
 
+    static audio = {
+      playlist: null,
+      currentTrack: null,
+      currentIndex: -1,
+      loopMode: "none",
+      currentAudio: null
+    }
+
     static time = {
       monthly:  {},
       weekly:   {},
@@ -79,11 +87,11 @@
       location:   variablesModule.location,
       orchard:    variablesModule.orchard,
       combat:     variablesModule.combat,
+      audio:      variablesModule.audio,
       player:  {},
       npcList: [],
       enemy:   {},
       effect:  {},
-      version: currentVersion,
     };
     
     constructor() {
@@ -91,27 +99,13 @@
       this.tool = null;
       this.log = null;
     }
-    
-    compareVersions(a, b) {
-      const aParts = a.split('.').map(Number);
-      const bParts = b.split('.').map(Number);
-      
-      for (let i = 0; i < 3; i++) {
-        if (aParts[i] !== bParts[i]) {
-          return aParts[i] - bParts[i];
-        }
-      }
-      return 0;
-    }
 
     mergeDefaults() {
       const defaults = variablesModule.defaultVar;
       const target = V.maplebirch;
-      
       const merge = (dest, source) => {
         for (const key in source) {
           if (key === 'version') continue;
-          
           if (!dest.hasOwnProperty(key)) {
             dest[key] = this.tool.clone(source[key]);
           } else if (typeof source[key] === 'object' && !Array.isArray(source[key])) {

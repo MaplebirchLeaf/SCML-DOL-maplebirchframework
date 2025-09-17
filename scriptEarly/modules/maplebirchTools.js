@@ -1527,9 +1527,7 @@
               <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$maplebirch.options.V" false true autocheck>> V <<= maplebirch.lang.t('permission')>></label></div>
               <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$maplebirch.options.T" false true autocheck>> T <<= maplebirch.lang.t('permission')>></label></div>
               <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$maplebirch.options.maplebirch" false true autocheck>> Maplebirch <<= maplebirch.lang.t('permission')>></label></div>
-              <div class="settingsToggleItem">
-                <label onclick='maplebirch.trigger("update")'><<checkbox "$maplebirch.options.window" false true autocheck>> window <<= maplebirch.lang.t('permission')>>(完全权限)</label>
-              </div>
+              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$maplebirch.options.window" false true autocheck>> window <<= maplebirch.lang.t('permission')>>(完全权限)</label></div>
               <div id="ConsoleCheat" class="settingsToggleItemWide">
                 <<set _CodeCheater to maplebirch.lang.t('Code Cheater')>>
                 <details class="JSCheatConsole">
@@ -2282,13 +2280,25 @@
       data.forEach(traits => {
         if (traits && traits.title && traits.name) {
           const mappedTitle = othersSystem.getTraitCategory(traits.title);
-          this.traitsData.push({
-            title: mappedTitle,
-            name: typeof traits.name === 'function' ? traits.name() : traits.name,
-            colour: typeof traits.colour === 'function' ? traits.colour() : traits.colour || '',
-            has: typeof traits.has === 'function' ? traits.has() : traits.has || false,
-            text: typeof traits.text === 'function' ? traits.text() : traits.text || ''
-          });
+          const nameValue = typeof traits.name === 'function' ? traits.name() : traits.name;
+          const existingIndex = this.traitsData.findIndex(t => t.title === mappedTitle && t.name === nameValue);
+          if (existingIndex >= 0) {
+            this.traitsData[existingIndex] = {
+              title: mappedTitle,
+              name: nameValue,
+              colour: typeof traits.colour === 'function' ? traits.colour() : traits.colour || '',
+              has: typeof traits.has === 'function' ? traits.has() : traits.has || false,
+              text: typeof traits.text === 'function' ? traits.text() : traits.text || ''
+            };
+          } else {
+            this.traitsData.push({
+              title: mappedTitle,
+              name: nameValue,
+              colour: typeof traits.colour === 'function' ? traits.colour() : traits.colour || '',
+              has: typeof traits.has === 'function' ? traits.has() : traits.has || false,
+              text: typeof traits.text === 'function' ? traits.text() : traits.text || ''
+            });
+          }
         }
       });
     }

@@ -1,5 +1,5 @@
 (() => {
-  const frameworkVersion = '2.2.3';
+  const frameworkVersion = '2.3.1';
   const lastUpdate = '2025.09.10';
   const lastModifiedBy = '楓樺葉';
   
@@ -110,52 +110,65 @@
 
     async importAllLanguages(modName) {
       const languages = ['EN', 'CN', 'JP'];
-      const results = await Promise.all(
-        languages.map(lang => 
-          this.loadTranslations(
-            modName, 
-            lang, 
-            `translations/${lang.toLowerCase()}.json`
-          )
-        )
-      );
+      const results = [];
+      for (const lang of languages) {
+        const filePath = `translations/${lang.toLowerCase()}.json`;
+        const success = await this.#loadAndProcessTranslations(modName, lang, filePath);
+        results.push(success);
+      }
       return results.every(success => success);
     }
 
-    async loadTranslations(modName, languageCode, filePath) {
+    async #loadAndProcessTranslations(modName, languageCode, filePath) {
       if (!this.core.modLoader) {
         this.core.logger.log('Mod加载器未设置', 'ERROR');
         return false;
       }
-      
+
       const modZip = this.core.modLoader.getModZip(modName);
       if (!modZip) {
         this.core.logger.log(`找不到Mod: ${modName}`, 'ERROR');
         return false;
       }
-      
+
       const file = modZip.zip.file(filePath);
       if (!file) {
         this.core.logger.log(`找不到翻译文件: ${modName}/${filePath}`, 'WARN');
         return false;
       }
-      
+
       try {
         const json = await file.async('text');
         const data = JSON.parse(json);
-        const batchEntries = [];
-        for (const [key, text] of Object.entries(data)) {
-          if (!this.translations.has(key)) this.translations.set(key, {});
-          this.translations.get(key)[languageCode] = text;
-          if (this.db) batchEntries.push({ key, translations: this.translations.get(key) });
+        const keys = Object.keys(data);
+        const batchSize = 500;
+        let processedCount = 0;
+        while (processedCount < keys.length) {
+          const batchKeys = keys.slice(processedCount, processedCount + batchSize);
+          const batchEntries = [];
+          for (const key of batchKeys) {
+            if (!this.translations.has(key)) this.translations.set(key, {});
+            this.translations.get(key)[languageCode] = data[key];
+            if (this.db) {
+              batchEntries.push({
+                key,
+                translations: this.translations.get(key)
+              });
+            }
+          }
+          if (batchEntries.length > 0) await this.#storeBatchInDB(batchEntries);
+          processedCount += batchKeys.length;
         }
-        if (batchEntries.length > 0) await this.#storeBatchInDB(batchEntries);
-        this.core.logger.log(`加载翻译: ${languageCode} (${Object.keys(data).length} 项)`, 'DEBUG');
+        this.core.logger.log(`加载翻译: ${languageCode} (${keys.length} 项)`, 'DEBUG');
         return true;
       } catch (error) {
         this.core.logger.log(`加载失败: ${modName}/${filePath} - ${error.message}`, 'ERROR');
         return false;
       }
+    }
+
+    async loadTranslations(modName, languageCode, filePath) {
+      return this.#loadAndProcessTranslations(modName, languageCode, filePath);
     }
 
     t(key) {
@@ -317,6 +330,7 @@
         ':mousemove':           [], // 移动鼠标
         ':coreReady':           [], // (本)框架核心完成
         ':expectedmodulecount': [], // (本)框架模块就绪
+        ':dataImport':          [], // 数据导入时机(即modloader可用时机)
         ':onSave':              [], // 保存
         ':onLoad':              [], // 读档
         ':oncloseoverlay':      [], // 关闭窗口
@@ -860,7 +874,7 @@
     constructor() {
       this.meta = {
         state: ModuleState.PENDING,
-        coreModules: ['state', 'tool', 'var', 'npc', 'char'],
+        coreModules: ['state', 'audio', 'tool', 'var', 'npc', 'char'],
         initializedAt: new Date().toLocaleString(),
       };
 
@@ -957,11 +971,14 @@
       const modLoader = window.modSC2DataManager.getModLoader();
       const modUtils = window.modSC2DataManager.getModUtils();
       iModcore.setModLoader(modLoader, modUtils);
+      iModcore.once(':dataImport', async () => {
+        await iModcore.lang.clearDatabase();
+        await iModcore.lang.initDatabase();
+        await iModcore.lang.importAllLanguages('maplebirch');
+        await iModcore.lang.preloadAllTranslations();
+      }, 3);
       await iModcore.preInit();
-      await iModcore.lang.clearDatabase();
-      await iModcore.lang.initDatabase();
-      await iModcore.lang.importAllLanguages('maplebirch');
-      await iModcore.lang.preloadAllTranslations();
+      iModcore.trigger(':dataImport');
     }, 3);
     iModcore.on(':passageinit', async (ev) => {
       const passage = ev.passage;
@@ -980,7 +997,7 @@
       SugarCube.Save.onLoad.add(() => iModcore.trigger(':onLoad', State.variables));
     }, 3);
 
-    iModcore.setExModCount(6);  // 预设总模块数量
+    iModcore.setExModCount(7);  // 预设总模块数量
     iModcore.log('初始化流程设置结束', 'INFO');
   }, 3)
   

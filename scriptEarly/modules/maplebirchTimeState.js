@@ -147,6 +147,7 @@
         'onBefore',  // 时间流逝前事件
         'onThread',  // 时间流逝中事件
         'onAfter',   // 时间流逝后事件
+        'onTimeTravel', // 时空穿越
       ];
       
       this.timeEvents = {};
@@ -386,6 +387,67 @@
       } catch (error) {
         this.#log(`时间流逝处理错误: ${error.message}`, 'ERROR');
         return this.originalTimePass(passedSeconds);
+      }
+    }
+
+    /**
+     * @param {object} options - 时间旅行选项
+     * @param {DateTime} [options.target] - 目标时间点（DateTime对象）
+     * @param {number} [options.year] - 目标年份
+     * @param {number} [options.month] - 目标月份 (1-12)
+     * @param {number} [options.day] - 目标日期 (1-31)
+     * @param {number} [options.hour=0] - 目标小时 (0-23)
+     * @param {number} [options.minute=0] - 目标分钟 (0-59)
+     * @param {number} [options.second=0] - 目标秒数 (0-59)
+     * @param {number} [options.addYears=0] - 增加的年数（可负）
+     * @param {number} [options.addMonths=0] - 增加的月数（可负）
+     * @param {number} [options.addDays=0] - 增加的天数（可负）
+     * @param {number} [options.addHours=0] - 增加的小时数（可负）
+     * @param {number} [options.addMinutes=0] - 增加的分钟数（可负）
+     * @param {number} [options.addSeconds=0] - 增加的秒数（可负）
+     */
+    timeTravel(options = {}) {
+      try {
+        let targetDate;
+        const currentDate = new DateTime(Time.date);
+
+        if (options.target || (options.year !== undefined && options.month !== undefined && options.day !== undefined)) {
+          if (options.target instanceof DateTime) {
+            targetDate = new DateTime(options.target);
+          } else {
+            const { year, month, day, hour = 0, minute = 0, second = 0 } = options;
+            targetDate = new DateTime(year, month, day, hour, minute, second);
+          }
+        } else if (options.addYears || options.addMonths || options.addDays || options.addHours || options.addMinutes || options.addSeconds) {
+            targetDate = new DateTime(currentDate);
+            if (options.addYears) targetDate.addYears(options.addYears);
+            if (options.addMonths) targetDate.addMonths(options.addMonths);
+            if (options.addDays) targetDate.addDays(options.addDays);
+            if (options.addHours) targetDate.addHours(options.addHours);
+            if (options.addMinutes) targetDate.addMinutes(options.addMinutes);
+            if (options.addSeconds) targetDate.addSeconds(options.addSeconds);
+        } else {
+          throw new Error("无效的时间旅行参数");
+        }
+        const prevDate = new DateTime(Time.date);
+        const diffSeconds = targetDate.timeStamp - prevDate.timeStamp;
+        Time.setDate(targetDate);
+        this.prevDate = prevDate;
+        this.currentDate = targetDate;
+        Object.keys(this.cumulativeTime).forEach(key => this.cumulativeTime[key] = 0);
+
+        this.#triggerEvents('onTimeTravel', {
+          prev: prevDate,
+          current: targetDate,
+          diffSeconds,
+          direction: diffSeconds >= 0 ? 'forward' : 'backward',
+          isLeap: DateTime.isLeapYear(targetDate.year)
+        });
+        this.#log(`时间穿越完成: prevDate → targetDate (${diffSeconds}秒)`, 'DEBUG', prevDate, targetDate);
+        return true;
+      } catch (error) {
+        this.#log(`时间穿越失败: ${error.message}`, 'ERROR');
+        return false;
       }
     }
 

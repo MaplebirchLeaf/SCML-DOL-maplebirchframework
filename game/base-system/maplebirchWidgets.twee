@@ -1,0 +1,113 @@
+:: maplebirch widgets [widget]
+
+<<widget 'maplebirchOptionsInfo'>>
+  <div class="settingsHeader options"><span class="maplebirchHint"><<= maplebirch.lang.autoTranslate('秋枫白桦拓展')>></span></div>
+  <div class="settingsGrid">
+    <<if maplebirch.modUtils.getMod('maplebirch-audio')>>
+      <div class="settingsToggleItemWide">
+        <details class="maplebirch-playback">
+          <summary class="maplebirch-playback"><<= maplebirch.lang.t('music player')>></summary>
+          <div class="maplebirch-playback-content">
+            <<if !V.maplebirch.audio.playlist>><<set V.maplebirch.audio.playlist to maplebirch.audio.getPlayer('maplebirch-audio').audioKeys>><</if>>
+            <<for _key range V.maplebirch.audio.playlist>>
+              <<capture _key>>
+              <<link _key>>
+                <<run V.maplebirch.audio.currentTrack = _key>>
+                <<run V.maplebirch.audio.currentIndex = V.maplebirch.audio.playlist.indexOf(_key)>>
+                <<run maplebirch.audio.getPlayer('maplebirch-audio').stopAll()>>
+                <<run maplebirch.audio.getPlayer('maplebirch-audio').play(_key, { loop: V.maplebirch.audio.loopMode === "single" })>>
+                <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls>><</replace>>
+              <</link>><br>
+              <</capture>>
+            <</for>><br>
+            <div id='maplebirch-playback-controls'><<maplebirch-playback-controls>></div>
+          </div>
+        </details>
+      </div>
+    <</if>>
+  </div>
+<</widget>>
+
+<<widget 'maplebirch-playback-controls'>>
+  <<set _playing = maplebirch.audio.getPlayer('maplebirch-audio').isPlaying()>>
+  <<if !V.maplebirch.audio.currentAudio>>
+    <<run V.maplebirch.audio.currentAudio = _playing[0] ? _playing[0] : V.maplebirch.audio.currentTrack>>
+  <</if>>
+  <<if !V.maplebirch.audio.volume>><<run V.maplebirch.audio.volume = 1.0>><</if>>
+  <div>
+    <<if V.maplebirch.audio.currentTrack>>
+      当前播放: <strong><span class='gold'><<print V.maplebirch.audio.currentTrack>></span></strong>
+      <<if V.maplebirch.audio.loopMode === "single">>(单曲循环)<</if>>
+    <<else>>
+      没有播放中的曲目
+    <</if>>
+  </div>
+  <div class="audio-controls">
+    <<set _prev_text to maplebirch.lang.t('previous song')>>
+    <<link _prev_text>>
+      <<if V.maplebirch.audio.currentIndex > 0>>
+        <<run V.maplebirch.audio.currentIndex = V.maplebirch.audio.currentIndex - 1>>
+      <<else>>
+        <<run V.maplebirch.audio.currentIndex = V.maplebirch.audio.playlist.length - 1>>
+      <</if>>
+      <<run V.maplebirch.audio.currentTrack = V.maplebirch.audio.playlist[V.maplebirch.audio.currentIndex]>>
+      <<run V.maplebirch.audio.currentAudio = V.maplebirch.audio.currentTrack>>
+      <<run maplebirch.audio.getPlayer('maplebirch-audio').stopAll()>>
+      <<run maplebirch.audio.getPlayer('maplebirch-audio').play(V.maplebirch.audio.currentTrack, {loop: V.maplebirch.audio.loopMode === "single",volume: V.maplebirch.audio.volume})>>
+      <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls>><</replace>>
+    <</link>>
+    <<if maplebirch.audio.getPlayer('maplebirch-audio').isPlaying()[0]>>
+      <<set _pause_text to maplebirch.lang.t('pause')>>
+      <<link _pause_text>>
+        <<run maplebirch.audio.getPlayer('maplebirch-audio').togglePause(V.maplebirch.audio.currentAudio)>>
+        <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls>><</replace>>
+      <</link>>
+    <<elseif V.maplebirch.audio.currentAudio>>
+      <<set _playback_text to maplebirch.lang.t('playback')>>
+      <<link _playback_text>>
+        <<run maplebirch.audio.getPlayer('maplebirch-audio').togglePause(V.maplebirch.audio.currentAudio)>>
+        <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls>><</replace>>
+      <</link>>
+    <</if>>
+    <<set _nextsong_text to maplebirch.lang.t('next song')>>
+    <<link _nextsong_text>>
+      <<if V.maplebirch.audio.currentIndex < V.maplebirch.audio.playlist.length - 1>>
+        <<run V.maplebirch.audio.currentIndex = V.maplebirch.audio.currentIndex + 1>>
+      <<else>>
+        <<run V.maplebirch.audio.currentIndex = 0>>
+      <</if>>
+      <<run V.maplebirch.audio.currentTrack = V.maplebirch.audio.playlist[V.maplebirch.audio.currentIndex]>>
+      <<run V.maplebirch.audio.currentAudio = V.maplebirch.audio.currentTrack>>
+      <<run maplebirch.audio.getPlayer('maplebirch-audio').stopAll()>>
+      <<run maplebirch.audio.getPlayer('maplebirch-audio').play(V.maplebirch.audio.currentTrack, { loop: V.maplebirch.audio.loopMode === "single",volume: V.maplebirch.audio.volume})>>
+      <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls>><</replace>>
+    <</link>>
+    <<set _stop_text to maplebirch.lang.t('stop')>>
+    <<link _stop_text>>
+      <<run maplebirch.audio.getPlayer('maplebirch-audio').stopAll()>>
+      <<run V.maplebirch.audio.currentTrack = null>>
+      <<run V.maplebirch.audio.currentIndex = -1>>
+      <<run V.maplebirch.audio.currentAudio = null>>
+      <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls>><</replace>>
+    <</link>>
+    <<set _loopmode_text to maplebirch.lang.t('loop mode')>>
+    <<link _loopmode_text>>
+      <<if V.maplebirch.audio.loopMode === "none">>
+        <<run V.maplebirch.audio.loopMode = "single">>
+      <<else>>
+        <<run V.maplebirch.audio.loopMode = "none">>
+      <</if>>
+      <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls>><</replace>>
+    <</link>>
+  </div>
+  <label><<= maplebirch.lang.t('volume')>>:</label>
+  <<numberslider '$maplebirch.audio.volume' $maplebirch.audio.volume 0 1 0.01 {
+    value: v => Math.round(v * 100) + '%',
+    onInputChange: value => {
+      maplebirch.audio.getPlayer('maplebirch-audio').setVolume(value);
+    },
+    onMouseUp: value => {
+      maplebirch.audio.getPlayer('maplebirch-audio').setVolume(value);
+    }
+  }>>
+<</widget>>
