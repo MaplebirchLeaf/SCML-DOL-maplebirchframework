@@ -16,6 +16,7 @@
     - [地点创建](#地点创建)
     - [时间事件](#时间事件)
     - [NPC注册](#NPC注册)
+    - [音频管理](#音频管理)
 - [致谢](#致谢)
 - [未实现的功能构想](#未实现的功能构想)
 
@@ -151,7 +152,7 @@ maplebirch.tool.effect.registerWidget(
 <<maplebirchReplace 'maplebirchModHint' 'customize'>> 自定义 通过 <<print 'maplebirchModHint'>> 使用你的自设弹窗。
 ```
 #### 特质添加
-  便携添加特质，可重复添加下方为汉化包汉化后的中英文特质标题映射，输入对应英文进你的特质标题即可为对应特质区域添加特质。
+  便携添加特质，可重复添加下方为汉化包汉化后的中英文特质标题映射，输入对应英文进你的特质标题即可为对应特质区域添加特质(可修改原版特质)。
 <details>
   <summary>点击查看图片</summary>
   <img width="438" height="247" alt="image" src="https://github.com/user-attachments/assets/7b2fd514-4819-4a5f-832c-5ca9bd00d1bf" />
@@ -519,6 +520,28 @@ npc.addStats({
   <img width="510" height="1083" alt="image" src="https://github.com/user-attachments/assets/5e5c5625-2eab-4c15-9d86-eaa0da4b0da0" />
 </details> 
 
+#### 音频管理  
+ 在js中通过 **`await maplebirch.audio.importAllAudio(你的模组名);`** 来导入你的数据文件。
+```
+根目录/  
+└── audio/  
+    ├── XX.mpd
+    ├── xx.wav  
+    └── 音频文件
+```
+- `maplebirch.audio.getPlayer('my-mod');` : 获取播放器   
+```
+示例:  
+ 播放音频  
+ maplebirch.audio.getPlayer('my-mod').play('background-music', {  
+  loop: true, // 单曲循环  
+  volume: 0.7  
+ });  
+
+maplebirch.audio.getPlayer('my-mod').togglePause('background-music'); // 暂停音频
+maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
+```
+
 ### 致谢
 - 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 制作的Modloader和所支持的功能。
 - 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 大神开发了Modloader以及所有预置模组、[Number_Sir](https://github.com/NumberSir) 大佬开发了模组编写助手，以及两位魔法师在模组开发群里提供的教程和指导。
@@ -529,5 +552,6 @@ npc.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
