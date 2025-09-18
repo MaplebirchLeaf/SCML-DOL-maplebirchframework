@@ -514,6 +514,36 @@ npc.addStats({
   }
 });
 ```
++ 然后关于npc关系文本的快捷注册需要你写相应的**宏`<<widget>>`**
+```
+<<widget '(你的npc名字)relationshiptext'>>
+  <<if $NPCName[_i].love gte $npclovehigh>>
+   <<if $NPCName[_i].dom gte $npcdomhigh>>
+    认为你<span class="green">可爱十足。</span>
+   <<elseif $NPCName[_i].dom lte $npcdomlow>>
+    认为你<span class="green">鼓舞人心。</span>
+   <<else>>
+    认为你<span class="green">令人愉悦。</span>
+   <</if>>
+  <<elseif $NPCName[_i].love lte $npclovelow>>
+   <<if $NPCName[_i].dom gte $npcdomhigh>>
+    认为你<span class="red">十分可悲。</span>
+   <<elseif $NPCName[_i].dom lte $npcdomlow>>
+    认为你<span class="red">使人恼火。</span>
+   <<else>>
+    认为你<span class="red">非常讨厌。</span>
+   <</if>>
+  <<else>>
+   <<if $NPCName[_i].dom gte $npcdomhigh>>
+    认为你<span class="pink">很可爱。</span>
+   <<elseif $NPCName[_i].dom lte $npcdomlow>>
+    <span class="teal">敬仰着你。</span>
+   <<else>>
+    对你没什么看法。
+   <</if>>
+  <</if>>
+<</widget>>
+```
 
 <details>
   <summary>点击查看图片</summary>
@@ -552,6 +582,7 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
