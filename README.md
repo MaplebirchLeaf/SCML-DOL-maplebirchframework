@@ -570,6 +570,11 @@ npc.addStats({
 
 maplebirch.audio.getPlayer('my-mod').togglePause('background-music'); // 暂停音频
 maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
+
+默认行为​​：play(key, { loop: true })会循环100次
+​​无限循环​​：play(key, { loop: true, loopCount: Infinity })会无限循环
+​​自定义次数​​：play(key, { loop: true, loopCount: 5 })会循环5次
+
 ```
 
 ### 致谢
@@ -582,6 +587,7 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
