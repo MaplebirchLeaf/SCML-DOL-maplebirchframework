@@ -162,16 +162,16 @@ maplebirch.tool.effect.registerWidget(
 示例:  
 maplebirch.tool.other.addTraits({  
   title: 特质标题,  
-  name: typeof traits.name === 'function' ? traits.name() : traits.name,                 // 特质名字  
-  colour: typeof traits.colour === 'function' ? traits.colour() : traits.colour || '',   // 文字颜色  
-  has: typeof traits.has === 'function' ? traits.has() : traits.has || false,            // 触发条件  
-  text: typeof traits.text === 'function' ? traits.text() : traits.text || ''            // 特质说明  
+  name: '一个名字',                      // 特质名字  
+  colour: 'red',                        // 文字颜色(或自己css?)   
+  has: true, <-这是默认触发              // 触发条件  
+  text: '这是一个特质'                   // 特质说明  
 },{  
   title: "General Traits",  
-  name: typeof traits.name === 'function' ? traits.name() : traits.name,  
-  colour: typeof traits.colour === 'function' ? traits.colour() : traits.colour || '',  
-  has: typeof traits.has === 'function' ? traits.has() : traits.has || false,  
-  text: typeof traits.text === 'function' ? traits.text() : traits.text || ''  
+  name: () => {maplebirch.lang.t('XX') / maplebirch.lang.autoTranslate('XX')},     // 函数态，这里是导入翻译数据后按语言显示名称，你也可以按自己条件写判断不同时候的名称，例如原版牛化。  
+  colour: () => {},                                                                // 同理  
+  has: () => {}    
+  text: () => {}     
 });  
 ```
 
@@ -582,6 +582,7 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
