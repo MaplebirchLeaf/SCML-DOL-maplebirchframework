@@ -479,7 +479,7 @@ maplebirch.state.regTimeEvent('onHour', 'conditionalEvent', {
 #### NPC注册
  为你的模组便携添加npc，详情看**下方图片**，或去代码指定位置，选择你的npc数据。
 ```
-// 添加一个名为Lily的狐狸NPC
+// 添加一个名为Lily的狐狸NPC **(三个大括号是必要的，即使不要最好也写个{})**  
 npc.add({
   nam: "Lily",         // NPC唯一名称（必需）
   gender: "f",         // 女性（m/f/none）
@@ -582,6 +582,7 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
