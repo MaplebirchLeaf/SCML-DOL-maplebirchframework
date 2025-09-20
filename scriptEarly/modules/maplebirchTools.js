@@ -205,8 +205,6 @@
         const imageData = await window.modSC2DataManager.getHtmlTagSrcHook().requestImageBySrc(src);
         if (imageData) return imageData;
       }
-      
-      // 回退到原始路径
       return src;
     } catch (error) {
       log(`ModLoader图片加载失败: ${error.message}`, 'ERROR');
@@ -1557,8 +1555,7 @@
               </div>
             <</if>>
           </div><hr>`,
-        NPCinit : `
-          <<run maplebirch.npc._vanillaNPCInit(_nam)>>`
+        NPCinit : `<<run maplebirch.npc._vanillaNPCInit(_nam)>>`
       };
 
       this.widgethtml = '';
@@ -2286,17 +2283,17 @@
             this.traitsData[existingIndex] = {
               title: mappedTitle,
               name: nameValue,
-              colour: typeof traits.colour === 'function' ? traits.colour() : traits.colour || '',
-              has: typeof traits.has === 'function' ? traits.has() : traits.has || false,
-              text: typeof traits.text === 'function' ? traits.text() : traits.text || ''
+              colour: traits.colour,
+              has: traits.has,
+              text: traits.text
             };
           } else {
             this.traitsData.push({
               title: mappedTitle,
               name: nameValue,
-              colour: typeof traits.colour === 'function' ? traits.colour() : traits.colour || '',
-              has: typeof traits.has === 'function' ? traits.has() : traits.has || false,
-              text: typeof traits.text === 'function' ? traits.text() : traits.text || ''
+              colour: traits.colour,
+              has: traits.has,
+              text: traits.text
             });
           }
         }
@@ -2308,21 +2305,24 @@
       const result = maplebirch.tool.clone(data);
       this.traitsData.forEach(trait => {
         const title = trait.title;
+        const colourValue = typeof trait.colour === 'function' ? trait.colour() : trait.colour || '';
+        const hasValue = typeof trait.has === 'function' ? trait.has() : trait.has || false;
+        const textValue = typeof trait.text === 'function' ? trait.text() : trait.text || '';
         if (titleMap[title] !== undefined) {
           result[titleMap[title]].traits.push({
             name: trait.name,
-            colour: trait.colour,
-            has: trait.has,
-            text: trait.text
+            colour: colourValue,
+            has: hasValue,
+            text: textValue
           });
         } else {
           result.push({
             title: title,
             traits: [{
               name: trait.name,
-              colour: trait.colour,
-              has: trait.has,
-              text: trait.text
+              colour: colourValue,
+              has: hasValue,
+              text: textValue
             }]
           });
           titleMap[title] = result.length - 1;

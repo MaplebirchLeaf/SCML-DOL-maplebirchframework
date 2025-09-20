@@ -1,6 +1,6 @@
 (() => {
-  const frameworkVersion = '2.3.1';
-  const lastUpdate = '2025.09.10';
+  const frameworkVersion = '2.3.7';
+  const lastUpdate = '2025.09.20';
   const lastModifiedBy = '楓樺葉';
   
   const ModuleState = {
@@ -210,7 +210,6 @@
         }
         this.isPreloaded = true;
         this.core.logger.log(`预加载完成: ${loadedCount} 条翻译`, 'INFO');
-        this.core.events.trigger(':finally');
       } catch (error) {
         this.core.logger.log(`预加载失败: ${error.message}`, 'ERROR');
       }
@@ -454,7 +453,7 @@
   class ModuleManager {
     static streamConfig = {
       batchSize: 5,
-      yieldInterval: 10,
+      yieldInterval: 5,
     }
 
     constructor(core) {
@@ -992,11 +991,13 @@
       if (!iModcore.modules.initPhase.mainInitCompleted) return;
       await iModcore.postInit();
     }, 3);
+    iModcore.on(':passageend', async() => {
+      setTimeout(() => iModcore.events.trigger(':finally'), 1000);
+    }, 3);
     iModcore.once(':storyready' , () => {
       SugarCube.Save.onSave.add(() => iModcore.trigger(':onSave', State.variables));
       SugarCube.Save.onLoad.add(() => iModcore.trigger(':onLoad', State.variables));
     }, 3);
-
     iModcore.setExModCount(7);  // 预设总模块数量
     iModcore.log('初始化流程设置结束', 'INFO');
   }, 3)

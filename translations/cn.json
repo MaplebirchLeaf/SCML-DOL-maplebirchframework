@@ -31,6 +31,7 @@
   "playback" : "播放",
   "pause" : "暂停",
   "stop" : "停止",
+  "resume" : "恢复",
   "loop mode" : "循环模式",
   "volume" : "音量",
   "mobile client" : "手机端",

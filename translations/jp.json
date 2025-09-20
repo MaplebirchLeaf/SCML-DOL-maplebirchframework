@@ -31,6 +31,7 @@
   "playback" : "再生",
   "pause" : "一時停止",
   "stop" : "停止",
+  "resume" : "再開",
   "loop mode" : "ループモード",
   "volume" : "音量",
   "mobile client" : "携帯クライアント",

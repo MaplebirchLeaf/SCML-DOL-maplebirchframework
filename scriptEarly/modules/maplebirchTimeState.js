@@ -419,13 +419,13 @@
             targetDate = new DateTime(year, month, day, hour, minute, second);
           }
         } else if (options.addYears || options.addMonths || options.addDays || options.addHours || options.addMinutes || options.addSeconds) {
-            targetDate = new DateTime(currentDate);
-            if (options.addYears) targetDate.addYears(options.addYears);
-            if (options.addMonths) targetDate.addMonths(options.addMonths);
-            if (options.addDays) targetDate.addDays(options.addDays);
-            if (options.addHours) targetDate.addHours(options.addHours);
-            if (options.addMinutes) targetDate.addMinutes(options.addMinutes);
-            if (options.addSeconds) targetDate.addSeconds(options.addSeconds);
+          targetDate = new DateTime(currentDate);
+          if (options.addYears) targetDate.addYears(options.addYears);
+          if (options.addMonths) targetDate.addMonths(options.addMonths);
+          if (options.addDays) targetDate.addDays(options.addDays);
+          if (options.addHours) targetDate.addHours(options.addHours);
+          if (options.addMinutes) targetDate.addMinutes(options.addMinutes);
+          if (options.addSeconds) targetDate.addSeconds(options.addSeconds);
         } else {
           throw new Error("无效的时间旅行参数");
         }

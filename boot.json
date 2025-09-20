@@ -5,9 +5,10 @@
     "cn": "秋枫白桦",
     "jp": "秋楓白樺"
   },
-  "version": "2.3.1",
+  "version": "2.3.7",
   "styleFileList": [
-    "styles/maplebirchDefault.css"
+    "styles/maplebirchDefault.css",
+    "styles/maplebirchPanel​.css"
   ],
   "scriptFileList": [
     "game/03-JavaScript/maplebirchDefineMacros.js"

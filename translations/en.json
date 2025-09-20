@@ -31,6 +31,7 @@
   "playback" : "playback",
   "pause" : "pause",
   "stop" : "stop",
+  "resume" : "resume",
   "loop mode" : "loop mode",
   "volume" : "volume",
   "mobile client" : "mobile client",

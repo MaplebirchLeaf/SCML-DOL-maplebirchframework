@@ -83,8 +83,9 @@
         // 可孕
         canBePregnant: ['Alex', 'Black Wolf', 'Great Hawk']
       };
-      this.importantNPCs = [];  // 恋人npc ,如罗宾
-      this.specialNPCs = [];    // 特殊npc ,如幽灵
+      this.loveInterestNpcs = []; // 可恋爱npc ,如罗宾
+      this.importantNPCs = [];    // 重要npc ,如罗宾
+      this.specialNPCs = [];      // 特殊npc ,如幽灵
       this.NamedNPC = [];
       this.NPCNameList = [];
       this.npcConfigData = {};
@@ -93,6 +94,7 @@
 
     #getNamedNPC() {
       if (!V.NPCName) return [];
+      this.loveInterestNpcs = this.tool.clone(setup.loveInterestNpc);
       const currentNPCs = this.tool.clone(V.NPCName);
       const existingNames = [...this.NamedNPC.map(npc => npc.nam), ...this.NPCNameList];
       const newNPCs = [];
@@ -312,12 +314,10 @@
       let skippedCount = 0;
       const modUtils = window.modUtils;
       const existingNames = [...this.NamedNPC.map(npc => npc.nam), ...this.NPCNameList];
-      
       for (const npcName in this.data) {
         if (this.data.hasOwnProperty(npcName)) {
           const modNPC = this.data[npcName];
           if (this.tool.contains(existingNames, [npcName], { mode: 'any' })) {
-            this.log.warn(`NPC名称冲突: ${npcName} 已存在，跳过添加`, 'WARN');
             skippedCount++;
             continue;
           }
@@ -338,10 +338,10 @@
       for (const npcName of npcNames) {
         const cnTranslation = setup.NPCNameList_cn_name[npcName][0];
         if (!maplebirch.lang.translations.has(npcName)) {
-            maplebirch.lang.translations.set(npcName, {
-              EN: npcName,
-              CN: cnTranslation
-            });
+          maplebirch.lang.translations.set(npcName, {
+            EN: npcName,
+            CN: cnTranslation
+          });
         } else {
           const existing = maplebirch.lang.translations.get(npcName);
           existing.CN = cnTranslation;
@@ -381,6 +381,7 @@
         }
       }
       V.NPCName = globalNPCs;
+      V.NPCNameList = [...setup.NPCNameList];
       setup.NPCNameList = globalNameList;
       this.#updateCNPCProxy();
       this.log(`模组NPC注入完成: 添加 ${injectedCount} 个NPC`, 'DEBUG');
@@ -403,21 +404,30 @@
 
     vanillaNPCConfig(npcConfig) {
       if (!npcConfig || typeof npcConfig !== 'object') return {};
+      for (const npcId in this.npcConfigData) {
+        if (Object.prototype.hasOwnProperty.call(this.npcConfigData, npcId)) {
+          const config = this.npcConfigData[npcId];
+          if (config && typeof config === 'object') {
+            if (config.important === true && !this.importantNPCs.includes(npcId)) this.importantNPCs.push(npcId);
+            if (config.special === true && !this.specialNPCs.includes(npcId)) this.specialNPCs.push(npcId);
+          }
+        }
+      }
       const Config = this.tool.clone(npcConfig);
       for (const npcName in this.npcConfigData) {
-        if (this.npcConfigData.hasOwnProperty(npcName)) {
+        if (Object.prototype.hasOwnProperty.call(this.npcConfigData, npcName)) {
           const modConfig = this.npcConfigData[npcName];
           if (Config[npcName]) {
             Config[npcName] = this.#mergeConfigs(Config[npcName], modConfig);
-            this.log(`合并NPC配置: ${npcName}` , 'DEBUG');
+            this.log(`合并NPC配置: ${npcName}`, 'DEBUG');
           } else {
             Config[npcName] = modConfig;
             this.log(`添加新NPC配置: ${npcName}`, 'DEBUG');
           }
         }
       }
-      T.importantNpcOrder.pushUnique(...this.importantNPCs);
-      T.specialNPCs.pushUnique(...this.specialNPCs);
+      if (Array.isArray(T.importantNpcOrder)) this.importantNPCs.forEach(id => T.importantNpcOrder.pushUnique(id));
+      if (Array.isArray(T.specialNPCs)) this.specialNPCs.forEach(id => T.specialNPCs.pushUnique(id));
       return T.npcConfig = Config;
     }
 
@@ -478,17 +488,24 @@
     preInit() {
       this.tool = maplebirch.tool;
       this.log = this.tool.createLogger('npc');
+      maplebirch.once(':passagestart',() => {
+        if (!this.tool.contains(['Start', 'Downgrade Waiting Room'], [maplebirch.state.passage.title], { mode: 'any' })) {
+          this.injectModNPCs();
+          this._npcList();
+          maplebirch.on(':onLoad', () => {
+            this.ready = false;
+            this.injectModNPCs();
+          }, 3, 'npcinject');
+        }
+      });
     }
 
     Init() {
-      if (!this.tool.contains(['Start', 'Downgrade Waiting Room'], [maplebirch.state.passage.title], { mode: 'any' })) {
-        this.injectModNPCs();
-        this._npcList();
-        maplebirch.on(':onLoad', () => {
-          this.ready = false;
-          this.injectModNPCs();
-        }, 3, 'npcinject');
-      }
+      
+    }
+
+    postInit() {
+      setup.loveInterestNpc.pushUnique(this.loveInterestNpcs);
     }
   }
 
