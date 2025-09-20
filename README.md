@@ -43,6 +43,23 @@
 
 ### 详细内容介绍:
  **simplebirchFrameworks**兼容支持，可直接使用**simpleFrameworks.addto**指令。
+```
+    'addTraits': 'tool.other.addTraits',            // 添加特征
+    'addLocation': 'tool.other.configureLocation',  // 配置位置
+    'addTimeEvent': 'state.regTimeEvent',           // 添加时间事件
+    'addNPC': 'npc.add',                            // 添加NPC
+    'addStats': 'npc.addStats',                     // 添加状态
+    'addto': 'tool.framework.addTo',                // 添加到区域
+    'onInit': 'tool.framework.onInit',              // 初始化回调
+    'importLang': 'lang.importAllLanguages',        // 导入语言
+    'autoLang': 'lang.autoTranslate',               // 自动翻译
+    'getRandom': 'tool.random.get',                 // 获取随机值
+    'migration': 'tool.migration.create',           // 创建迁移
+    'importAudio': 'audio.importAllAudio',          // 导入音频
+    'getPlayer': 'audio.getPlayer'                  // 获取播放器
+```
+
+ 
 <details>
   <summary>点击查看图片</summary>
   <img width="648" height="1002" alt="image" src="https://github.com/user-attachments/assets/084a92bf-bc7b-47e6-ad1d-e4605caf7661" />
@@ -587,12 +604,3 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
-
-
-
-
-
-
-
-
-
