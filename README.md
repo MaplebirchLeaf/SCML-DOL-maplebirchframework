@@ -42,7 +42,7 @@
 </details>
 
 ### 详细内容介绍:
- **simplebirchFrameworks**兼容支持，可直接使用**simpleFrameworks.addto**指令，映射直连而不用maplebirch。
+ **simplebirchFrameworks**兼容支持，可直接使用**simpleFrameworks.addto**指令，映射直连而不用maplebirch。同时**maplebirchFrameworks**和**simplebirchFrameworks**等效两者皆有映射可使用。
 ```
     'addTraits': 'tool.other.addTraits',            // 添加特征
     'addLocation': 'tool.other.configureLocation',  // 配置位置
@@ -706,6 +706,7 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
