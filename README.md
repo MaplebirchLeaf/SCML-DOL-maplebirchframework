@@ -42,7 +42,7 @@
 </details>
 
 ### 详细内容介绍:
- **simplebirchFrameworks**兼容支持，可直接使用**simpleFrameworks.addto**指令。
+ **simplebirchFrameworks**兼容支持，可直接使用**simpleFrameworks.addto**指令，映射直连而不用maplebirch。
 ```
     'addTraits': 'tool.other.addTraits',            // 添加特征
     'addLocation': 'tool.other.configureLocation',  // 配置位置
@@ -60,6 +60,11 @@
 ```
 
 
+<details>
+  <summary>点击查看图片</summary>
+  <img width="905" height="304" alt="image" src="https://github.com/user-attachments/assets/d33fb98e-211d-4595-8c6d-1f774b61d431" />
+</details>
+
 #### 事件注册
    通过 **`maplebirch.on(eventName, callback, priority = 1, description = '')`** 来注册事件。  
 - `eventName`：事件名称（可自定义创建，下方图片为默认事件名）  
@@ -75,6 +80,8 @@
 maplebirch.once(':coreReady',() => console.log('核心已准备好'), 3);  
 maplebirch.trigger(':coreReady'); 时触发console.log('核心已准备好')后删除事件。  
 ```
+
+
 <details>
   <summary>点击查看图片</summary>
   <img width="706" height="401" alt="image" src="https://github.com/user-attachments/assets/a488bcf5-e505-473d-a7c2-a8e0885b2678" />
@@ -599,5 +606,6 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
