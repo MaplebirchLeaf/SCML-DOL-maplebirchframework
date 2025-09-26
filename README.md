@@ -59,6 +59,106 @@
     'getPlayer': 'audio.getPlayer'                  // 获取播放器
 ```
 
+```
+ 示例：
+// 1. 添加特质示例
+simpleFrameworks.addTraits({
+  title: "General Traits",
+  name: "魔法天赋",
+  colour: "purple",
+  has: () => V.magicTalent !== undefined,
+  text: "你天生具有魔法亲和力"
+});
+
+// 2. 添加地点示例
+simpleFrameworks.addLocation('magic_tower', {
+  folder: 'magic_tower',
+  base: { 
+    main: { 
+      image: 'tower_exterior.png',
+      condition: () => Time.dayState === 'day'
+    },
+    night: {
+      image: 'tower_night.png',
+      condition: () => Time.dayState === 'night'
+    }
+  }
+});
+
+// 3. 添加时间事件示例
+simpleFrameworks.addTimeEvent('onDay', 'dailyMagicEvent', {
+  action: (data) => {
+    if (V.magicTalent) {
+      V.magicEnergy = Math.min(V.magicEnergy + 10, 100);
+    }
+  },
+  description: '每日魔法能量恢复'
+});
+
+// 4. 添加NPC示例
+simpleFrameworks.addNPC({
+  nam: "Eldrin",
+  gender: "m",
+  title: "archmage"
+}, {
+  important: true,
+  love: { maxValue: 50 }
+});
+
+// 5. 添加状态示例
+simpleFrameworks.addStats({
+  magic: {
+    min: 0,
+    max: 100,
+    position: 4
+  }
+});
+
+// 6. addto区域插入示例
+simpleFrameworks.addto('header', 'magicHeader', () => {
+  if (V.magicTalent) {
+    return `<div class="magic-indicator">魔法能量: ${V.magicEnergy || 0}</div>`;
+  }
+  return '';
+});
+
+// 7. 初始化回调示例
+simpleFrameworks.onInit(() => {
+  console.log('模组初始化完成');
+  // 初始化魔法系统
+  if (!V.magicSystem) {
+    V.magicSystem = {
+      spells: [],
+      mana: 100
+    };
+  }
+});
+
+// 8. 多语言导入示例
+await simpleFrameworks.importLang('myMagicMod');
+
+// 9. 自动翻译示例
+const translatedText = simpleFrameworks.autoTranslate('火球术');
+
+// 10. 随机数获取示例
+const randomValue = simpleFrameworks.getRandom(1, 100);
+
+// 11. 变量迁移示例
+simpleFrameworks.migration('magicSystem', {
+  from: 'oldMagicVar',
+  to: 'V.magicSystem',
+  transform: (oldValue) => {
+    return { spells: oldValue.spells || [], mana: oldValue.mana || 100 };
+  }
+});
+
+// 12. 音频导入示例
+await simpleFrameworks.importAudio('myMagicMod');
+
+// 13. 音频播放器获取示例
+const audioPlayer = simpleFrameworks.getPlayer('myMagicMod');
+audioPlayer.play('spell_cast', { volume: 0.8 });
+```
 
 <details>
   <summary>点击查看图片</summary>
@@ -606,6 +706,7 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
