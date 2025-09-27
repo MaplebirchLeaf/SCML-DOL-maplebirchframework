@@ -9,7 +9,6 @@
 - [安装方式说明](#安装方式说明)
 - [反馈与讨论方式](#反馈与讨论方式)
 - [详细内容介绍](#详细内容介绍)
-    - [事件注册](#事件注册)
     - [多语言管理](#多语言管理)
     - [addto区域快捷插入](#addto区域快捷插入)
     - [特质添加](#特质添加)
@@ -163,28 +162,6 @@ audioPlayer.play('spell_cast', { volume: 0.8 });
 <details>
   <summary>点击查看图片</summary>
   <img width="905" height="304" alt="image" src="https://github.com/user-attachments/assets/d33fb98e-211d-4595-8c6d-1f774b61d431" />
-</details>
-
-#### 事件注册
-   通过 **`maplebirch.on(eventName, callback, priority = 1, description = '')`** 来注册事件。  
-- `eventName`：事件名称（可自定义创建，下方图片为默认事件名）  
-- `callback`：事件触发时的回调函数  
-- `priority`：优先级（优先级从小到大 **`1 -> 3`**，默认值 **`1`**）  
-- `description`：事件描述（字符串，默认空字符串）  
-
-其中 **`maplebirch.once(eventName, callback, priority = 1, description = '')`** 是注册单次事件，即触发后删除。  
-其中 **`maplebirch.off(eventName, identifier)`** 是删除注册的事件，**`identifier`**是事件标识符，通常使用注册时的**事件描述**。  
-其中 **`maplebirch.trigger(eventName, ...args)`** 是触发事件的函数，`...args`是传导的变量数据。
-```
-示例:  
-maplebirch.once(':coreReady',() => console.log('核心已准备好'), 3);  
-maplebirch.trigger(':coreReady'); 时触发console.log('核心已准备好')后删除事件。  
-```
-
-
-<details>
-  <summary>点击查看图片</summary>
-  <img width="706" height="401" alt="image" src="https://github.com/user-attachments/assets/a488bcf5-e505-473d-a7c2-a8e0885b2678" />
 </details>
 
 #### 多语言管理
@@ -706,6 +683,7 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
