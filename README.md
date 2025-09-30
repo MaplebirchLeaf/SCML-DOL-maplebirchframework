@@ -41,7 +41,8 @@
 </details>
 
 ### 详细内容介绍:
- **simplebirchFrameworks**兼容支持，可直接使用**simpleFrameworks.addto**指令，映射直连而不用maplebirch。同时**maplebirchFrameworks**和**simplebirchFrameworks**等效两者皆有映射可使用。
+ - **simplebirchFrameworks**兼容支持，可直接使用**simpleFrameworks.addto**指令，映射直连而不用maplebirch。  
+ - 同时**maplebirchFrameworks**和**simplebirchFrameworks**等效两者皆有映射可使用。  
 ```
     'addTraits': 'tool.other.addTraits',            // 添加特征
     'addLocation': 'tool.other.configureLocation',  // 配置位置
@@ -49,7 +50,7 @@
     'addNPC': 'npc.add',                            // 添加NPC
     'addStats': 'npc.addStats',                     // 添加状态
     'addto': 'tool.framework.addTo',                // 添加到区域
-    'onInit': 'tool.framework.onInit',              // 初始化回调
+    'onInit': 'tool.framework.onInit',              // 初始化脚本
     'importLang': 'lang.importAllLanguages',        // 导入语言
     'autoLang': 'lang.autoTranslate',               // 自动翻译
     'getRandom': 'tool.random.get',                 // 获取随机值
@@ -189,7 +190,117 @@ audioPlayer.play('spell_cast', { volume: 0.8 });
 ```
 
 #### addto区域快捷插入
-  与原来的简易框架一致，在对应区域插入widget或函数，详情看下方图片。  
+  与原来的**简易框架**一致，在对应区域插入widget或函数，详情看下方图片。 
+1. `maplebirchFramework.addTo(zone, ...widgets)` - 将部件添加到指定UI区域  
+2. `maplebirchFramework.onInit(...widgets)` - 注册游戏初始化逻辑  
+框架已挂载到全局对象：`maplebirch.tool.framework`   
+可通过以下方式使用：  
+ - `maplebirchFramework.addTo` 映射到 `maplebirch.tool.framework.addTo`  
+ - `maplebirchFramework.onInit` 映射到 `maplebirch.tool.framework.onInit`  
+```
+  ======================== 方法详解 ========================
+  1. maplebirchFramework.onInit(...widgets)
+    注册游戏初始化时执行的逻辑
+  
+    参数：
+      ...widgets - 支持多种类型的初始化项：
+        - 字符串: 宏命令名称 (如 'setupPlayerData')
+        - 函数: 直接执行的JS函数
+        - 对象: 包含init方法的对象
+  
+    执行时机：游戏启动时（StoryInit段落）
+  
+  2. maplebirchFramework.addTo(zone, ...widgets)
+    向指定UI区域添加内容
+  
+    参数：
+      zone - 目标区域名称 (字符串)
+      ...widgets - 支持多种类型的UI内容：
+        - 字符串: 宏命令名称 (如 'displayPlayerName')
+        - 函数: 返回HTML/宏字符串的函数
+        - 对象: 带条件的UI配置
+```
+  
+- 框架提供多个预定义区域供添加内容：  
+```
+| 区域名称                | 位置说明                 |
+|-------------------------|--------------------------|
+| `Header`                | 页面顶部                 |
+| `Footer`                | 页面底部                 |
+| `Options`               | 选项菜单                 |
+| `StatusBar`             | 状态栏                   |
+| `Information`           | 信息区域                 |
+| `BeforeLinkZone`        | 选项链接前               |
+| `AfterLinkZone`         | 选项链接后               |
+| `CharaDescription`      | 角色描述区               |
+| `DegreesBox`            | 属性区域                 |
+| `SkillsBox`             | 技能区域                 |
+| `SchoolSubjectsBox`     | 学科区域                 |
+| `HintMobile`            | 移动端提示区             |
+| `Journal`               | 日志尾部                 |
+| `Init`                  | 初始化脚本区域           |
+| `Cheats`                | 作弊栏区域               |
+| `Statistics`            | 统计栏区域               |
+| `CaptionDescription`    | 标题描述区域             |
+| `MenuBig`               | 大菜单区域               |
+| `MenuSmall`             | 小菜单区域               |
+| `CaptionAfterDescription`| 标题描述后区域           |
+| `StatsMobile`           | 移动端状态区域           |
+| `DegreesBonusDisplay`   | 属性加成显示区域         |
+| `SkillsBonusDisplay`    | 技能加成显示区域         |
+| `SubjectBoxBonusDisplay`| 学科加成显示区域         |
+| `SchoolMarksText`       | 成绩文本区域             |
+| `WeaponBox`             | 武器框区域               |
+| `Reputation`            | 声誉显示区域             |
+| `Fame`                  | 知名度显示区域           |
+| `StatusSocial`          | 社交状态区域             |
+| `NPCinit`               | NPC初始化区域            |
+```
+- 当使用对象作为widget参数时，支持以下配置：
+```
+{
+  widget: 'macroName',     // 必需：宏命令名称
+  exclude: ['Passage1'],   // 可选：排除的段落名称
+  match: /Chapter\d+/,    // 可选：匹配段落名称的正则
+  passage: ['Settings']    // 可选：仅在这些段落显示
+}
+```
+- 使用示例：
+```
+ // 示例1：初始化玩家数据
+  maplebirchFramework.onInit(() => {
+    if (!V.playerModData) {
+      V.playerModData = {
+        modPoints: 0,
+        modLevel: 1
+      };
+    }
+  });
+  
+  // 示例2：添加页脚信息
+  maplebirchFramework.addTo('Footer', () => {
+    return `模组版本: 1.0 | 点数: ${V.playerModData?.modPoints || 0}`;
+  });
+  
+  // 示例3：添加带条件的选项按钮
+  maplebirchFramework.addTo('Options', {
+    widget: 'modSettingsButton',
+    exclude: ['Battle', 'Combat'] // 战斗场景不显示
+  });
+  
+  // 示例4：添加多个初始化项
+  maplebirchFramework.onInit(
+    'initModSystem',           // 宏命令
+    initModData,               // 函数
+    { init: modConfig.init }   // 对象
+  );
+  
+  // 示例5：添加动态状态显示
+  maplebirchFramework.addTo('StatusBar', () => {
+  return `模组等级: ${V.playerModData?.modLevel || 1}`;
+});
+```
+
 <details>
   <summary>点击查看图片</summary>
   <img width="846" height="990" alt="image" src="https://github.com/user-attachments/assets/0fc25fa2-4bd9-4323-b17e-6d3a77376e1d" />
@@ -508,6 +619,7 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
