@@ -174,47 +174,20 @@ audioPlayer.play('spell_cast', { volume: 0.8 });
     └── jp.json
 ```
 在js中通过 **`await maplebirch.lang.importAllLanguages(你的模组名);`** 来导入你的数据文件。  
+- `maplebirch.t(键名)` : 根据键名转换翻译。  
+- `maplebirch.autoTranslate(任意语言数据)` : 自动根据当前语言自动转换。
 - `maplebirch.lang.t(键名)` : 根据键名转换翻译。  
 - `maplebirch.lang.autoTranslate(任意语言数据)` : 自动根据当前语言自动转换。
 ```
 示例:  
  cn.json中: "key" : "键"  
  en.josn中: "key" : "key"
+ maplebirch.t('key') 在中文 输出'键'。在英文输出 'key'。
  maplebirch.lang.t('key') 在中文 输出'键'。在英文输出 'key'。
+ maplebirch.autoTranslate('键') 在中文 输出'键'。在英文输出 'key'。
  maplebirch.lang.autoTranslate('键') 在中文 输出'键'。在英文输出 'key'。
 ```
-#### 原版`<<effect>>`宏内容添加
-  在原版的 **`<<effect>>`** 中添加内容，常用于成就的添加，比较难用完全可以使用addto中的 **Header页眉区域替代** 。  
-```
-示例:  
-maplebirch.tool.registerWidget(id, widget, cleanup, meta);  
-maplebirch.tool.registerText(id, text, cleanup, meta);
-maplebirch.tool.effect.registerText(
-  "XXX",
-  [
-    { style: "span", text: `蓝色`, colour: "blue" },
-    { style: "span", text: `红色`, colour: "red" }
-  ],
-  false
-  ,
-  { persistent: true } // 设置为持久化
-);
-maplebirch.tool.effect.registerWidget(
-  "XXX",
-  ["earnFeat", "Under the Ice"],
-  fasle
-  ,
-  {
-    description: "获得'Under the Ice'成就",
-    persistent: false
-  }
-);
-```
-- `id`：此注册内容的id(如为持久化则必须为唯一id)  
-- `widget`：使用的widget宏
-- `text`：文本，
-- `cleanup`：清理函数  
-- `meta`：元数据(persistent: trues时为持久化)  
+
 #### addto区域快捷插入
   与原来的简易框架一致，在对应区域插入widget或函数，详情看下方图片。  
 <details>
@@ -307,269 +280,121 @@ maplebirch.tool.other.addTraits({
  */
 ```
 #### 时间事件
- 用于注册时间事件。
+ 可用**maplebirchFrameworks.addTimeEvent**或者**maplebirch.state.regTimeEvent**进行注册。
 ```
 /**
- * 时间事件系统数据结构说明
+ * ======================== 事件注册方式 ========================
  * 
- * 核心事件数据结构：
+ * 使用 maplebirch.state.regTimeEvent() 方法注册时间事件：
  * 
- * 所有事件类型共有的核心属性:
- *   passed: number,        // 流逝的总秒数
- *   prevDate: DateTime,    // 流逝前的时间对象
- *   currentDate: DateTime  // 流逝后的时间对象
+ * maplebirch.state.regTimeEvent(
+ *   type,       // 事件类型 (字符串)
+ *   eventId,    // 事件唯一标识符 (字符串)
+ *   options     // 事件配置选项 (对象)
+ * );
  * 
- * 1. onBefore 事件 (时间流逝前触发)
- * @typedef {Object} BeforeEventData
- * @property {number} passed - 即将流逝的秒数
- * @property {number} timeStamp - 流逝前的时间戳
- * @property {DateTime} prev - 流逝前的时间对象（只读）
- * @property {Object} option - 预留选项对象（通常为空）
+ * 支持的事件类型：
+ * - 'onSec'     : 每秒触发
+ * - 'onMin'     : 每分钟触发
+ * - 'onHour'    : 每小时触发
+ * - 'onDay'     : 每天触发
+ * - 'onWeek'    : 每周触发
+ * - 'onMonth'   : 每月触发
+ * - 'onYear'    : 每年触发
+ * - 'onBefore'  : 时间流逝前触发
+ * - 'onThread'  : 时间流逝中触发
+ * - 'onAfter'   : 时间流逝后触发
+ * - 'onTimeTravel': 时间穿越时触发
  * 
- * 2. onThread 事件 (时间流逝中触发)
- * @typedef {Object} ThreadEventData
- * @property {number} passed - 流逝的秒数
- * @property {number} sec - 秒数差
- * @property {number} min - 分钟差
- * @property {number} hour - 小时差
- * @property {number} day - 天数差
- * @property {number} week - 周数差
- * @property {number} month - 月数差
- * @property {number} year - 年数差
- * @property {number[]} weekday - 星期变化 [流逝前星期, 流逝后星期]
- * @property {Object} cumulative - 累积时间对象
- *   @property {number} cumulative.sec - 累积秒数
- *   @property {number} cumulative.min - 累积分钟
- *   @property {number} cumulative.hour - 累积小时
- *   @property {number} cumulative.day - 累积天数
- *   @property {number} cumulative.week - 累积周数
- *   @property {number} cumulative.month - 累积月数
- *   @property {number} cumulative.year - 累积年数
- * @property {DateTime} prevDate - 流逝前的时间对象
- * @property {DateTime} currentDate - 流逝后的时间对象
+ * ======================== 配置选项 (options) ========================
  * 
- * 3. onAfter 事件 (时间流逝后触发)
- * @typedef {Object} AfterEventData
- * @property {number} passed - 流逝的秒数
- * @property {number} sec - 秒数差
- * @property {number} min - 分钟差
- * @property {number} hour - 小时差
- * @property {number} day - 天数差
- * @property {number} week - 周数差
- * @property {number} month - 月数差
- * @property {number} year - 年数差
- * @property {number[]} weekday - 星期变化 [流逝前星期, 流逝后星期]
- * @property {Object} cumulative - 累积时间对象
- *   @property {number} cumulative.sec - 累积秒数
- *   @property {number} cumulative.min - 累积分钟
- *   @property {number} cumulative.hour - 累积小时
- *   @property {number} cumulative.day - 累积天数
- *   @property {number} cumulative.week - 累积周数
- *   @property {number} cumulative.month - 累积月数
- *   @property {number} cumulative.year - 累积年数
- * @property {DateTime} prevDate - 流逝前的时间对象
- * @property {DateTime} currentDate - 流逝后的时间对象
+ * {
+ *   action: function(enhancedTimeData) { ... },  // 必需：事件触发时执行的回调函数
+ *   cond: function(enhancedTimeData) { ... },    // 可选：条件检查函数，返回true时触发
+ *   priority: 0,                                 // 可选：事件优先级（数值越大优先级越高）
+ *   once: false,                                 // 可选：是否一次性事件（触发后自动移除）
+ *   description: '事件描述',                      // 可选：事件描述文本
+ *   accumulate: {                                // 可选：累积触发配置
+ *     unit: 'sec',                               // 累积单位（'sec','min','hour','day','week','month','year'）
+ *     target: 1                                  // 累积目标值
+ *   },
+ *   exact: false                                // 可选：是否在精确时间点触发（仅对小时及以上事件有效）
+ * }
  * 
- * 4. 周期性事件 (onSec, onMin, onHour, onDay, onWeek, onMonth)
- * @typedef {Object} PeriodicEventData
- * @property {number} passed - 流逝的秒数
- * @property {number} sec - 秒数差
- * @property {number} min - 分钟差
- * @property {number} hour - 小时差
- * @property {number} day - 天数差
- * @property {number} week - 周数差
- * @property {number} month - 月数差
- * @property {number} year - 年数差
- * @property {number[]} weekday - 星期变化 [流逝前星期, 流逝后星期]
- * @property {Object} cumulative - 累积时间对象
- *   @property {number} cumulative.sec - 累积秒数
- *   @property {number} cumulative.min - 累积分钟
- *   @property {number} cumulative.hour - 累积小时
- *   @property {number} cumulative.day - 累积天数
- *   @property {number} cumulative.week - 累积周数
- *   @property {number} cumulative.month - 累积月数
- *   @property {number} cumulative.year - 累积年数
- * @property {Object} changes - 本次事件周期内累积的变化量
- *   @property {number} changes.sec - 秒数变化量
- *   @property {number} changes.min - 分钟变化量
- *   @property {number} changes.hour - 小时变化量
- *   @property {number} changes.day - 天数变化量
- *   @property {number} changes.week - 周数变化量
- *   @property {number} changes.month - 月数变化量
- *   @property {number} changes.year - 年数变化量
- * @property {DateTime} prevDate - 流逝前的时间对象
- * @property {DateTime} currentDate - 流逝后的时间对象
+ * ======================== 时间数据对象 (enhancedTimeData) ========================
  * 
- * DateTime 对象结构
+ * 传递给 cond 和 action 函数的时间数据对象包含以下属性：
  * 
- * @typedef {Object} DateTime
- * @property {number} year - 年份（支持负值表示公元前）
- * @property {number} month - 月份 (1-12)
- * @property {number} day - 日期 (1-31)
- * @property {number} hour - 小时 (0-23)
- * @property {number} minute - 分钟 (0-59)
- * @property {number} second - 秒数 (0-59)
- * @property {number} weekDay - 星期 (1-7, 1=周日)
- * @property {number} timeStamp - Unix时间戳（秒）
- * @property {number} moonPhase - 月相 (0-1)
- * @property {number} moonPhaseFraction - 月相分数
- * @property {string} dayState - 时间段 ("dawn", "day", "dusk", "night")
- * @property {function} toString - 转换为字符串的方法
- * @property {function} addSeconds - 添加秒数
- * @property {function} addMinutes - 添加分钟
- * @property {function} addHours - 添加小时
- * @property {function} addDays - 添加天数
- * @property {function} addMonths - 添加月数
- * @property {function} addYears - 添加年数
- * @property {function} compareWith - 比较两个时间对象
- *   @param {DateTime} other - 要比较的时间对象
- *   @param {boolean} [getSeconds=false] - 是否只返回秒数差
- *   @returns {number|Object} - 秒数差或详细时间差对象
+ * {
+ *   passed: number,           // 实际流逝的秒数
+ *   sec: number,              // 总流逝秒数
+ *   min: number,              // 总流逝分钟数
+ *   hour: number,             // 总流逝小时数
+ *   day: number,              // 总流逝天数
+ *   week: number,             // 总流逝周数
+ *   month: number,            // 总流逝月数
+ *   year: number,             // 总流逝年数
+ *   weekday: [prev, current], // 流逝前后的星期几（1-7）
+ *   prevDate: DateTime,       // 流逝前的完整时间对象
+ *   currentDate: DateTime,    // 流逝后的完整时间对象
+ *   detailedDiff: {           // 详细时间差
+ *     years: number,
+ *     months: number,
+ *     days: number,
+ *     hours: number,
+ *     minutes: number,
+ *     seconds: number
+ *   },
+ *   changes: {                // 本次流逝引起的变化量
+ *     sec: number,
+ *     min: number,
+ *     hour: number,
+ *     day: number,
+ *     week: number,
+ *     month: number,
+ *     year: number
+ *   },
+ *   cumulative: {             // 累积时间量
+ *     sec: number,
+ *     min: number,
+ *     hour: number,
+ *     day: number,
+ *     week: number,
+ *     month: number,
+ *     year: number
+ *   },
+ *   triggeredByAccumulator: { // 仅当由累积触发时存在
+ *     unit: string,            // 触发单位
+ *     target: number           // 触发目标值
+ *   }
+ * }
  * 
- * 时间事件系统功能：
- * - 提供精确的时间流逝事件处理
- * - 支持多种时间单位的事件（秒、分、时、日、周、月）
- * - 处理闰年、闰月等复杂日历计算
- * - 支持负年份（公元前）的时间计算
- * - 提供累积时间变化统计
- * - 自动优化底层DateTime实现
+ * ======================== 使用示例 ========================
+ * 
+ * // 注册一个每天午夜触发的精确事件
+ * maplebirch.state.regTimeEvent('onDay', 'midnight-event', {
+ *   action: () => console.log('午夜到了！新的一天开始了！'),
+ *   exact: true,
+ *   description: '每天午夜触发的事件'
+ * });
+ * 
+ * // 注册一个整点触发的精确事件
+ * maplebirch.state.regTimeEvent('onHour', 'hourly-event', {
+ *   action: () => console.log('整点报时！'),
+ *   exact: true,
+ *   description: '每小时整点触发的事件'
+ * });
+ * 
+ * // 注册一个累积型事件（每累积30分钟触发）
+ * maplebirch.state.regTimeEvent('onMin', 'cumulative-event', {
+ *   action: (data) => console.log(`已累积 ${data.cumulative.min} 分钟`),
+ *   accumulate: { unit: 'min', target: 30 },
+ *   description: '每30分钟触发的事件'
+ * });
+ * 
+ * // 时间旅行示例（前进1天）
+ * maplebirch.state.timeTravel({ addDays: 1 });
  */
-```
-
-```
-示例:  
-// 1. 注册时间流逝前事件 (onBefore)
-maplebirch.state.regTimeEvent('onBefore', 'beforeEventExample', {
-  action: (data) => {
-    console.log(`[onBefore] 即将流逝 ${data.passed} 秒`);
-    console.log(`当前时间: ${data.prev.toString()}`);
-  },
-  description: '时间流逝前记录日志',
-  priority: 5
-});
-
-// 2. 注册每秒事件 (onSec)
-maplebirch.state.regTimeEvent('onSec', 'secEventExample', {
-  action: (data) => {
-    console.log(`[onSec] 秒数变化: ${data.changes.sec}`);
-    // 每秒检查一次玩家状态
-    if (V.player.health < 30) {
-      console.warn('警告: 玩家生命值过低!');
-    }
-  },
-  description: '每秒检查玩家状态'
-});
-
-// 3. 注册每分钟事件 (onMin)
-maplebirch.state.regTimeEvent('onMin', 'minEventExample', {
-  action: (data) => {
-    console.log(`[onMin] 分钟变化: ${data.changes.min}`);
-    // 每分钟恢复1点体力
-    V.player.stamina = Math.min(V.player.stamina + 1, 100);
-  },
-  description: '每分钟恢复体力',
-  priority: 3
-});
-
-// 4. 注册每小时事件 (onHour)
-maplebirch.state.regTimeEvent('onHour', 'hourEventExample', {
-  action: (data) => {
-    console.log(`[onHour] 小时变化: ${data.changes.hour}`);
-    // 每小时自动存档
-    if (!V.disableAutoSave) {
-      Save.save('auto');
-      console.log('自动存档完成');
-    }
-  },
-  description: '每小时自动存档'
-});
-
-// 5. 注册每天事件 (onDay)
-maplebirch.state.regTimeEvent('onDay', 'dayEventExample', {
-  action: (data) => {
-    console.log(`[onDay] 天数变化: ${data.changes.day}`);
-    // 每天重置商店库存
-    Shop.resetStock();
-    // 更新每日任务
-    Quest.resetDailyQuests();
-    // 特殊日期事件
-    if (data.currentDate.month === 12 && data.currentDate.day === 25) {
-      console.log('圣诞节特殊事件触发!');
-      V.events.christmas = true;
-    }
-  },
-  description: '每日重置和特殊事件',
-  priority: 10
-});
-
-// 6. 注册每周事件 (onWeek)
-maplebirch.state.regTimeEvent('onWeek', 'weekEventExample', {
-  action: (data) => {
-    console.log(`[onWeek] 周数变化: ${data.changes.week}`);
-    // 每周结算工资
-    if (V.player.job) {
-      const salary = Jobs[V.player.job].salary;
-      V.player.money += salary;
-      console.log(`收到周薪: $${salary}`);
-    }
-  },
-  description: '每周结算工资'
-});
-
-// 7. 注册每月事件 (onMonth)
-maplebirch.state.regTimeEvent('onMonth', 'monthEventExample', {
-  action: (data) => {
-    console.log(`[onMonth] 月数变化: ${data.changes.month}`);
-    // 每月支付账单
-    const bills = calculateBills();
-    V.player.money -= bills;
-    console.log(`支付账单: $${bills}`);
-    
-    // 季节变化检测
-    const season = getSeason(data.currentDate.month);
-    if (V.currentSeason !== season) {
-      V.currentSeason = season;
-      console.log(`季节变为: ${season}`);
-    }
-  },
-  description: '每月账单和季节变化'
-});
-
-// 8. 注册时间流逝后事件 (onAfter)
-maplebirch.state.regTimeEvent('onAfter', 'afterEventExample', {
-  action: (data) => {
-    console.log(`[onAfter] 时间流逝完成`);
-    console.log(`新时间: ${data.currentDate.toString()}`);
-    // 更新UI时间显示
-    updateTimeDisplay(data.currentDate);
-  },
-  description: '更新UI时间显示'
-});
-
-// 9. 一次性事件示例 (使用once选项)
-maplebirch.state.regTimeEvent('onDay', 'oneTimeEvent', {
-  action: (data) => {
-    console.log('这是一次性事件，只会触发一次!');
-    // 触发特殊剧情
-    startSpecialEvent();
-  },
-  once: true,
-  description: '一次性特殊事件'
-});
-
-// 10. 条件性事件示例 (使用cond选项)
-maplebirch.state.regTimeEvent('onHour', 'conditionalEvent', {
-  cond: (data) => {
-    // 只在夜晚触发 (晚上8点到早上6点)
-    return data.currentDate.hour >= 20 || data.currentDate.hour < 6;
-  },
-  action: (data) => {
-    console.log('夜晚事件触发!');
-    // 增加夜晚遭遇概率
-    V.nightEncounterChance += 0.1;
-  },
-  description: '夜晚专属事件'
-});
 ```
 #### NPC注册
  为你的模组便携添加npc，详情看**下方图片**，或去代码指定位置，选择你的npc数据。
@@ -683,6 +508,7 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
