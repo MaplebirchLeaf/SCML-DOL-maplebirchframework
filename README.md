@@ -1,54 +1,92 @@
 # SCML-DOL-maplebirchframework
-基于 Sugarcube2 ModLoader 为 DOL 游戏设计的模块化开发框架，旨在简化游戏扩展模组的开发流程
-<hr>
-
-当前框架包含以下核心功能：
-+ 事件注册系统
-+ 多语言管理
-+ 模块管理器
-+ 变量迁移工具
-
-随机数生成器
-
-游戏内置作弊器
-
-addto 区域快捷插入（覆盖游戏内侧边栏几乎所有功能，除成就和存档）
-
-简易弹窗系统
-
-特质添加工具
-
-地点创建系统（左上角地点图片）
-
-时间事件系统（支持 -9999 年至 9999 年，公元纪年）
-
-NPC 注册系统（包含创新属性，避免重载时出现错误）
-
-音频管理系统
-
-文本注册系统
-
-- [安装方式说明](#安装方式说明)
+`maplebirchFramework` 是基于 **Sugarcube2 ModLoader** 为 **Degrees-of-Lewdity** 游戏设计的模块化开发框架，旨在能够为游戏扩展模组的开发提供一些便利，让开发者能够更轻松地构建和维护模组内容。
+***
+## 目录
+- [基本介绍](#基本介绍)
+- [安装与依赖方式说明](#安装与依赖方式说明)
 - [反馈与讨论方式](#反馈与讨论方式)
-- [详细内容介绍](#详细内容介绍)
+- [功能介绍与示例](#功能介绍与示例)
     - [多语言管理](#多语言管理)
-    - [变量迁徙](#变量迁徙)
-    - [addto区域快捷插入](#addto区域快捷插入)
-    - [特质添加](#特质添加)
-    - [地点创建](#地点创建)
+    - [事件注册](#事件注册)
+    - [模块管理](#模块管理)
     - [时间事件](#时间事件)
-    - [NPC注册](#NPC注册)
+        - [时间事件的注册方式](#时间事件的注册方式)
+        - [时间事件的配置选项](#时间事件的配置选项)
+        - [时间数据对象](#时间数据对象)
+        - [时间事件使用示例](#时间事件使用示例)
+    - [时间旅行](#时间旅行)
+        - [使用示例](#使用示例)
+        - [选项参数](#选项参数(二选一))
     - [音频管理](#音频管理)
-    - [文本注册](#文本注册)
+        - [导入音频文件](#导入音频文件)
+        - [使用示例](#使用示例)
+        - [参数说明](#参数说明)
+    - [变量迁徙](#变量迁徙)
+        - [使用示例](#使用示例)
+        - [主要方法](#主要方法)
+        - [工具集](#工具集(utils))
+    - [随机数生成](#随机数生成)
+    - [文本片段](#文本片段)
+    - [作弊控制台](#作弊控制台)
+    - [​​区域注册](#​​区域注册)
+    - [​​简易弹窗](#​​​​简易弹窗)
+    - [特质注册](#特质注册)
+    - [地点注册](#地点注册)
+    - [NPC注册](#NPC注册)
 - [致谢](#致谢)
 - [未实现的功能构想](#未实现的功能构想)
 
-### 反馈与讨论方式
- (暂无)，或在**污度孤儿中国模组制作群**联系我。
+## 基本介绍
+- 本框架写成于 **Degrees-of-Lewdity-v0.5.4.9** 版本，将会持续随着游戏版本而更新。如 **Degrees-of-Lewdity-v0.5.4.9** 往前的版本不会考虑兼容。  
 
-### 安装方式说明
-  申明依赖两种方式。  
-**第一种: 在boot.json中申明**  
+- 对于原来使用[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的模组，可以直接将[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)替换成[**秋枫白桦框架**](https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchframework)尝试执行，基本兼容了原依赖[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的模组(如: [**猫咖出租屋**](https://github.com/Maomaoi/Degrees-of-Lewdity-Cattery))，但不兼容强依赖的模组(如: [**泰拉瑞亚拓展**](https://github.com/Nephthelana/DOL-Terra-Expanding-Modd/))，以及我之前的秋枫白桦拓展。  
+
+- 提供了映射接口 `maplebirchFrameworks` 和 `simplebirchFrameworks` 对 `maplebirch` 的映射和快捷使用，以及防止大幅破坏原结构。
+
+| 提供的功能 | 映射方法使用 | 对应路径 |
+| :-: | :-: | :-: |
+| 导入语言文件 | maplebirchFrameworks.addLanguage / simplebirchFrameworks.addLanguage | maplebirch.lang.importAllLanguages |
+| 注册时间事件 | maplebirchFrameworks.addTimeEvent / simplebirchFrameworks.addTimeEvent | maplebirch.state.regTimeEvent |
+| 时间旅行 | maplebirchFrameworks.timeTravel / simplebirchFrameworks.timeTravel | maplebirch.state.timeTravel |
+| 导入音频文件 | maplebirchFrameworks.addAudio / simplebirchFrameworks.addAudio | maplebirch.audio.importAllAudio |
+| 获取音频播放实例 | maplebirchFrameworks.getPlayer / simplebirchFrameworks.getPlayer | maplebirch.audio.getPlayer |
+| 变量迁徙实例 | maplebirchFrameworks.migration / simplebirchFrameworks.migration | maplebirch.tool.migration.create |
+| 获取随机值 | maplebirchFrameworks.getRandom / simplebirchFrameworks.getRandom | maplebirch.tool.random.get |
+| 注册文本片段 | maplebirchFrameworks.addText / simplebirchFrameworks.addText | maplebirch.tool.text.reg |
+| addto区域注册 | maplebirchFrameworks.addto / simplebirchFrameworks.addto | maplebirch.tool.framework.addTo |
+| 初始化函数脚本 | maplebirchFrameworks.onInit / simplebirchFrameworks.onInit | maplebirch.tool.framework.onInit |
+| 添加特质 | maplebirchFrameworks.addTraits / simplebirchFrameworks.addTraits | maplebirch.tool.other.addTraits |
+| 添加地点 | maplebirchFrameworks.addLocation / simplebirchFrameworks.addLocation | maplebirch.tool.other.configureLocation |
+| 添加NPC | maplebirchFrameworks.addNPC / simplebirchFrameworks.addNPC | maplebirch.npc.add |
+| 添加NPC状态 | maplebirchFrameworks.addStats / simplebirchFrameworks.addStats | maplebirch.npc.addStats |
+
+<details>
+<summary>现已实现的功能</summary>
+    
+| 功能模块 | 核心作用 |
+| :-: | :-: |
+| 多语言管理 | 提供国际化和多语言翻译支持 |
+| 事件注册 | 允许注册和触发自定义事件 |
+| 模块管理​ | 管理模组依赖和生命周期 |
+| 时间事件 | 管理各种时间触发事件 |
+| 时间旅行​ | 实现游戏内时间跳跃功能 |
+| 音频管理​ | 处理音频资源的加载和播放 |
+| ​​变量迁徙​ | 处理数据迁移和版本兼容性​ |
+| 随机数生成​​ | ​​提供可控的伪随机数生成​ |
+| ​​文本片段 | ​​动态注册和渲染文本片段​ |
+| 作弊控制台 | ​​提供游戏内的代码执行环境​ |
+| ​​区域注册​ | 动态注册界面部件区域​ |
+| ​​特质注册​ | 动态添加游戏特质 |
+| 地点注册​​ | 动态添加游戏地点​ |
+| NPC注册 | 为游戏内添加NPC​ |
+</details>
+
+## 安装与依赖方式说明
+
+- 在侧边／底部的 **Releases** 中下载最新版的 `maplebirchframework.zip` 文件。
+
+- 第一种依赖申明(依赖模组加载器申明依赖): 在模组 `boot.js` 文件中的 `dependenceInfo` 区域添加下方内容。
+  
 ```
 "dependenceInfo": [
     {
@@ -57,273 +95,504 @@ NPC 注册系统（包含创新属性，避免重载时出现错误）
     }
   ]
 ```
-**第二种：利用钩子依赖**
-
 <details>
   <summary>点击查看图片</summary>
-  <img width="1828" height="648" alt="image" src="https://github.com/user-attachments/assets/3ed72615-54f9-4590-8901-93da0262ddf4" />
+  <img width="1837" height="1182" alt="image" src="https://github.com/user-attachments/assets/59f70994-0709-4661-be53-5496967f0679" />
 </details>
 
-### 详细内容介绍:
- - **simplebirchFrameworks**兼容支持，可直接使用**simpleFrameworks.addto**指令，映射直连而不用maplebirch。  
- - 同时**maplebirchFrameworks**和**simplebirchFrameworks**等效两者皆有映射可使用。  
-```
-    'addTraits': 'tool.other.addTraits',            // 添加特征
-    'addLocation': 'tool.other.configureLocation',  // 配置位置
-    'addTimeEvent': 'state.regTimeEvent',           // 添加时间事件
-    'addNPC': 'npc.add',                            // 添加NPC
-    'addStats': 'npc.addStats',                     // 添加状态 
-    'addto': 'tool.framework.addTo',                // 添加到区域
-    'addText': 'tool.text.reg',                     // 添加注册文本
-    'onInit': 'tool.framework.onInit',              // 初始化回调
-    'importLang': 'lang.importAllLanguages',        // 导入语言
-    'getRandom': 'tool.random.get',                 // 获取随机值
-    'migration': 'tool.migration.create',           // 创建迁移
-    'importAudio': 'audio.importAllAudio',          // 导入音频
-    'getPlayer': 'audio.getPlayer'                  // 获取播放器
-```
 
-```
- 示例：
-// 1. 添加特质示例
-simpleFrameworks.addTraits({
-  title: "General Traits",
-  name: "魔法天赋",
-  colour: "purple",
-  has: () => V.magicTalent !== undefined,
-  text: "你天生具有魔法亲和力"
-});
++ 第二种依赖申明(利用模组加载器的钩子): 这种方法可以让依赖框架的模组在框架之前加载。 
+<details>
+  <summary>点击查看图片</summary>
+  <img width="1848" height="1192" alt="image" src="https://github.com/user-attachments/assets/dd8aca44-0619-4f1f-bec5-8d1f2f30f5f4" />
+</details>
 
-// 2. 添加地点示例
-simpleFrameworks.addLocation('magic_tower', {
-  folder: 'magic_tower',
-  base: { 
-    main: { 
-      image: 'tower_exterior.png',
-      condition: () => Time.dayState === 'day'
-    },
-    night: {
-      image: 'tower_night.png',
-      condition: () => Time.dayState === 'night'
-    }
+## 反馈与讨论方式
+ (暂无)，或在**污度孤儿中国模组制作群**联系我。
+
+## 功能介绍与示例:
+ ### 多语言管理
+  - 通常的翻译文件存放路径:  
+  ```
+    根目录/  
+    └── translations/  
+        ├── cn.json  
+        ├── en.json  
+        └── jp.json
+  ```
+  - 导入你的翻译文件(三个函数任选其一):  
+  ```
+    await maplebirchFrameworks.addLanguage(你的模组名);  
+    await simpleFrameworks.addLanguage(你的模组名);  
+    await maplebirch.lang.importAllLanguages(你的模组名);  
+  ```
+  - 在文件中使用翻译:
+  ```
+    maplebirch.t(键名) // 自动根据当前语言键名转换翻译  
+    如: maplebirch.t('volume'); 在中文时输出 '音量'  
+    maplebirch.autoTranslate(任意语言数据) // 自动根据当前语言自动转换  
+    如: maplebirch.autoTranslate('音量'); 在英文时输出 'volume'  
+    在sugarcube环境中使用 <<= maplebirch.t(键名)>> / <<= maplebirch.autoTranslate(任意语言数据)>>显示
+    <<= XX>> 等效于 <<print XX>>
+  ```
+ ### 事件注册
+  - 使用 `maplebirch.on(evt[触发的时机], handler[需要触发的函数], desc = ''[你注册事件的标识符])` 进行事件注册
+  - 使用 `maplebirch.once(evt[触发的时机], handler[需要触发的函数], desc = ''[你注册事件的标识符])` 进行一次性事件注册，即生效一次后删除
+  - 使用 `maplebirch.off(evt[触发的时机], identifier[已注册事件的标识符])` 进行删除已注册的回调事件
+  - 使用 `maplebirch.trigger(evt[触发的时机], ...args[需要传导的上下文变量])` 进行触发以及传递环境变量
+ ### 模块管理
+  + **~~!!![警告]慎用此功能!!!,作者写得实在太烂了(~~**  
+```
+主要功能：
+- register(name, module, dependencies): 注册新模块
+- preInit(): 执行预初始化阶段
+- init(): 执行主初始化阶段
+- loadInit(): 执行存档加载初始化
+- postInit(): 执行后初始化阶段
+```
+  + 使用示例(必须要在 **`scriptFileList_earlyload`** 时机进行注册，且在注册前使用 **`maplebirch.ExModCount = maplebirch.expectedModuleCount + 1`** 来提升预期数量。)  
+```
+// 1. 注册UI组件模块（无依赖）
+maplebirch.register('uiComponents', {
+  preInit() {
+    // 预初始化：注册基础UI组件
+    this.registerButtonComponent();
+  },
+  init() {
+    // 主初始化：绑定UI事件
+    this.bindButtonEvents();
+  },
+  loadInit() {
+    // 存档加载后：恢复UI状态
+    this.restoreUIState();
+  },
+  postInit() {
+    // 后初始化：执行UI动画
+    this.startIntroAnimation();
   }
 });
 
-// 3. 添加时间事件示例
-simpleFrameworks.addTimeEvent('onDay', 'dailyMagicEvent', {
-  action: (data) => {
-    if (V.magicTalent) {
-      V.magicEnergy = Math.min(V.magicEnergy + 10, 100);
+// 2. 注册游戏数据模块（依赖uiComponents）
+maplebirch.register('gameData', {
+  preInit() {
+    // 预初始化：设置数据结构
+    this.initDataStructures();
+  },
+  init() {
+    // 主初始化：加载初始数据
+    this.loadInitialData();
+  }
+}, ['uiComponents']); // 声明依赖uiComponents模块
+
+// 3. 注册AI系统模块（依赖gameData）
+maplebirch.register('aiSystem', {
+  init() {
+    // 主初始化：启动AI线程
+    this.startAIProcessing();
+  },
+  postInit() {
+    // 后初始化：连接AI到游戏界面
+    this.connectToGameUI();
+  }
+}, ['gameData']);
+```
+ ### 时间事件
+  #### 时间事件的注册方式
+   - 使用 `maplebirchFrameworks.addTimeEvent` 、 `simpleFrameworks.addTimeEvent` 和 `maplebirch.state.regTimeEvent` 任选其一注册时间事件  
+```
+maplebirchFrameworks.addTimeEvent(
+  type,       // 事件类型 (字符串)
+  eventId,    // 事件唯一标识符 (字符串)
+  options     // 事件配置选项 (对象)
+);
+
+支持的事件类型：
+- 'onSec'     : 每秒触发
+- 'onMin'     : 每分钟触发
+- 'onHour'    : 每小时触发
+- 'onDay'     : 每天触发
+- 'onWeek'    : 每周触发
+- 'onMonth'   : 每月触发
+- 'onYear'    : 每年触发
+- 'onBefore'  : 时间流逝前触发
+- 'onThread'  : 时间流逝中触发
+- 'onAfter'   : 时间流逝后触发
+- 'onTimeTravel': 时间穿越时触发
+```
+  #### 时间事件的配置选项
+```
+{
+  action: function(enhancedTimeData) { ... },  // 必需：事件触发时执行的回调函数
+  cond: function(enhancedTimeData) { ... },    // 可选：条件检查函数，返回true时触发
+  priority: 0,                                 // 可选：事件优先级（数值越大优先级越高）
+  once: false,                                 // 可选：是否一次性事件（触发后自动移除）
+  description: '事件描述',                      // 可选：事件描述文本
+  accumulate: {                                // 可选：累积触发配置
+    unit: 'sec',                               // 累积单位（'sec','min','hour','day','week','month','year'）
+    target: 1                                  // 累积目标值
+  },
+  exact: false                                 // 可选：是否在精确时间点触发（仅对小时及以上事件有效）
+}
+```
+  #### 时间数据对象
+```
+传递给 cond 和 action 函数的时间数据对象包含以下属性：
+{
+  passed: number,           // 实际流逝的秒数
+  sec: number,              // 总流逝秒数
+  min: number,              // 总流逝分钟数
+  hour: number,             // 总流逝小时数
+  day: number,              // 总流逝天数
+  week: number,             // 总流逝周数
+  month: number,            // 总流逝月数
+  year: number,             // 总流逝年数
+  weekday: [prev, current], // 流逝前后的星期几（1-7）
+  prevDate: DateTime,       // 流逝前的完整时间对象
+  currentDate: DateTime,    // 流逝后的完整时间对象
+  detailedDiff: {           // 详细时间差
+    years: number,
+    months: number,
+    days: number,
+    hours: number,
+    minutes: number,
+    seconds: number
+  },
+  changes: {                // 本次流逝引起的变化量
+    sec: number,
+    min: number,
+    hour: number,
+    day: number,
+    week: number,
+    month: number,
+    year: number
+  },
+  cumulative: {             // 累积时间量
+    sec: number,
+    min: number,
+    hour: number,
+    day: number,
+    week: number,
+    month: number,
+    year: number
+  },
+  triggeredByAccumulator: { // 仅当由累积触发时存在
+    unit: string,            // 触发单位
+    target: number           // 触发目标值
+  }
+}
+```
+  #### 时间事件使用示例  
+```
+// 基础事件类型示例
+maplebirch.state.regTimeEvent('onSec', 'sec-counter', {
+  action: () => V.secondCounter = (V.secondCounter || 0) + 1,
+  description: '每秒计数器'
+});
+
+maplebirch.state.regTimeEvent('onMin', 'minute-alert', {
+  action: () => console.log('又过去了一分钟'),
+  cond: () => V.player.awake, // 仅在玩家清醒时触发
+  priority: 5,
+  description: '每分钟提示'
+});
+
+// 精确时间点事件
+maplebirch.state.regTimeEvent('onHour', 'dawn-event', {
+  action: () => {
+    if (Time.hour === 6) {
+      console.log('黎明到来，新的一天开始了');
+      V.energy += 20; // 清晨精力恢复
     }
   },
-  description: '每日魔法能量恢复'
+  exact: true,
+  description: '黎明事件'
 });
 
-// 4. 添加NPC示例
-simpleFrameworks.addNPC({
-  nam: "Eldrin",
-  gender: "m",
-  title: "archmage"
-}, {
-  important: true,
-  love: { maxValue: 50 }
+// 周期性累积事件
+maplebirch.state.regTimeEvent('onDay', 'fatigue-system', {
+  action: (data) => {
+    const hoursAwake = data.cumulative.hour;
+    if (hoursAwake > 16) {
+      V.fatigueLevel = Math.min(10, V.fatigueLevel + 1);
+      console.log(`连续清醒${hoursAwake}小时，疲劳度增加`);
+    }
+  },
+  accumulate: { unit: 'hour', target: 1 },
+  description: '疲劳度累积系统'
 });
 
-// 5. 添加状态示例
-simpleFrameworks.addStats({
-  magic: {
-    min: 0,
-    max: 100,
-    position: 4
-  }
+// 周循环事件
+maplebirch.state.regTimeEvent('onWeek', 'market-day', {
+  action: () => {
+    if (Time.weekDay === 6) { // 星期六
+      V.marketOpen = true;
+      console.log('周末集市开放！');
+    }
+  },
+  exact: true,
+  description: '周末集市'
 });
 
-// 6. addto区域插入示例
-simpleFrameworks.addto('header', 'magicHeader', () => {
-  if (V.magicTalent) {
-    return `<div class="magic-indicator">魔法能量: ${V.magicEnergy || 0}</div>`;
-  }
-  return '';
+// 月相事件
+maplebirch.state.regTimeEvent('onMonth', 'full-moon', {
+  action: () => {
+    if (Time.moonPhase === 'full') {
+      console.log('满月之夜，特殊事件触发');
+      V.werewolfForm = true;
+    }
+  },
+  cond: () => Time.hour === 23, // 仅在夜晚触发
+  description: '满月事件'
 });
 
-// 7. 初始化回调示例
-simpleFrameworks.onInit(() => {
-  console.log('模组初始化完成');
-  // 初始化魔法系统
-  if (!V.magicSystem) {
-    V.magicSystem = {
-      spells: [],
-      mana: 100
-    };
-  }
+// 年度事件
+maplebirch.state.regTimeEvent('onYear', 'birthday-event', {
+  action: () => {
+    console.log(`今天是${V.playerName}的生日！`);
+    V.age += 1;
+    V.birthdayGift = true;
+  },
+  cond: (data) => 
+    data.currentDate.month === V.playerBirthMonth && 
+    data.currentDate.day === V.playerBirthDay,
+  once: false, // 每年重复
+  description: '角色生日'
 });
 
-// 8. 多语言导入示例
-await simpleFrameworks.importLang('myMagicMod');
-
-// 9. 自动翻译示例
-const translatedText = simpleFrameworks.autoTranslate('火球术');
-
-// 10. 随机数获取示例
-const randomValue = simpleFrameworks.getRandom(1, 100);
-
-// 11. 变量迁移示例
-simpleFrameworks.migration('magicSystem', {
-  from: 'oldMagicVar',
-  to: 'V.magicSystem',
-  transform: (oldValue) => {
-    return { spells: oldValue.spells || [], mana: oldValue.mana || 100 };
-  }
+// 时间旅行事件
+maplebirch.state.regTimeEvent('onTimeTravel', 'time-paradox', {
+  action: (data) => {
+    const diff = data.diffSeconds;
+    if (Math.abs(diff) > 31536000) { // 超过1年
+      console.warn('严重时间悖论警告！');
+      V.timeParadoxCount = (V.timeParadoxCount || 0) + 1;
+    }
+  },
+  priority: 100, // 最高优先级
+  description: '时间悖论检测'
 });
 
-// 12. 音频导入示例
-await simpleFrameworks.importAudio('myMagicMod');
+// 复合事件处理
+maplebirch.state.regTimeEvent('onAfter', 'save-autosave', {
+  action: (data) => {
+    if (data.changes.day > 0) {
+      console.log('每日自动存档');
+      Save.slot.save('auto');
+    }
+  },
+  description: '自动存档系统'
+});
 
-// 13. 音频播放器获取示例
-const audioPlayer = simpleFrameworks.getPlayer('myMagicMod');
-audioPlayer.play('spell_cast', { volume: 0.8 });
+// 一次性事件示例
+maplebirch.state.regTimeEvent('onDay', 'special-event-2025', {
+  action: () => {
+    console.log('限时事件触发！');
+    V.specialEventCompleted = true;
+  },
+  cond: (data) => 
+    data.currentDate.year === 2025 && 
+    data.currentDate.month === 10 && 
+    data.currentDate.day === 5,
+  once: true, // 仅触发一次
+  priority: 10,
+  description: '2025年限定事件'
+});
+
+// 带累积的精确事件
+maplebirch.state.regTimeEvent('onMin', 'meditation', {
+  action: (data) => {
+    if (data.triggeredByAccumulator) {
+      console.log(`冥想完成！累计${data.triggeredByAccumulator.count}分钟`);
+      V.meditationMinutes += data.triggeredByAccumulator.count;
+    }
+  },
+  accumulate: { unit: 'min', target: 15 },
+  exact: true, // 只在整15分钟时触发
+  description: '冥想计时器'
+});
+
+// 条件复杂的事件
+maplebirch.state.regTimeEvent('onHour', 'guard-patrol', {
+  action: () => {
+    const hour = Time.hour;
+    if (hour >= 2 && hour <= 4) {
+      console.log('深夜守卫巡逻');
+      V.guardAlertLevel = 'high';
+    }
+  },
+  cond: () => V.location === 'castle' && V.playerStealth < 30,
+  priority: 7,
+  description: '守卫巡逻系统'
+});
 ```
+ ### 时间旅行
+  #### 使用示例
+  - 此功能允许游戏时间向前或向后跳跃，支持精确时间点和相对时间偏移两种模式(时间旅行会触发 **'onTimeTravel'** 事件，并自动重置累积时间计数器)  
+```
+// 1. 精确时间点旅行（跳转到特定日期时间）
+maplebirch.state.timeTravel({
+  year: 2025,      // 目标年份
+  month: 10,       // 目标月份 (1-12)
+  day: 15,         // 目标日期 (1-31)
+  hour: 14,        // 目标小时 (0-23, 可选)
+  minute: 30,      // 目标分钟 (0-59, 可选)
+  second: 0        // 目标秒数 (0-59, 可选)
+});
 
-<details>
-  <summary>点击查看图片</summary>
-  <img width="905" height="304" alt="image" src="https://github.com/user-attachments/assets/d33fb98e-211d-4595-8c6d-1f774b61d431" />
-</details>
+// 2. 相对时间偏移（从当前时间加减）
+maplebirch.state.timeTravel({
+  addDays: 7,      // 向前推进7天
+  addHours: -3     // 同时回退3小时
+});
 
-#### 多语言管理
-  通常翻译数据文件路径  
+// 3. 使用DateTime对象指定目标时间
+const targetDate = new DateTime(2026, 3, 20, 9, 0, 0);
+maplebirch.state.timeTravel({
+  target: targetDate
+});
+
+// 4. 复杂时间跳跃（结合绝对和相对）
+maplebirch.state.timeTravel({
+  year: 2025,      // 跳转到2025年
+  addMonths: 6     // 再向前推进6个月
+});
+
+// 5. 时间旅行事件监听
+maplebirch.events.on(':onTimeTravel', (data) => {
+  console.log(`时间旅行完成: ${data.prev} → ${data.current}`);
+  console.log(`方向: ${data.direction}, 时间差: ${data.diffSeconds}秒`);
+});
+```
+  #### 选项参数(二选一)
+```
+A. 精确时间点模式:
+  - target: DateTime对象 或
+  - year: 目标年份 (支持负数表示公元前)
+  - month: 目标月份 (1-12)
+  - day: 目标日期 (1-31)
+  - hour: 目标小时 (0-23, 默认0)
+  - minute: 目标分钟 (0-59, 默认0)
+  - second: 目标秒数 (0-59, 默认0)
+
+B. 相对时间偏移模式:
+  - addYears: 增加的年数 (可负)
+  - addMonths: 增加的月数 (可负)
+  - addDays: 增加的天数 (可负)
+  - addHours: 增加的小时数 (可负)
+  - addMinutes: 增加的分钟数 (可负)
+  - addSeconds: 增加的秒数 (可负)
+```
+ ### 音频管理
+   #### 导入音频文件
+  + 用sugarcube从游戏中导入文件 `<input type='file' accept='audio/*' onchange='maplebirch.audio.addAudioFromFile(this.files[0], ['你的模组名']).then(success => {if (success) maplebirch.audio.initStorage()});'>` ，其中 **['你的模组名']** 指的是你的模组所存储的音频文件。
+  + 从模组中导入音频文件，最后在 **钩子依赖中用(`await maplebirchFramework.addAudio(你的模组名)`)** 或者 用 其它地方使用 **`await maplebirchFramework.addAudio(你的模组名)`** 来导入你模组zip里的音频文件
 ```
 根目录/  
-└── translations/  
-    ├── cn.json  
-    ├── en.json  
-    └── jp.json
+└── audio/  
+    ├── XX.mp3
+    ├── xx.wav  
+    └── 音频文件等
 ```
-通过 **`await maplebirch.lang.importAllLanguages(你的模组名);`** 或者 **`await maplebirchFrameworks.importLang(你的模组名);`** 来导入你的数据文件。  
-- `maplebirch.t(键名)` : 根据键名转换翻译。  
-- `maplebirch.autoTranslate(任意语言数据)` : 自动根据当前语言自动转换。
-- `maplebirch.lang.t(键名)` : 根据键名转换翻译。  
-- `maplebirch.lang.autoTranslate(任意语言数据)` : 自动根据当前语言自动转换。
+  #### 使用示例
 ```
-示例:  
- cn.json中: "key" : "键"  
- en.josn中: "key" : "key"
- maplebirch.t('key') 在中文 输出'键'。在英文输出 'key'。
- maplebirch.lang.t('key') 在中文 输出'键'。在英文输出 'key'。
- maplebirch.autoTranslate('键') 在中文 输出'键'。在英文输出 'key'。
- maplebirch.lang.autoTranslate('键') 在中文 输出'键'。在英文输出 'key'。
-```
+// 1. 从文件添加音频
+const fileInput = document.createElement('input');
+fileInput.type = 'file';
+fileInput.accept = 'audio/*';
+fileInput.onchange = async (e) => {
+  const file = e.target.files[0];
+  await maplebirch.audio.addAudioFromFile(file, my-mod);
+};
+fileInput.click();
 
-#### 变量迁徙
-通过 **`maplebirchFrameworks.migration();`** 或者 **`maplebirch.tool.migration.create();`** 来创建你模组的变量迁徙规则。 
-```
- 迁移路径：
- 0.0.0 → 1.0.0: 初始化存档
- 1.0.0 → 1.1.0: 重命名属性 + 删除属性
- 1.1.0 → 1.2.0: 转换数值 + 添加新系统
+// 2. 从Mod加载音频
+await maplebirch.audio.importAllAudio('my-mod', 'audio');
 
-// 创建迁移系统实例
-const migrator = maplebirch.tool.migration.create();
+// 3. 获取音频播放器
+const player = maplebirch.audio.getPlayer('maplebirch-audio');
 
-// 0.0.0 → 1.0.0: 初始化存档
-migrator.add('0.0.0', '1.0.0', (data, { fill }) => {
-  fill(data, {
-    version: '1.0.0',
-    player: {
-      name: '冒险者',
-      hp: 100,
-      mp: 50,
-      coins: 0,
-      items: ['剑', '药水']
-    }
-  });
+// 4. 播放音频
+player.play('background-music', {
+  loop: true,
+  volume: 0.7,
+  allowOverlap: false
 });
 
-// 1.0.0 → 1.1.0: 重命名和删除
-migrator.add('1.0.0', '1.1.0', (data, { rename, remove }) => {
-  // 重命名属性
-  rename(data, 'player.hp', 'player.health');
-  rename(data, 'player.mp', 'player.mana');
+// 5. 暂停/恢复音频
+player.togglePause('background-music');
+
+// 6. 停止音频
+player.stop('background-music');
+
+// 7. 设置全局音量
+player.setVolume(0.5);
+
+// 8. 设置单个音频音量
+player.setVolumeFor('sound-effect', 0.8);
+
+// 9. 设置循环次数
+player.setLoopCount('notification', 3);
+
+// 10. 检查正在播放的音频
+const playing = player.isPlaying();
+console.log('正在播放:', playing);
+
+// 11. 获取音频时长
+const duration = player.getDuration('background-music');
+console.log('音频时长:', duration);
+```
+  #### 参数说明
+```
+play() 方法选项:
+  - loop: 是否循环播放 (默认false)
+  - loopCount: 循环次数 (默认100)
+  - volume: 音量 (0.0-1.0, 默认1.0)
+  - offset: 开始播放位置 (秒)
+  - duration: 播放时长 (秒)
+  - allowOverlap: 是否允许多个实例同时播放 (默认false)
+  - stopOthers: 是否停止其他正在播放的同名音频 (默认false)
+  - onEnded: 播放结束回调函数
+```
+ ### 变量迁徙
+  #### 使用示例
+```
+// 创建迁移系统（带日志记录）
+const migrator = maplebirchFrameworks.migration.create();
+
+// 添加迁移脚本（1.0.0 → 1.1.0）
+migrator.add('1.0.0', '1.1.0', (data, utils) => {
+  utils.rename(data, 'user.name', 'user.fullname');
+  utils.remove(data, 'deprecatedField');
+});
+
+// 准备数据（带当前版本号）
+const userData = { version: '1.0.0', user: { name: 'Alice' } };
+
+// 执行迁移到目标版本
+migrator.run(userData, '2.0.0');
+
+// 填充默认值
+migrator.utils.fill(userData, { settings: { theme: 'dark' } });
+```
+  #### 主要方法
+- `create()`: 创建迁移器实例，返回包含add/run/utils的对象
+- `add(fromVersion, toVersion, migrationFn)`: 添加迁移脚本
+- `run(data, targetVersion)`: 执行数据迁移
+  #### 工具集(utils):
+- `resolvePath(obj, path, createIfMissing)`: 解析对象路径
+- `rename/move(data, oldPath, newPath)`: 重命名/移动属性
+- `remove(data, path)`: 删除属性
+- `transform(data, path, transformer)`: 转换属性值
+- `fill(target, defaults, options)`: 填充缺失属性
   
-  // 删除旧属性
-  remove(data, 'player.items');
-});
+ ### 随机数生成
+ ### 文本片段
+ ### 作弊控制台
+ ### 区域注册
+ ### 特质注册
+ ### 地点注册
+ ### NPC注册
 
-// 1.1.0 → 1.2.0: 转换和添加新系统
-migrator.add('1.1.0', '1.2.0', (data, { transform, fill }) => {
-  // 转换金币为银币 (1金币 = 100银币)
-  transform(data, 'player.coins', coins => coins * 100);
-  
-  // 添加新系统
-  fill(data, {
-    skills: ['攻击'],
-    achievements: []
-  });
-});
-
-// 使用示例
-function upgradeSave(save) {
-  migrator.run(save, '1.2.0');
-  return save;
-}
-
-// 示例1: 全新玩家存档
-const newSave = upgradeSave({});
-结果:
-{
-  version: '1.2.0',
-  player: {
-    name: '冒险者',
-    health: 100,  // 重命名
-    mana: 50,     // 重命名
-    coins: 0      // 转换为0银币
-  },
-  skills: ['攻击'],  // 新增
-  achievements: []   // 新增
-}
-
-// 示例2: 老玩家存档升级
-const oldSave = upgradeSave({
-  player: {
-    name: '战士',
-    hp: 150,
-    mp: 30,
-    coins: 50,
-    items: ['斧头', '盾牌']
-  }
-});
-结果:
-{
-  version: '1.2.0',
-  player: {
-    name: '战士',
-    health: 150,  // 重命名
-    mana: 30,     // 重命名
-    coins: 5000   // 50金币 → 5000银币
-  },
-  skills: ['攻击'],  // 新增
-  achievements: []   // 新增
-  // items属性被删除
-}
-
-// 示例3: 部分升级到1.1.0
-const midSave = upgradeSave({
-  player: {
-    hp: 80,
-    coins: 10
-  }
-}, '1.1.0');
-结果:
-{
-  version: '1.1.0',
-  player: {
-    name: '冒险者', // 默认值
-    health: 80,    // 重命名
-    mana: 50,      // 默认值
-    coins: 10      // 未转换
-  }
-  // items属性被删除
-}
-```
 
 #### addto区域快捷插入
   与原来的**简易框架**一致，在对应区域插入widget或函数，详情看下方图片。 
@@ -494,153 +763,36 @@ maplebirch.tool.other.addTraits({
   便携为你的地点添加右上角贴图，详情请查看原版对应的**setup.LocationImages**变量
 ```
 /**
- * 地点配置方法（添加/更新）
- * @param {string} locationId - 地点ID
- * @param {object} config - 配置对象
- * @param {object} [options] - 配置选项
- * @param {boolean} [options.overwrite=false] - 是否覆盖整个配置
- * @param {string} [options.layer] - 指定操作图层
- * @param {string} [options.element] - 指定操作元素
- * 
- * 示例1：添加新地点
- * configureLocation('magic_academy', {
- *   folder: 'magic_academy',
- *   base: { main: { image: 'main.png' } }
- * });
- * 
- * 示例2：更新特定元素
- * configureLocation('lake_ruin', {
- *   condition: () => Weather.bloodMoon && !Weather.isSnow
- * }, { layer: 'base', element: 'bloodmoon' });
- * 
- * 示例3：完全覆盖地点
- * configureLocation('cafe', {
- *   folder: 'cafe_remastered',
- *   base: { ... }
- * }, { overwrite: true });
- * 
- * 示例4：添加新图层元素
- * configureLocation('forest', {
- *   image: 'fireflies.png',
- *   animation: { frameDelay: 300 }
- * }, { layer: 'emissive', element: 'fireflies' });
- */
-```
-#### 时间事件
- 可用**maplebirchFrameworks.addTimeEvent**或者**maplebirch.state.regTimeEvent**进行注册。
-```
-/**
- * ======================== 事件注册方式 ========================
- * 
- * 使用 maplebirch.state.regTimeEvent() 方法注册时间事件：
- * 
- * maplebirch.state.regTimeEvent(
- *   type,       // 事件类型 (字符串)
- *   eventId,    // 事件唯一标识符 (字符串)
- *   options     // 事件配置选项 (对象)
- * );
- * 
- * 支持的事件类型：
- * - 'onSec'     : 每秒触发
- * - 'onMin'     : 每分钟触发
- * - 'onHour'    : 每小时触发
- * - 'onDay'     : 每天触发
- * - 'onWeek'    : 每周触发
- * - 'onMonth'   : 每月触发
- * - 'onYear'    : 每年触发
- * - 'onBefore'  : 时间流逝前触发
- * - 'onThread'  : 时间流逝中触发
- * - 'onAfter'   : 时间流逝后触发
- * - 'onTimeTravel': 时间穿越时触发
- * 
- * ======================== 配置选项 (options) ========================
- * 
- * {
- *   action: function(enhancedTimeData) { ... },  // 必需：事件触发时执行的回调函数
- *   cond: function(enhancedTimeData) { ... },    // 可选：条件检查函数，返回true时触发
- *   priority: 0,                                 // 可选：事件优先级（数值越大优先级越高）
- *   once: false,                                 // 可选：是否一次性事件（触发后自动移除）
- *   description: '事件描述',                      // 可选：事件描述文本
- *   accumulate: {                                // 可选：累积触发配置
- *     unit: 'sec',                               // 累积单位（'sec','min','hour','day','week','month','year'）
- *     target: 1                                  // 累积目标值
- *   },
- *   exact: false                                // 可选：是否在精确时间点触发（仅对小时及以上事件有效）
- * }
- * 
- * ======================== 时间数据对象 (enhancedTimeData) ========================
- * 
- * 传递给 cond 和 action 函数的时间数据对象包含以下属性：
- * 
- * {
- *   passed: number,           // 实际流逝的秒数
- *   sec: number,              // 总流逝秒数
- *   min: number,              // 总流逝分钟数
- *   hour: number,             // 总流逝小时数
- *   day: number,              // 总流逝天数
- *   week: number,             // 总流逝周数
- *   month: number,            // 总流逝月数
- *   year: number,             // 总流逝年数
- *   weekday: [prev, current], // 流逝前后的星期几（1-7）
- *   prevDate: DateTime,       // 流逝前的完整时间对象
- *   currentDate: DateTime,    // 流逝后的完整时间对象
- *   detailedDiff: {           // 详细时间差
- *     years: number,
- *     months: number,
- *     days: number,
- *     hours: number,
- *     minutes: number,
- *     seconds: number
- *   },
- *   changes: {                // 本次流逝引起的变化量
- *     sec: number,
- *     min: number,
- *     hour: number,
- *     day: number,
- *     week: number,
- *     month: number,
- *     year: number
- *   },
- *   cumulative: {             // 累积时间量
- *     sec: number,
- *     min: number,
- *     hour: number,
- *     day: number,
- *     week: number,
- *     month: number,
- *     year: number
- *   },
- *   triggeredByAccumulator: { // 仅当由累积触发时存在
- *     unit: string,            // 触发单位
- *     target: number           // 触发目标值
- *   }
- * }
- * 
- * ======================== 使用示例 ========================
- * 
- * // 注册一个每天午夜触发的精确事件
- * maplebirch.state.regTimeEvent('onDay', 'midnight-event', {
- *   action: () => console.log('午夜到了！新的一天开始了！'),
- *   exact: true,
- *   description: '每天午夜触发的事件'
- * });
- * 
- * // 注册一个整点触发的精确事件
- * maplebirch.state.regTimeEvent('onHour', 'hourly-event', {
- *   action: () => console.log('整点报时！'),
- *   exact: true,
- *   description: '每小时整点触发的事件'
- * });
- * 
- * // 注册一个累积型事件（每累积30分钟触发）
- * maplebirch.state.regTimeEvent('onMin', 'cumulative-event', {
- *   action: (data) => console.log(`已累积 ${data.cumulative.min} 分钟`),
- *   accumulate: { unit: 'min', target: 30 },
- *   description: '每30分钟触发的事件'
- * });
- * 
- * // 时间旅行示例（前进1天）
- * maplebirch.state.timeTravel({ addDays: 1 });
+地点配置方法（添加/更新）
+@param {string} locationId - 地点ID
+@param {object} config - 配置对象
+@param {object} [options] - 配置选项
+@param {boolean} [options.overwrite=false] - 是否覆盖整个配置
+@param {string} [options.layer] - 指定操作图层
+@param {string} [options.element] - 指定操作元素
+
+示例1：添加新地点
+configureLocation('magic_academy', {
+  folder: 'magic_academy',
+  base: { main: { image: 'main.png' } }
+});
+
+示例2：更新特定元素
+configureLocation('lake_ruin', {
+  condition: () => Weather.bloodMoon && !Weather.isSnow
+}, { layer: 'base', element: 'bloodmoon' });
+
+示例3：完全覆盖地点
+configureLocation('cafe', {
+  folder: 'cafe_remastered',
+  base: { ... }
+}, { overwrite: true });
+
+示例4：添加新图层元素
+configureLocation('forest', {
+  image: 'fireflies.png',
+  animation: { frameDelay: 300 }
+}, { layer: 'emissive', element: 'fireflies' });
  */
 ```
 #### NPC注册
@@ -749,137 +901,137 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 
 ```
 /**
- *   - `text(content: string, style?: string)`：添加文本（可选样式），自动添加空格
- *   - `line(content?: string, style?: string)`：添加换行（可带文本内容）
- *   - `wikify(content: string)`：解析并添加维基语法文本
- *   - `raw(content: any)`：直接添加原始内容（DOM节点/字符串）
- *   - `ctx: object`：渲染上下文数据
- * 
- * 所有方法支持链式调用，例如：
- *   text("你好").line("世界").text("！", "bold");
- * 
- * @example // 基本注册和渲染
- * // 注册处理器
- * text.reg("welcome", ({ text }) => {
- *   text("欢迎来到奇幻世界！");
- * });
- * 
- * // 在SugarCube中使用
- * <<maplebirchTextOutput "welcome">>
- * 
- * // 生成结果：
- * // <span>欢迎来到奇幻世界！ </span>
- * 
- * @example // 带样式的文本
- * // 注册处理器
- * text.reg("warning", ({ text, line }) => {
- *   text("危险区域！", "red").line("请小心前进", "yellow");
- * });
- * 
- * // 在SugarCube中使用
- * <<maplebirchTextOutput "warning">>
- * 
- * // 生成结果：
- * // <span class="red">危险区域！ </span><br>
- * // <span class="yellow">请小心前进 </span>
- * 
- * @example // 使用上下文
- * // 注册处理器
- * text.reg("character_info", ({ text, ctx }) => {
- *   text(`姓名：${ctx.name}`)
- *     .text(`职业：${ctx.class}`)
- *     .text(`等级：${ctx.level}`);
- * });
- * 
- * // 在SugarCube中使用
- * <<set $player = { name: "艾拉", class: "游侠", level: 12 }>>
- * <<maplebirchTextOutput "character_info" $player>>
- * 
- * // 生成结果：
- * // <span>姓名：艾拉 </span>
- * // <span>职业：游侠 </span>
- * // <span>等级：12 </span>
- * 
- * @example // 维基语法解析
- * // 注册处理器
- * text.reg("npc_dialogue", ({ text, wikify, ctx }) => {
- *   text(`${ctx.npcName}:`).line();
- *   wikify(`"旅途小心，$player。[[前往${ctx.location}->NextScene]]"`);
- * });
- * 
- * // 在SugarCube中使用
- * <<set $npc = { npcName: "老巫师", location: "黑森林" }>>
- * <<maplebirchTextOutput "npc_dialogue" $npc>>
- * 
- * // 生成结果：
- * // <span>老巫师: </span><br>
- * // <span class="macro-text">"旅途小心，小明。</span>
- * // <a class="link-internal" href="NextScene">前往黑森林</a>
- * // <span class="macro-text">"</span>
- * 
- * @example // 组合元素与动态内容
- * // 注册处理器
- * text.reg("quest", ({ text, line, raw, ctx }) => {
- *   text(`任务：${ctx.title}`, "quest-title").line(ctx.description).line();
- *   
- *   const progress = document.createElement("progress");
- *   progress.value = ctx.progress;
- *   progress.max = 100;
- *   raw(progress);
- *   
- *   line(`进度：${ctx.progress}%`, "small-text");
- * });
- * 
- * // 在SugarCube中使用
- * <<set $quest = {
- *   title: "击败洞穴巨魔",
- *   description: "清除洞穴中的巨魔威胁",
- *   progress: 30
- * }>>
- * <<maplebirchTextOutput "quest" $quest>>
- * 
- * // 生成结果：
- * // <span class="quest-title">任务：击败洞穴巨魔 </span><br>
- * // <span>清除洞穴中的巨魔威胁 </span><br>
- * // <progress value="30" max="100"></progress><br>
- * // <span class="small-text">进度：30% </span>
- * 
- * @example // 嵌套渲染
- * // 注册处理器
- * text.reg("scene_container", async ({ text, raw, ctx }) => {
- *   text("=== 场景开始 ===").line();
- *   
- *   const nestedFrag = await text.renderFragment([
- *     "location_description",
- *     "npc_dialogue"
- *   ], ctx);
- *   
- *   raw(nestedFrag);
- *   
- *   text("=== 场景结束 ===").line();
- * });
- * 
- * text.reg("location_description", ({ text, ctx }) => {
- *   text(`你来到了${ctx.location}。`).line();
- * });
- * 
- * text.reg("npc_dialogue", ({ text, ctx }) => {
- *   text(`${ctx.npcName}说：`).text(ctx.dialogue);
- * });
- * 
- * // 在SugarCube中使用
- * <<set $sceneCtx = {
- *   location: "神秘洞穴",
- *   npcName: "守护者",
- *   dialogue: "这里藏着古老的宝藏。"
- * }>>
- * <<maplebirchTextOutput "scene_container" $sceneCtx>>
- * 
- * // 生成结果：
- * // <span>=== 场景开始 === </span><br>
- * // <span>你来到了神秘洞穴。 </span><br>
- * // <span>守护者说： </span><span>这里藏着古老的宝藏。 </span>
- * // <span>=== 场景结束 === </span><br>
+  - `text(content: string, style?: string)`：添加文本（可选样式），自动添加空格
+  - `line(content?: string, style?: string)`：添加换行（可带文本内容）
+  - `wikify(content: string)`：解析并添加维基语法文本
+  - `raw(content: any)`：直接添加原始内容（DOM节点/字符串）
+  - `ctx: object`：渲染上下文数据
+
+所有方法支持链式调用，例如：
+  text("你好").line("世界").text("！", "bold");
+
+@example // 基本注册和渲染
+// 注册处理器
+text.reg("welcome", ({ text }) => {
+  text("欢迎来到奇幻世界！");
+});
+
+// 在SugarCube中使用
+<<maplebirchTextOutput "welcome">>
+
+// 生成结果：
+// <span>欢迎来到奇幻世界！ </span>
+
+@example // 带样式的文本
+// 注册处理器
+text.reg("warning", ({ text, line }) => {
+  text("危险区域！", "red").line("请小心前进", "yellow");
+});
+
+// 在SugarCube中使用
+<<maplebirchTextOutput "warning">>
+
+// 生成结果：
+// <span class="red">危险区域！ </span><br>
+// <span class="yellow">请小心前进 </span>
+
+@example // 使用上下文
+// 注册处理器
+text.reg("character_info", ({ text, ctx }) => {
+  text(`姓名：${ctx.name}`)
+    .text(`职业：${ctx.class}`)
+    .text(`等级：${ctx.level}`);
+});
+
+// 在SugarCube中使用
+<<set $player = { name: "艾拉", class: "游侠", level: 12 }>>
+<<maplebirchTextOutput "character_info" $player>>
+
+// 生成结果：
+// <span>姓名：艾拉 </span>
+// <span>职业：游侠 </span>
+// <span>等级：12 </span>
+
+@example // 维基语法解析
+// 注册处理器
+text.reg("npc_dialogue", ({ text, wikify, ctx }) => {
+  text(`${ctx.npcName}:`).line();
+  wikify(`"旅途小心，$player。[[前往${ctx.location}->NextScene]]"`);
+});
+
+// 在SugarCube中使用
+<<set $npc = { npcName: "老巫师", location: "黑森林" }>>
+<<maplebirchTextOutput "npc_dialogue" $npc>>
+
+// 生成结果：
+// <span>老巫师: </span><br>
+// <span class="macro-text">"旅途小心，小明。</span>
+// <a class="link-internal" href="NextScene">前往黑森林</a>
+// <span class="macro-text">"</span>
+
+@example // 组合元素与动态内容
+// 注册处理器
+text.reg("quest", ({ text, line, raw, ctx }) => {
+  text(`任务：${ctx.title}`, "quest-title").line(ctx.description).line();
+  
+  const progress = document.createElement("progress");
+  progress.value = ctx.progress;
+  progress.max = 100;
+  raw(progress);
+  
+  line(`进度：${ctx.progress}%`, "small-text");
+});
+
+// 在SugarCube中使用
+<<set $quest = {
+  title: "击败洞穴巨魔",
+  description: "清除洞穴中的巨魔威胁",
+  progress: 30
+}>>
+<<maplebirchTextOutput "quest" $quest>>
+
+// 生成结果：
+// <span class="quest-title">任务：击败洞穴巨魔 </span><br>
+// <span>清除洞穴中的巨魔威胁 </span><br>
+// <progress value="30" max="100"></progress><br>
+// <span class="small-text">进度：30% </span>
+
+@example // 嵌套渲染
+// 注册处理器
+text.reg("scene_container", async ({ text, raw, ctx }) => {
+  text("=== 场景开始 ===").line();
+  
+  const nestedFrag = await text.renderFragment([
+    "location_description",
+    "npc_dialogue"
+  ], ctx);
+  
+  raw(nestedFrag);
+  
+  text("=== 场景结束 ===").line();
+});
+
+text.reg("location_description", ({ text, ctx }) => {
+  text(`你来到了${ctx.location}。`).line();
+});
+
+text.reg("npc_dialogue", ({ text, ctx }) => {
+  text(`${ctx.npcName}说：`).text(ctx.dialogue);
+});
+
+// 在SugarCube中使用
+<<set $sceneCtx = {
+  location: "神秘洞穴",
+  npcName: "守护者",
+  dialogue: "这里藏着古老的宝藏。"
+}>>
+<<maplebirchTextOutput "scene_container" $sceneCtx>>
+
+// 生成结果：
+// <span>=== 场景开始 === </span><br>
+// <span>你来到了神秘洞穴。 </span><br>
+// <span>守护者说： </span><span>这里藏着古老的宝藏。 </span>
+// <span>=== 场景结束 === </span><br>
  */
 ```
 
@@ -893,6 +1045,7 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
