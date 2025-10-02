@@ -18,20 +18,20 @@
   };
 
   const methodPaths = {
+    'addLanguage': 'lang.importAllLanguages',       // 导入语言
+    'addTimeEvent': 'state.regTimeEvent',           // 添加时间事件
+    'timeTravel': 'state.timeTravel',               // 时间旅行
+    'addAudio': 'audio.importAllAudio',             // 导入音频
+    'getPlayer': 'audio.getPlayer',                 // 获取播放器
+    'migration': 'tool.migration.create',           // 创建迁移
+    'getRandom': 'tool.random.get',                 // 获取随机值
+    'addText': 'tool.text.reg',                     // 注册文本片段
+    'addto': 'tool.framework.addTo',                // 添加到区域
+    'onInit': 'tool.framework.onInit',              // 初始化回调
     'addTraits': 'tool.other.addTraits',            // 添加特征
     'addLocation': 'tool.other.configureLocation',  // 配置位置
-    'addTimeEvent': 'state.regTimeEvent',           // 添加时间事件
     'addNPC': 'npc.add',                            // 添加NPC
     'addStats': 'npc.addStats',                     // 添加状态 
-    'addto': 'tool.framework.addTo',                // 添加到区域
-    'addMigration': 'tool.migration.create',        // 创建变量迁徙
-    'onInit': 'tool.framework.onInit',              // 初始化回调
-    'importLang': 'lang.importAllLanguages',        // 导入语言
-    'autoLang': 'lang.autoTranslate',               // 自动翻译
-    'getRandom': 'tool.random.get',                 // 获取随机值
-    'migration': 'tool.migration.create',           // 创建迁移
-    'importAudio': 'audio.importAllAudio',          // 导入音频
-    'getPlayer': 'audio.getPlayer'                  // 获取播放器
   };
 
   const createFrameworkProxy = () => new Proxy({}, {

@@ -1,4 +1,4 @@
-(() => {
+(async() => {
   if (!window.maplebirch) {
     console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
     return;
@@ -113,41 +113,14 @@
      * 向NPC管理器中添加一个新NPC角色
      * @param {Object} npcData - NPC数据对象
      * @param {string} npcData.nam - NPC唯一名称（必需）
+     * @param {string} [npcData.title] - NPC的称号
      * @param {string} [npcData.gender="f"] - 性别 (m/f/none)
      * @param {string} [npcData.type="human"] - 种族类型
-     * @param {number} [npcData.trust=0] - 初始信任值
-     * @param {number} [npcData.love=0] - 初始好感值
-     * @param {number} [npcData.dom=0] - 初始支配值
-     * @param {number} [npcData.lust=0] - 初始性欲值
-     * @param {number} [npcData.init=0] - 是否已初始化（0/1）
      * @param {Object} [config] - NPC配置选项
      * @param {boolean} [config.important=false] - 是否重要NPC（显示在状态栏）
      * @param {boolean} [config.special=false] - 是否为特殊NPC
+     * @param {boolean} [config.special=false] - 是否为恋爱NPC
      * @param {Object} [translationsData] - 翻译数据对象
-     * @example
-     * // 添加一个名为Lily的狐狸NPC
-     * npc.add({
-     *   nam: "Lily",         // NPC唯一名称
-     *   gender: "f",         // 女性
-     *   type: "fox",         // 狐狸种族
-     *   trust: 20,           // 初始信任值
-     *   love: 15,            // 初始好感值
-     *   init: 1,             // 已初始化
-     *   breastsize: 2,       // 胸部尺寸
-     *   eyeColour: "amber"   // 眼睛颜色
-     * }, 
-     * {  // 如果添加原版没有的状态，请配合addStats使用
-     *   important: true,           // 重要npc标记
-     *   love : { maxValue : 30 },  // 设置好感
-     *   dom : { maxValue: 20 }	    // 设置支配
-     * },
-     * {
-     *   "Lily": {            // 翻译数据
-     *     CN: "莉莉",        // 中文翻译
-     *     EN: "Lily"        // 英文原文
-     *   }
-     * });
-     * 
      * @returns {boolean} 添加成功返回true，失败返回false
      */
     add(npcData, config, translationsData) {
@@ -206,20 +179,7 @@
      * @param {Object} statsObject[statName] - 状态配置
      * @param {number} statsObject[statName].min - 状态最小值
      * @param {number} statsObject[statName].max - 状态最大值
-     * @param {number|string} [statsObject[statName].position="secondLast"] - 在状态列表中的位置
-     *        (数字索引/"first"/"last"/"secondLast")
-     * @example
-     * // 添加新状态"arcana"并修改现有状态"purity"
-     * npc.addStats({
-     *   arcana: {           // 新状态-奥秘值
-     *     min: 0,           // 最小值0
-     *     max: 100,         // 最大值100
-     *     position: 3       // 插入到第4个位置
-     *   },
-     *   purity: {           // 修改现有状态-纯洁值
-     *     max: 200          // 调整最大值为200
-     *   }
-     * });
+     * @param {number|string} [statsObject[statName].position="secondLast"] - 在状态列表中的位置(数字索引/"first"/"last"/"secondLast")
      */
     addStats(statsObject) {
       if (!statsObject || typeof statsObject !== 'object') return;
@@ -338,6 +298,20 @@
       return true;
     }
 
+    #updateSettings() {
+      for (const npcId in this.npcConfigData) {
+        if (Object.prototype.hasOwnProperty.call(this.npcConfigData, npcId)) {
+          const config = this.npcConfigData[npcId];
+          if (config && typeof config === 'object') {
+            if (config.important === true && !this.importantNPCs.includes(npcId)) this.importantNPCs.push(npcId);
+            if (config.special === true && !this.specialNPCs.includes(npcId)) this.specialNPCs.push(npcId);
+            if (config.loveInterest === true && !this.loveInterestNpcs.includes(npcId)) this.loveInterestNpcs.push(npcId);
+          }
+        }
+      }
+      setup.loveInterestNpc.pushUnique(this.loveInterestNpcs);
+    }
+
     #vanillaNPCTranslations() {
       if (!setup.NPCNameList_cn_name) return;
       const npcNames = Object.keys(setup.NPCNameList_cn_name);
@@ -374,6 +348,7 @@
       this.#getNamedNPC();
       this.#clearInvalidNpcs();
       this.#onUpdate();
+      this.#updateSettings();
       const globalNPCs = V.NPCName;
       const globalNameList = setup.NPCNameList;
       let injectedCount = 0;
@@ -401,15 +376,6 @@
 
     vanillaNPCConfig(npcConfig) {
       if (!npcConfig || typeof npcConfig !== 'object') return {};
-      for (const npcId in this.npcConfigData) {
-        if (Object.prototype.hasOwnProperty.call(this.npcConfigData, npcId)) {
-          const config = this.npcConfigData[npcId];
-          if (config && typeof config === 'object') {
-            if (config.important === true && !this.importantNPCs.includes(npcId)) this.importantNPCs.push(npcId);
-            if (config.special === true && !this.specialNPCs.includes(npcId)) this.specialNPCs.push(npcId);
-          }
-        }
-      }
       const Config = this.tool.clone(npcConfig);
       for (const npcName in this.npcConfigData) {
         if (Object.prototype.hasOwnProperty.call(this.npcConfigData, npcName)) {
@@ -485,11 +451,20 @@
     preInit() {
       this.tool = maplebirch.tool;
       this.log = this.tool.createLogger('npc');
+      
       maplebirch.once(':passagestart',() => {
-        if (!this.tool.contains(['Start', 'Downgrade Waiting Room'], [maplebirch.state.passage.title], { mode: 'any' })) {
-          this.injectModNPCs();
-          this._npcList();
-        }
+        let retryCount = 0;
+        if (this.tool.contains(['Start', 'Downgrade Waiting Room'], [maplebirch.state.passage.title], { mode: 'any' })) return;
+        const tryInit = () => {
+          if (maplebirch.modules.initPhase.mainInitCompleted) {
+            this.injectModNPCs();
+            this._npcList();
+          } else if (retryCount < 5) {
+            retryCount++;
+            setTimeout(tryInit, 1);
+          }
+        };
+        tryInit();
       });
     }
 
@@ -501,11 +476,7 @@
       this.ready = false;
       this.injectModNPCs();
     }
-
-    postInit() {
-      setup.loveInterestNpc.pushUnique(this.loveInterestNpcs);
-    }
   }
 
-  maplebirch.register('npc', new NPCManager(), ['var']);
+  await maplebirch.register('npc', new NPCManager(), ['var']);
 })();

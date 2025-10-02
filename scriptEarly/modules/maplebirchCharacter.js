@@ -1,4 +1,4 @@
-(() => {
+(async() => {
   if (!window.maplebirch) {
     console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
     return;
@@ -191,5 +191,5 @@
     }
   }
 
-  maplebirch.register('char', new CharacterManager(), ['var']);
+  await maplebirch.register('char', new CharacterManager(), ['var']);
 })();

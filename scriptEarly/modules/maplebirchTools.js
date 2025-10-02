@@ -1,4 +1,4 @@
-(() => {
+(async() => {
   if (!window.maplebirch) {
     console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
     return;
@@ -382,11 +382,11 @@
       const migrations = [];
 
       const renameFunc = (data, oldPath, newPath) => {
-        const source = resolvePath(data, oldPath);
+        const source = utils.resolvePath(data, oldPath);
         if (!source?.parent[source.key]) return false;
         const value = source.parent[source.key];
         delete source.parent[source.key];
-        const target = resolvePath(data, newPath, true);
+        const target = utils.resolvePath(data, newPath, true);
         target.parent[target.key] = value;
         return true;
       };
@@ -395,12 +395,13 @@
         /**
          * 解析对象路径
          * @param {Object} obj - 目标对象
-         * @param {string} path - 点分隔路径 (如: 'a.b.c')
+         * @param {string} path - 点分隔路径
          * @param {boolean} [createIfMissing=false] - 是否自动创建缺失路径
          * @returns {Object|null} { parent: 父对象, key: 末级键名 } 或 null
          */
         resolvePath: (obj, path, createIfMissing = false) => {
-          const parts = String(path).split('.');
+          const parts = String(path).split('.').filter(Boolean);
+          if (parts.length === 0) return null;
           let current = obj;
           for (let i = 0; i < parts.length - 1; i++) {
             const part = parts[i];
@@ -427,6 +428,11 @@
         rename: renameFunc,
 
         /**
+         * 移动对象属性（rename的别名）
+         */
+        move: renameFunc,
+
+        /**
          * 删除对象属性
          * @param {Object} data - 目标数据对象
          * @param {string} path - 点分隔路径
@@ -440,8 +446,6 @@
           }
           return false;
         },
-
-        move: renameFunc,
 
         /**
          * 转换属性值
@@ -465,16 +469,19 @@
          * 填充缺失属性
          * @param {Object} target - 目标对象
          * @param {Object} defaults - 默认值模板对象
+         * @param {Object} [options] - 配置选项
+         * @param {string} [options.arrayBehaviour="merge"] - 数组处理方式 ("merge" 或 "replace")
          */
-        fill: (target, defaults) => {
+        fill: (target, defaults, options = {}) => {
+          const arrayBehaviour = options.arrayBehaviour || "merge";
           const filterFn = (key, value, depth) => {
             if (key === "version") return false;
             return !Object.prototype.hasOwnProperty.call(target, key);
           }
           try {
-            maplebirch.tool.merge(target, defaults, { arrayBehaviour: "merge", filterFn});
+            maplebirch.tool.merge(target, defaults, { arrayBehaviour, filterFn });
           } catch (err) {
-            this.log?.(`属性填充失败: ${err?.message || err}`, 'ERROR');
+            this.log(`属性填充失败: ${err?.message || err}`, 'ERROR');
           }
         }
       };
@@ -489,40 +496,47 @@
         add: (fromVersion, toVersion, migrationFn) => {
           if (typeof migrationFn !== 'function') return;
           const exists = migrations.some(m => m.fromVersion === fromVersion && m.toVersion === toVersion);
-          if (exists) this.log?.(`重复迁移: ${fromVersion} -> ${toVersion}`, 'WARN');
+          if (exists) this.log(`重复迁移: ${fromVersion} -> ${toVersion}`, 'WARN');
           migrations.push({ fromVersion, toVersion, migrationFn });
         },
 
         /**
          * 执行数据迁移
-         * @param {Object} data - 待迁移的数据对象 (需包含 version 属性)
-         * @param {string} targetVersion - 要迁移到的目标版本
-         * @throws {Error} 迁移失败时抛出异常
+         * @param {Object} data - 待迁移的数据对象
+         * @param {string} targetVersion - 目标版本
          */
         run: (data, targetVersion) => {
           data.version ||= '0.0.0';
           let currentVersion = data.version;
+          if (!/^\d+(\.\d+){0,2}$/.test(targetVersion)) this.log(`警告: 目标版本格式无效 ${targetVersion}`, 'WARN');
           if (this.#compareVersions(currentVersion, targetVersion) >= 0) return;
 
-          const sortedMigrations = [...migrations].sort((a, b) => this.#compareVersions(a.fromVersion, b.fromVersion) ||this.#compareVersions(a.toVersion, b.toVersion));
+          const sortedMigrations = [...migrations].sort((a, b) => this.#compareVersions(a.fromVersion, b.fromVersion) || this.#compareVersions(a.toVersion, b.toVersion));
+          let steps = 0;
+          const MAX_STEPS = 100;
 
-          while (this.#compareVersions(currentVersion, targetVersion) < 0) {
-            const migration = sortedMigrations.find(m =>this.#compareVersions(m.fromVersion, currentVersion) === 0 &&this.#compareVersions(m.toVersion, targetVersion) <= 0);
-            if (!migration) {
-              this.log?.(`迁移中断: ${currentVersion} -> ${targetVersion}`, 'WARN');
+          while (this.#compareVersions(currentVersion, targetVersion) < 0 && steps++ < MAX_STEPS) {
+            const candidates = sortedMigrations.filter(m => this.#compareVersions(m.fromVersion, currentVersion) === 0 && this.#compareVersions(m.toVersion, targetVersion) <= 0);
+            const migration = candidates.reduce((best, curr) => this.#compareVersions(curr.toVersion, best.toVersion) > 0 ? curr : best , { toVersion: currentVersion });
+            if (!migration || migration.toVersion === currentVersion) {
+              this.log(`迁移中断: ${currentVersion} -> ${targetVersion}`, 'WARN');
               break;
             }
             try {
-              this.log?.(`迁移中: ${currentVersion} → ${migration.toVersion}`, 'DEBUG');
+              this.log(`迁移中: ${currentVersion} → ${migration.toVersion}`, 'DEBUG');
               migration.migrationFn(data, utils);
               data.version = currentVersion = migration.toVersion;
             } catch (e) {
-              this.log?.(`迁移失败: ${e?.message || e}`, 'ERROR');
-              throw e;
+              const migrationError = new Error(`迁移失败 ${currentVersion}→${migration.toVersion}: ${e.message}`);
+              migrationError.fromVersion = currentVersion;
+              migrationError.toVersion = migration.toVersion;
+              migrationError.cause = e;
+              this.log('迁移失败', 'ERROR', migrationError.message);
+              throw migrationError;
             }
           }
           if (this.#compareVersions(currentVersion, targetVersion) < 0) {
-            this.log?.(`强制设置版本: ${targetVersion}`, 'WARN');
+            this.log(`强制设置版本: ${targetVersion}`, 'WARN');
             data.version = targetVersion;
           }
         },
@@ -546,14 +560,14 @@
   // 随机数生成系统 - 提供伪随机数生成和状态管理
   class randomSystem {
     constructor(logger) {
-      this.log = logger; // 带[random]前缀的日志函数
+      this.log = logger;
       this.state = {
-        seed: null,        // 当前种子值
+        seed: null,       // 当前种子值
         a: 1664525,       // LCG乘数
-        c: 1013904223,     // LCG增量
+        c: 1013904223,    // LCG增量
         m: 0x100000000,   // 模数 (2^32)
-        callCount: 0,      // 调用计数器
-        history: []        // 历史记录
+        callCount: 0,     // 调用计数器
+        history: []       // 历史记录
       };
     }
     
@@ -702,139 +716,6 @@
   }
 
   // 文本系统 - 用于注册和渲染文本片段
-/**
- *   - `text(content: string, style?: string)`：添加文本（可选样式），自动添加空格
- *   - `line(content?: string, style?: string)`：添加换行（可带文本内容）
- *   - `wikify(content: string)`：解析并添加维基语法文本
- *   - `raw(content: any)`：直接添加原始内容（DOM节点/字符串）
- *   - `ctx: object`：渲染上下文数据
- * 
- * 所有方法支持链式调用，例如：
- *   text("你好").line("世界").text("！", "bold");
- * 
- * @example // 基本注册和渲染
- * // 注册处理器
- * text.reg("welcome", ({ text }) => {
- *   text("欢迎来到奇幻世界！");
- * });
- * 
- * // 在SugarCube中使用
- * <<maplebirchTextOutput "welcome">>
- * 
- * // 生成结果：
- * // <span>欢迎来到奇幻世界！ </span>
- * 
- * @example // 带样式的文本
- * // 注册处理器
- * text.reg("warning", ({ text, line }) => {
- *   text("危险区域！", "red").line("请小心前进", "yellow");
- * });
- * 
- * // 在SugarCube中使用
- * <<maplebirchTextOutput "warning">>
- * 
- * // 生成结果：
- * // <span class="red">危险区域！ </span><br>
- * // <span class="yellow">请小心前进 </span>
- * 
- * @example // 使用上下文
- * // 注册处理器
- * text.reg("character_info", ({ text, ctx }) => {
- *   text(`姓名：${ctx.name}`)
- *     .text(`职业：${ctx.class}`)
- *     .text(`等级：${ctx.level}`);
- * });
- * 
- * // 在SugarCube中使用
- * <<set $player = { name: "艾拉", class: "游侠", level: 12 }>>
- * <<maplebirchTextOutput "character_info" $player>>
- * 
- * // 生成结果：
- * // <span>姓名：艾拉 </span>
- * // <span>职业：游侠 </span>
- * // <span>等级：12 </span>
- * 
- * @example // 维基语法解析
- * // 注册处理器
- * text.reg("npc_dialogue", ({ text, wikify, ctx }) => {
- *   text(`${ctx.npcName}:`).line();
- *   wikify(`"旅途小心，$player。[[前往${ctx.location}->NextScene]]"`);
- * });
- * 
- * // 在SugarCube中使用
- * <<set $npc = { npcName: "老巫师", location: "黑森林" }>>
- * <<maplebirchTextOutput "npc_dialogue" $npc>>
- * 
- * // 生成结果：
- * // <span>老巫师: </span><br>
- * // <span class="macro-text">"旅途小心，小明。</span>
- * // <a class="link-internal" href="NextScene">前往黑森林</a>
- * // <span class="macro-text">"</span>
- * 
- * @example // 组合元素与动态内容
- * // 注册处理器
- * text.reg("quest", ({ text, line, raw, ctx }) => {
- *   text(`任务：${ctx.title}`, "quest-title").line(ctx.description).line();
- *   
- *   const progress = document.createElement("progress");
- *   progress.value = ctx.progress;
- *   progress.max = 100;
- *   raw(progress);
- *   
- *   line(`进度：${ctx.progress}%`, "small-text");
- * });
- * 
- * // 在SugarCube中使用
- * <<set $quest = {
- *   title: "击败洞穴巨魔",
- *   description: "清除洞穴中的巨魔威胁",
- *   progress: 30
- * }>>
- * <<maplebirchTextOutput "quest" $quest>>
- * 
- * // 生成结果：
- * // <span class="quest-title">任务：击败洞穴巨魔 </span><br>
- * // <span>清除洞穴中的巨魔威胁 </span><br>
- * // <progress value="30" max="100"></progress><br>
- * // <span class="small-text">进度：30% </span>
- * 
- * @example // 嵌套渲染
- * // 注册处理器
- * text.reg("scene_container", async ({ text, raw, ctx }) => {
- *   text("=== 场景开始 ===").line();
- *   
- *   const nestedFrag = await text.renderFragment([
- *     "location_description",
- *     "npc_dialogue"
- *   ], ctx);
- *   
- *   raw(nestedFrag);
- *   
- *   text("=== 场景结束 ===").line();
- * });
- * 
- * text.reg("location_description", ({ text, ctx }) => {
- *   text(`你来到了${ctx.location}。`).line();
- * });
- * 
- * text.reg("npc_dialogue", ({ text, ctx }) => {
- *   text(`${ctx.npcName}说：`).text(ctx.dialogue);
- * });
- * 
- * // 在SugarCube中使用
- * <<set $sceneCtx = {
- *   location: "神秘洞穴",
- *   npcName: "守护者",
- *   dialogue: "这里藏着古老的宝藏。"
- * }>>
- * <<maplebirchTextOutput "scene_container" $sceneCtx>>
- * 
- * // 生成结果：
- * // <span>=== 场景开始 === </span><br>
- * // <span>你来到了神秘洞穴。 </span><br>
- * // <span>守护者说： </span><span>这里藏着古老的宝藏。 </span>
- * // <span>=== 场景结束 === </span><br>
- */
   class textSystem {
     constructor(logger, rng) {
       this.log = logger;
@@ -859,29 +740,6 @@
      *   - `raw(content: any)`：直接添加原始内容（DOM节点/字符串）
      *   - `ctx: object`：渲染上下文数据（context）
      * @param {string} [id] - 可选的自定义处理器ID
-     * @example // 基本文本
-     * text.reg("welcome", ({ text }) => {
-     *   text("欢迎来到冒险世界！");
-     * });
-     * @example // 样式文本+换行
-     * text.reg("warning", ({ text, line }) => {
-     *   text("危险区域！", "red-text")
-     *     .line("请小心前进", "yellow-text");
-     * });
-     * @example // 维基语法+上下文
-     * text.reg("npc_dialogue", ({ text, wikify, ctx }) => {
-     *   text(`${ctx.npcName}:`).line();
-     *   wikify(`"你好旅行者，[[前往${ctx.location}->NextScene]]"`);
-     * });
-     * @example // 组合元素
-     * text.reg("quest", ({ text, line, raw }) => {
-     *   text("任务：击败巨魔", "quest-title")
-     *     .line("奖励：50金币", "gold-text")
-     *     .line();
-     *   const progress = document.createElement("progress");
-     *   progress.value = 30;
-     *   raw(progress);
-     * });
      */
     reg(key, handler, id) {
       if (!key || typeof handler !== 'function') {
@@ -1563,9 +1421,6 @@
     }
 
     /**
-     * 添加部件到指定区域
-     * 
-     * 支持三种类型的部件参数：
      * 1. 字符串类型：直接作为宏名称使用，渲染时会自动包装为 <<宏名称>>
      * 2. 函数类型：函数会被转换为字符串并包装在 <<run>> 宏中执行
      * 3. 对象类型：支持条件渲染配置，包含以下属性：
@@ -1648,10 +1503,6 @@
       });
     }
 
-    /**
-     * 创建部件代码
-     * @returns {Promise} 异步操作
-     */
     async #createWidgets() {
       const data = this.data;
       const print = {
@@ -1687,10 +1538,6 @@
       this.log('部件代码创建完成', 'DEBUG');
     }
 
-    /**
-     * 创建特殊部件
-     * @returns {Promise<string>} 特殊部件HTML
-     */
     async #createSpecialWidgets() {
       let html = '\r\n';
       for (const widget in this.specialWidget) {
@@ -1944,7 +1791,7 @@
       
       for (const [title, passage] of passageData) {
         try {
-          await this.patchPassage(passage, title);
+          this.patchPassage(passage, title);
         } catch (e) {
           const errorMsg = e?.message ? e.message : e;
           this.log(`处理段落 ${title} 时出错: ${errorMsg}`, 'ERROR');
@@ -2395,5 +2242,5 @@
     }
   }
 
-  maplebirch.register('tool', new toolsModule(), ['state']);
+  await maplebirch.register('tool', new toolsModule(), ['state']);
 })();

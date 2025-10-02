@@ -509,8 +509,8 @@
 
   class EventEmitter {
     static streamConfig = {
-      batchSize: 10,     // 每批处理监听器数量
-      yieldInterval: 2   // 批处理间让步(ms)
+      batchSize: 15,     // 每批处理监听器数量
+      yieldInterval: 1   // 批处理间让步(ms)
     }
 
     constructor(core) {
@@ -628,8 +628,8 @@
 
   class ModuleManager {
     static streamConfig = {
-      batchSize: 5,     // 批处理大小
-      yieldInterval: 2  // 批处理间让步时间(ms)
+      batchSize: 7,     // 批处理大小
+      yieldInterval: 1  // 批处理间让步时间(ms)
     }
 
     constructor(core) {
@@ -1132,9 +1132,9 @@
             await maplebirch.loadInit();
             if (stateShow) SugarCube.Engine.show();
             maplebirch.onLoad = false;
-          } else if (retryCount < 3) {
+          } else if (retryCount < 5) {
             retryCount++;
-            setTimeout(tryLoadInit, 5);
+            setTimeout(tryLoadInit, 1);
           }
         };
         tryLoadInit();
@@ -1146,9 +1146,9 @@
       const tryPostInit = async () => {
         if (maplebirch.modules.initPhase.mainInitCompleted) {
           await maplebirch.postInit();
-        } else if (retryCount < 3) {
+        } else if (retryCount < 5) {
           retryCount++;
-          setTimeout(tryPostInit, 5);
+          setTimeout(tryPostInit, 1);
         }
       };
       tryPostInit();
