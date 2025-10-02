@@ -10,22 +10,25 @@
   class variablesModule {
     static check() {
       if (typeof V.maplebirch !== 'object' || V.maplebirch === null) V.maplebirch = {};
-      if (typeof V.maplebirch.options !== 'object' || V.maplebirch.options === null) {
-        V.maplebirch.options = {...this.constructor.options};
+      if (typeof V.maplebirch.language !== 'string') V.maplebirch.language = maplebirch.Language;
+      if (!V.options) return;
+      if (typeof V.options?.maplebirch !== 'object' || V.options?.maplebirch === null) {
+        V.options.maplebirch = maplebirch.tool.clone(variablesModule.options);
       } else {
-        const defaultOptions = this.constructor.options;
-        for (const key in defaultOptions) if (!(key in V.maplebirch.options)) V.maplebirch.options[key] = defaultOptions[key]
+        const defaultOptions = variablesModule.options;
+        for (const key in defaultOptions) if (!(key in V.options.maplebirch)) V.options.maplebirch[key] = maplebirch.tool.clone(defaultOptions[key]);
       }
-      if (typeof V.maplebirch.language !== 'string') V.maplebirch.language = maplebirch.language;
     }
 
     static options = {
       modHint: 'disable',
       debug: false,
-      V: true,
-      T: true,
-      maplebirch: false,
-      window: false
+      sandbox: {
+        V: true,
+        T: true,
+        maplebirch: false,
+        window: false
+      },
     }
 
     static audio = {
@@ -33,7 +36,8 @@
       currentTrack: null,
       currentIndex: -1,
       loopMode: "none",
-      currentAudio: null
+      currentAudio: null,
+      storage: {}
     }
 
     static time = {
@@ -97,68 +101,70 @@
     constructor() {
       this.version = currentVersion;
       this.tool = null;
+      this.migrationSystem = null;
       this.log = null;
     }
 
-    mergeDefaults() {
-      const defaults = variablesModule.defaultVar;
-      const target = V.maplebirch;
-      const merge = (dest, source) => {
-        for (const key in source) {
-          if (key === 'version') continue;
-          if (!dest.hasOwnProperty(key)) {
-            dest[key] = this.tool.clone(source[key]);
-          } else if (typeof source[key] === 'object' && !Array.isArray(source[key])) {
-            merge(dest[key], source[key]);
-          }
+    setupMigrations() {
+      if (this.migrationSystem) return;
+      this.migrationSystem = this.tool.migration.create();
+      this.migrationSystem.add('0.0.0', '1.0.0', (data, utils) => {
+        const defaults = this.tool.clone(variablesModule.defaultVar);
+        if (!data || Object.keys(data).length === 0 || !data.version || data.version === '0.0.0') {
+          Object.assign(data, defaults);
+          data.version = '1.0.0';
+          return;
         }
-      };
-      
-      merge(target, defaults);
-    }
-
-    addMigrations() {
-      const migrationSystem = this.tool.migration.create();
-      
-      // 添加 0.0.0 -> 1.0.0 的空迁移（初始化）
-      migrationSystem.add('0.0.0', '1.0.0', (data, utils) => {
-        // 空白迁移，仅用于初始化数据结构，实际迁移逻辑由后面的mergeDefaults处理
+        try {
+          utils.fill(data, defaults);
+        } catch (e) {
+          this.log(`迁移合并默认值失败: ${e?.message || e}`, 'ERROR');
+        }
+        data.version = '1.0.0';
       });
-      
-      migrationSystem.run();
     }
 
     preInit() { 
       this.tool = maplebirch.tool;
       this.log = this.tool.createLogger('var');
-      maplebirch.once(':passageinit',() => variablesModule.check(), 3);
+      maplebirch.once(':passageinit', () => variablesModule.check());
+      maplebirch.once(':finally', () => variablesModule.check());
+      this.setupMigrations();
     }
 
     Init() {
-      let isNewGame = false;
-      if (maplebirch.state.passage.title === 'Start2') isNewGame = true;
-      if (isNewGame) {
+      if (maplebirch.state.passage.title === 'Start2') {
         V.maplebirch = this.tool.clone({
           ...variablesModule.defaultVar,
-          options: variablesModule.options,
           version: this.version
         });
         this.log(`新游戏数据初始化完成 (v${this.version})`, 'DEBUG');
-      } else if (!V.maplebirch.version || V.maplebirch.version !== this.version) {
-        this.addMigrations();
-        const migrationSystem = maplebirch.tool.migration.create();
-        migrationSystem.run(V.maplebirch, this.version);
-        this.mergeDefaults();
-        this.log(`存档数据迁移完成 (v${V.maplebirch.version} → v${this.version})`, 'DEBUG');
+        return;
+      }
+      try {
+        this.migrationSystem.run(V.maplebirch, this.version);
+        this.log?.(`存档数据迁移完成 (→ v${this.version})`, 'DEBUG');
+      } catch (e) {}
+    }
+
+    loadInit() {
+      variablesModule.check();
+      try {
+        this.migrationSystem.run(V.maplebirch, this.version);
+        this.log(`读档迁移/修正完成 (→ v${this.version})`, 'DEBUG');
+      } catch (e) {
+        this.log(`读档迁移出错: ${e?.message || e}`, 'ERROR');
       }
     }
 
     postInit() {
-      if (V.maplebirch.version !== this.version) {
-        const migrationSystem = maplebirch.tool.migration.create();
-        migrationSystem.run(V.maplebirch, this.version);
-        this.mergeDefaults();
-        this.log(`存档数据修正完成 (v${V.maplebirch.version} → v${this.version})`, 'DEBUG');
+      if (!V.maplebirch.version || V.maplebirch.version !== this.version) {
+        try {
+          this.migrationSystem.run(V.maplebirch, this.version);
+          this.log(`存档数据修正完成 (→ v${this.version})`, 'DEBUG');
+        } catch (e) {
+          this.log(`后初始化迁移出错: ${e?.message || e}`, 'ERROR');
+        }
       }
     }
   }

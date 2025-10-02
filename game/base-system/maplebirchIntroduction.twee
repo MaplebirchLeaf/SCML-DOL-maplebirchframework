@@ -7,8 +7,8 @@
 <<widget 'maplebirchModHint'>>
   <span class='searchButtons'>
     <<textbox '_maplebirchModHintTextbox' ''>>
-    <<set $_Search to maplebirch.lang.autoTranslate('搜索')>>
-    <<set $_Clear to maplebirch.lang.autoTranslate('清除')>>
+    <<set $_Search to maplebirch.autoTranslate('搜索')>>
+    <<set $_Clear to maplebirch.autoTranslate('清除')>>
     <<button $_Search>>
       <<run maplebirch.tool.modhint.searchButtonClicked()>>
     <</button>>
@@ -25,9 +25,9 @@
   <<setupTabs>>
   <div id="overlayTabs" class="tab">
     <<closeButtonMobile>>
-    <<set $_ModIntro to maplebirch.lang.autoTranslate('模组介绍')>>
-    <<set $_ModSettings to maplebirch.lang.autoTranslate('模组设置')>>
-    <<set $_ModPanel to maplebirch.lang.autoTranslate('角色面板')>>
+    <<set $_ModIntro to maplebirch.autoTranslate('模组介绍')>>
+    <<set $_ModSettings to maplebirch.autoTranslate('模组设置')>>
+    <<set $_ModPanel to maplebirch.autoTranslate('角色面板')>>
     <<button $_ModIntro>>
       <<toggleTab>>
       <<replace #customOverlayContent>><<maplebirchModHint>><</replace>>
@@ -46,14 +46,14 @@
 <</widget>>
 
 <<widget 'maplebirchModHintMobile'>>
-  <<if $maplebirch.options.modHint is 'mobile' && $options.sidebarStats isnot 'disabled'>>
+  <<if $options.maplebirch.modHint is 'mobile' && $options.sidebarStats isnot 'disabled'>>
     <input type="button" class="saveMenuButton maplebirchModHintMobile" value="" onclick="maplebirch.tool.modhint.hintClicked()">
   <</if>>
 <</widget>>
 
 <<widget "maplebirchModHintDesktop">>
-	<<if $maplebirch.options && $maplebirch.options.modHint is 'desktop'>>
-    <<set $_modHint to maplebirch.lang.autoTranslate('秋枫白桦')>>
+	<<if $options.maplebirch.modHint is 'desktop'>>
+    <<set $_modHint to maplebirch.autoTranslate('秋枫白桦').toUpperCase()>>
     <<button $_modHint>>
     	<<maplebirchReplace "maplebirchModHint" "title">>
     <</button>>

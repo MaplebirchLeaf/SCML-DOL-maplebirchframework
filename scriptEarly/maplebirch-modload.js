@@ -8,27 +8,7 @@
   const maplebirch = window.maplebirch;
   logger.log('[maplebirchMod] 开始执行');
 
-  async function effectAddTextAndWidget() {
-    const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
-    const SCdata = oldSCdata.cloneSC2DataInfo();
-    const datetimeScriptPath = 'effect.js';
-    const file = SCdata.scriptFileItems.getByNameWithOrWithoutPath(datetimeScriptPath);
-    if (!file) {
-      maplebirch.log(`找不到文件: ${datetimeScriptPath}`, 'ERROR');
-      return;
-    }
-    const regex = /(if \(V\.combat === 0 && V\.ironmanmode === true\) IronMan\.scheduledSaves\(\);)/;
-    
-    if (regex.test(file.content)) {
-      file.content = file.content.replace(
-        regex,
-        "$1\n\n\tmaplebirch.tool.effect.executeEffects({element: element,wikifier: (...args) => {const command = args[0];const params = args.slice(1).join(' ');sWikifier(`<<${command}${params ? ' ' + params : ''}>>`);},container: fragment});"
-      );
-    }
-    addonReplacePatcher.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);
-  }
-
-  async function fixDolGlitch() {
+  /*async function fixDolGlitch() {
     const Widget_Named_NPCsPassagePath = 'Widgets Named Npcs';
     const passage1 = modUtils.getPassageData(Widget_Named_NPCsPassagePath);
     if (modUtils.getMod('ModI18N')) {
@@ -38,6 +18,26 @@
       passage1.tags,
       passage1.id);
     }
+  }*/
+
+  async function modifyOptionsDateFormat() {
+    const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
+    const SCdata = oldSCdata.cloneSC2DataInfo();
+    const passageData = SCdata.passageDataItems.map;
+    const OptionsOverlayTwinePath = 'Options Overlay';
+    const modify = passageData.get(OptionsOverlayTwinePath);
+    const regex1 = /<label\s+class="en-GB">\s*<<radiobutton\s*"\$options\.dateFormat"\s*"en-GB"\s*autocheck\s*>>\s*([^<]+)<\/label>/;
+    const regex2 = /<label\s+class="en-US">\s*<<radiobutton\s*"\$options\.dateFormat"\s*"en-US"\s*autocheck\s*>>\s*([^<]+)<\/label>/;
+    const regex3 = /<label\s+class="zh-CN">\s*<<radiobutton\s*"\$options\.dateFormat"\s*"zh-CN"\s*autocheck\s*>>\s*([^<]+)<\/label>/;
+    const text1 = modUtils.getMod('ModI18N') ? '英(日/月/年)' : 'GB(dd/mm/yyyy)';
+    const text2 = modUtils.getMod('ModI18N') ? '美(月/日/年)' : 'US(mm/dd/yyyy)';
+    const text3 = modUtils.getMod('ModI18N') ? '中(年/月/日)' : 'CN(yyyy/mm/dd)';
+    if (regex1.test(modify.content)) modify.content = modify.content.replace(regex1, `<label class="en-GB"><<radiobutton "$options.dateFormat" "en-GB" autocheck>> ${text1}</label>`);
+    if (regex2.test(modify.content)) modify.content = modify.content.replace(regex2, `<label class="en-US"><<radiobutton "$options.dateFormat" "en-US" autocheck>> ${text2}</label>`);
+    if (regex3.test(modify.content)) modify.content = modify.content.replace(regex3, `<label class="zh-CN"><<radiobutton "$options.dateFormat" "zh-CN" autocheck>> ${text3}</label>`);
+    passageData.set(OptionsOverlayTwinePath, modify);
+    SCdata.passageDataItems.back2Array();
+    addonTweeReplacer.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);  
   }
 
   async function modifyJournalTime() {
@@ -46,13 +46,9 @@
     const passageData = SCdata.passageDataItems.map;
     const JournalTwinePath = 'Widgets Journal';
     const modify = passageData.get(JournalTwinePath);
-    const regex = /<<print\s*"([^"]*)"\s*\+\s*((?:Time\.\w+|ordinalSuffixOf\(Time\.monthDay\))\s*\+\s*)*"(.*?)"\s*>>/;
-    const text = modUtils.getMod('ModI18N') ? "'今天是' + (Time.year > 0 ? '公元' : '公元前') + Math.abs(Time.year) + '年' + Time.month + '月' + ordinalSuffixOf(Time.monthDay) + '日'" :"'It is the ' + ordinalSuffixOf(Time.monthDay) + ' of ' + Time.monthName + ', ' + Math.abs(Time.year) + (Time.year > 0 ? 'AD' : 'BC') + '.'"
+    const regex = /<<print\s*("It is "\s*\+\s*getFormattedDate\(Time\.date\)\s*\+\s*",\s*"\s*\+\s*Time\.year\s*\+\s*"\."|"今天是"\s*\+\s*Time\.year\s*\+\s*"年"\s*\+\s*getFormattedDate\(Time\.date\)\s*\+\s*"。"|ordinalSuffixOf\(Time\.monthDay\)\s*\+\s*"\s*"\s*\+\s*Time\.monthName\.slice\(0,3\)|Time\.month\s*\+\s*"月"\s*\+\s*ordinalSuffixOf\(Time\.monthDay\)\s*\+\s*"日")\s*>>/;
     if (regex.test(modify.content)) {
-      modify.content = modify.content.replace(
-        regex,
-        `<<= ${text}>>`
-      );
+      modify.content = modify.content.replace(regex,`<<= maplebirch.state.updateTimeLanguage('JournalTime')>>`);
       passageData.set(JournalTwinePath, modify);
     }
     SCdata.passageDataItems.back2Array();
@@ -66,8 +62,7 @@
       afterPatchModToGame: async() => {
         maplebirch.log('开始执行正则替换', 'DEBUG');
         await maplebirch.tool.framework.afterPatchModToGame();
-        await effectAddTextAndWidget();
-        await fixDolGlitch();
+        await modifyOptionsDateFormat();
         await modifyJournalTime();
       }
     },

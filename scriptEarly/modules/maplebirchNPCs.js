@@ -60,13 +60,13 @@
     }
     // 童贞类型
     static virginityTypes = {
-      anal:         false, // 肛门
-      oral:         false, // 口腔
-      penile:       false, // 阴茎
-      vaginal:      false, // 阴道
-      handholding:  false, // 牵手
+      anal:         true, // 肛门
+      oral:         true, // 口腔
+      penile:       true, // 阴茎
+      vaginal:      true, // 阴道
+      handholding:  true, // 牵手
       temple:       false, // 神殿
-      kiss:         false, // 接吻
+      kiss:         true, // 接吻
     }
     
     constructor() {
@@ -163,9 +163,13 @@
         return false;
       }
       const newNPC = this.tool.clone(NPCManager.baseNamedNPC);
-      Object.assign(newNPC.virginity, NPCManager.virginityTypes);
-      Object.assign(newNPC, npcData);
+      for (const statName in this.customStats) {
+        if (this.customStats.hasOwnProperty(statName)) {
+          if (npcData[statName] === undefined) newNPC[statName] = 0;
+        }
+      }
       
+      Object.assign(newNPC, npcData);
       if (!newNPC.description) newNPC.description = npcName;
       if (!newNPC.title) newNPC.title = "none";
       if (!newNPC.chastity) newNPC.chastity = {penis: "", vagina: "", anus: ""};
@@ -176,6 +180,7 @@
       if (!newNPC.corruption) newNPC.corruption = 0;
       if (!newNPC.eyeColour) newNPC.eyeColour = NPCManager.eyeColor[Math.floor(Math.random() * NPCManager.eyeColor.length)];
       if (!newNPC.hairColor) newNPC.hairColor = NPCManager.hairColor[Math.floor(Math.random() * NPCManager.hairColor.length)];
+      
       this.#setPronouns(newNPC);
       this.#applyVanillaPregnancySystem(newNPC, npcName);
 
@@ -298,6 +303,7 @@
     }
 
     #clearInvalidNpcs() {
+      setup.NPCNameList = [...new Set([...setup.NPCNameList, ...Object.keys(this.data)])];
       this.log(`开始解析npc...`, 'DEBUG', this.tool.clone(V.NPCName), this.tool.clone(setup.NPCNameList));
       const Names = V.NPCName.map(npc => npc.nam);
       const needsCleaning = !this.tool.contains(Names, setup.NPCNameList, { mode: 'all' }) || !this.tool.contains(setup.NPCNameList, Names, { mode: 'all' });
@@ -389,17 +395,8 @@
     }
 
     #mergeConfigs(base, mod) {
-      if (typeof base !== 'object' || typeof mod !== 'object') return mod !== undefined ? mod : base;
-      if (Array.isArray(base) || Array.isArray(mod)) return this.tool.clone(mod);
-      const result = this.tool.clone(base);
-      Object.keys(mod).forEach(key => {
-        if (mod[key] !== null && typeof mod[key] === 'object') {
-          result[key] = this.#mergeConfigs(result[key] || {}, mod[key]);
-        } else {
-          result[key] = this.tool.clone(mod[key]);
-        }
-      });
-      return result;
+      const filterFn = (key, value, depth) => {return Object.prototype.hasOwnProperty.call(mod, key);}
+      return maplebirch.tool.merge(base, mod, {arrayBehaviour: "replace", filterFn});
     }
 
     vanillaNPCConfig(npcConfig) {
@@ -492,16 +489,17 @@
         if (!this.tool.contains(['Start', 'Downgrade Waiting Room'], [maplebirch.state.passage.title], { mode: 'any' })) {
           this.injectModNPCs();
           this._npcList();
-          maplebirch.on(':onLoad', () => {
-            this.ready = false;
-            this.injectModNPCs();
-          }, 3, 'npcinject');
         }
       });
     }
 
     Init() {
       
+    }
+
+    loadInit() {
+      this.ready = false;
+      this.injectModNPCs();
     }
 
     postInit() {

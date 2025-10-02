@@ -1,5 +1,8 @@
 (() => {
-  if (!window.maplebirch) return;
+  if (!window.maplebirch) {
+    console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
+    return;
+  }
 
   const maplebirch = window.maplebirch;
 
@@ -36,6 +39,8 @@
     }
     
     initStorage() {
+      if (!V.maplebirch.audio?.storage) return
+      if (Object.keys(V.maplebirch.audio.storage).length === 0) return;
       for (const [key, base64] of Object.entries(V.maplebirch.audio.storage)) {
         try {
           const arrayBuffer = AudioManager.base64ToArrayBuffer(base64);
@@ -150,6 +155,10 @@
     }
 
     Init() {
+      this.initStorage();
+    }
+
+    loadInit() {
       this.initStorage();
     }
   }

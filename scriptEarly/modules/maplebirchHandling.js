@@ -7,15 +7,10 @@
   const maplebirch = window.maplebirch;
   
   class processHandling {
-    static cache = {
-      options: null,
-    }
-
     constructor() {
       this.lang = null
       this.tool = null;
       this.log = null;
-      this.cache = null;
       this.updateTimer = null;
     }
 
@@ -75,15 +70,15 @@
 
     _showFrameworkInfo() {
       let html_1 = `<div class="p-2 text-align-center">
-          <h3>${maplebirch.lang.t('Maplebirch Frameworks')}</h3>
+          <h3>${maplebirch.t('Maplebirch Frameworks')}</h3>
           <div class="m-2">
-            <span class="gold">${maplebirch.lang.t('Version')}：</span>${maplebirch.constructor.meta.version}<br>
+            <span class="gold">${maplebirch.t('Version')}：</span>${maplebirch.constructor.meta.version}<br>
           </div>
           <div class="m-2">
-            <span class="gold">${maplebirch.lang.t('Author')}：</span>${maplebirch.lang.autoTranslate(maplebirch.constructor.meta.author)}<br>
+            <span class="gold">${maplebirch.t('Author')}：</span>${maplebirch.autoTranslate(maplebirch.constructor.meta.author)}<br>
           </div>
           <div class="m-2">
-            <span class="gold">${maplebirch.lang.t('Last Modified By')}：</span>${maplebirch.lang.autoTranslate(maplebirch.constructor.meta.modifiedby)}<br>
+            <span class="gold">${maplebirch.t('Last Modified By')}：</span>${maplebirch.autoTranslate(maplebirch.constructor.meta.modifiedby)}<br>
           </div>
       </div>`;
 
@@ -109,7 +104,7 @@
       if (html.length > 0) {
         html_1 += `
           <div class="p-2 text-align-center">
-            <h3>${maplebirch.lang.t('Maplebirch Frameworks Mod List')}</h3>
+            <h3>${maplebirch.t('Maplebirch Frameworks Mod List')}</h3>
             <div id="modlist">
               ${html.join('')}
             </div>
@@ -120,67 +115,59 @@
       return html_1;
     }
 
-    _record(variableName, value) {
-      if (variableName && value !== undefined) processHandling.cache[variableName] = this.tool.clone(value);
-    }
-
-    _restore(variableName) {
-      if (processHandling.cache[variableName] !== undefined) return this.tool.clone(processHandling.cache[variableName]);
-      return null;
-    }
-
     _updatePermissions() {
-      if (!V.maplebirch?.options) return;
-      const options = V.maplebirch.options;
+      if (!V.options?.maplebirch?.sandbox) return;
+      const sandbox = V.options.maplebirch.sandbox;
       const allowedObjects = this.tool.console.allowedObjects;
-      if (options.window) {
-        options.V = true;
-        options.T = true;
-        options.maplebirch = true;
+      if (sandbox.window) {
+        sandbox.V = true;
+        sandbox.T = true;
+        sandbox.maplebirch = true;
         if (!this.tool.console.fullAccess) this.tool.console.enableFullAccess();
-      } else if (options.maplebirch) {
-        options.V = true;
-        options.T = true;
+      } else if (sandbox.maplebirch) {
+        sandbox.V = true;
+        sandbox.T = true;
         if (this.tool.console.fullAccess) this.tool.console.disableFullAccess();
       }
-      if (options.maplebirch && (!options.V || !options.T)) options.maplebirch = false;
-      if (options.window && !options.maplebirch) options.window = false;
-      if (options.V && !allowedObjects.has('V')) {
+      if (sandbox.maplebirch && (!sandbox.V || !sandbox.T)) sandbox.maplebirch = false;
+      if (sandbox.window && !sandbox.maplebirch) sandbox.window = false;
+      if (sandbox.V && !allowedObjects.has('V')) {
         this.tool.console.allowObject('V');
-      } else if (!options.V && allowedObjects.has('V')) {
+      } else if (!sandbox.V && allowedObjects.has('V')) {
         this.tool.console.disallowObject('V');
       }
-      if (options.T && !allowedObjects.has('T')) {
+      if (sandbox.T && !allowedObjects.has('T')) {
         this.tool.console.allowObject('T');
-      } else if (!options.T && allowedObjects.has('T')) {
+      } else if (!sandbox.T && allowedObjects.has('T')) {
         this.tool.console.disallowObject('T');
       }
-      if (options.maplebirch && !allowedObjects.has('maplebirch')) {
+      if (sandbox.maplebirch && !allowedObjects.has('maplebirch')) {
         this.tool.console.allowObject('maplebirch');
-      } else if (!options.maplebirch && allowedObjects.has('maplebirch')) {
+      } else if (!sandbox.maplebirch && allowedObjects.has('maplebirch')) {
         this.tool.console.disallowObject('maplebirch');
       }
-      if (options.window && !this.tool.console.fullAccess) {
+      if (sandbox.window && !this.tool.console.fullAccess) {
         this.tool.console.enableFullAccess();
-      } else if (!options.window && this.tool.console.fullAccess) {
+      } else if (!sandbox.window && this.tool.console.fullAccess) {
         this.tool.console.disableFullAccess();
       }
-      const vItem = $('label:contains("V 权限")').closest('.settingsToggleItem');
-      const tItem = $('label:contains("T 权限")').closest('.settingsToggleItem');
-      const mbItem = $('label:contains("Maplebirch 权限")').closest('.settingsToggleItem');
-      const wItem = $('label:contains("window 权限")').closest('.settingsToggleItem');
-      const vDisabled = options.window || options.maplebirch;
-      const tDisabled = options.window || options.maplebirch;
-      const mbDisabled = options.window || !(options.V && options.T);
-      const wDisabled = !options.maplebirch;
+      const text = maplebirch.t('permission');
+      const vItem = $(`label:contains("V ${text}")`).closest('.settingsToggleItem');
+      const tItem = $(`label:contains("T ${text}")`).closest('.settingsToggleItem');
+      const mbItem = $(`label:contains("Maplebirch ${text}")`).closest('.settingsToggleItem');
+      const wItem = $(`label:contains("window ${text}")`).closest('.settingsToggleItem');
+      const vDisabled = sandbox.window || sandbox.maplebirch;
+      const tDisabled = sandbox.window || sandbox.maplebirch;
+      const mbDisabled = sandbox.window || !(sandbox.V && sandbox.T);
+      const wDisabled = !sandbox.maplebirch;
       vItem.css("color", vDisabled ? "var(--400)" : "var(--000)");
-      vItem.find('input').prop('disabled', vDisabled).prop('checked', options.V);
+      vItem.find('input').prop('disabled', vDisabled).prop('checked', sandbox.V);
       tItem.css("color", tDisabled ? "var(--400)" : "var(--000)");
-      tItem.find('input').prop('disabled', tDisabled).prop('checked', options.T);
+      tItem.find('input').prop('disabled', tDisabled).prop('checked', sandbox.T);
       mbItem.css("color", mbDisabled ? "var(--400)" : "var(--000)");
-      mbItem.find('input').prop('disabled', mbDisabled).prop('checked', options.maplebirch);
+      mbItem.find('input').prop('disabled', mbDisabled).prop('checked', sandbox.maplebirch);
       wItem.css("color", wDisabled ? "var(--400)" : "var(--000)");
-      wItem.find('input').prop('disabled', wDisabled).prop('checked', options.window);
+      wItem.find('input').prop('disabled', wDisabled).prop('checked', sandbox.window);
     }
 
     preInit() {
@@ -197,19 +184,19 @@
         condition: () => Weather.bloodMoon && Weather.isSnow
       }, { layer: 'base', element: 'bloodmoon_snow' });
 
-      maplebirch.once(':definewidget', async () => {
+      maplebirch.once(':definewidget', () => {
         this.tool.widget.defineMacroS('maplebirchFrameworkVersions', () => this._showModVersions());
         this.tool.widget.defineMacroS('maplebirchFrameworkInfo', () => this._showFrameworkInfo());
-      }, 2);
+      });
 
-      $(document).on("mouseup touchend", () => {
+      maplebirch.on(':loadSaveData', () => maplebirch.Language = V?.maplebirch?.language);
+
+      $(document).on('mouseup touchend', () => {
         if (!maplebirch.modules.initPhase.preInitCompleted) return;
         try {
-          const options = V?.maplebirch?.options;
-          if (options && typeof options === 'object') this._record('options', options);
           if (typeof T.selectedLang === 'string' && maplebirch.constructor.meta.availableLanguages.includes(T.selectedLang)) {
             if (T.selectedLang !== maplebirch.lang.language) {
-              maplebirch.lang.setLanguage(T.selectedLang);
+              maplebirch.Language = T.selectedLang;
               if (typeof V.maplebirch !== 'object') V.maplebirch = {};
               V.maplebirch.language = T.selectedLang;
               T.tab.toggle();
@@ -217,20 +204,7 @@
             }
           }
         } catch (error) {
-          console.log('鼠标移动事件处理错误:', error);
-        }
-      });
-
-      maplebirch.on(':oncloseoverlay', () => {
-        const restoredOptions = this._restore('options');
-        if (restoredOptions !== null) {
-          const optionsChanged = !this.tool.equal(V.maplebirch?.options, restoredOptions);
-          if (optionsChanged) {
-            if (typeof V.maplebirch !== 'object') V.maplebirch = {};
-            V.maplebirch.options = restoredOptions;
-            V.debug = V.maplebirch.options?.debug ? 1 : 0;
-            State.show();
-          }
+          console.log('鼠标事件处理错误:', error);
         }
       });
 

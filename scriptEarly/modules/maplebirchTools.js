@@ -17,42 +17,51 @@
   }
 
   /**
-   * 通用拷贝函数
-   * @param {any} source - 要拷贝的对象
-   * @param {Object} [options={}] - 拷贝选项
-   * @param {boolean} [options.deep=true] - 是否深拷贝
+   * @param {any} source - 要克隆的对象
+   * @param {Object} [options={}] - 克隆选项
+   * @param {boolean} [options.deep=true] - 是否深克隆
    * @param {boolean} [options.preservePrototype=true] - 是否保留原型链
-   * @param {WeakMap} [map=new WeakMap()] - 内部使用的WeakMap（递归调用）
-   * @returns {any} 拷贝后的对象
-   */   
-  function universalCopy(source, options = {}, map = new WeakMap()) {
+   * @param {WeakMap} [map=new WeakMap()] - 内部WeakMap(处理循环引用)
+   * @returns {any} 克隆后的对象
+   * 
+   * @example
+   * // 基本类型克隆
+   * clone(42); // 42
+   * 
+   * @example
+   * // 对象深克隆
+   * const obj = { a: 1, b: { c: 2 } };
+   * const cloned = clone(obj);
+   * 
+   * @example
+   * // 浅克隆
+   * const obj = { a: 1, b: { c: 2 } };
+   * const cloned = clone(obj, { deep: false });
+   */
+  function clone(source, options = {}, map = new WeakMap()) {
     const { deep = true, preservePrototype = true } = options;
-    // 1. 处理原始类型值
     if (source === null || typeof source !== 'object') return source;
-    
-    // 2. 处理循环引用
     if (map.has(source)) return map.get(source);
-    
-    // 3. 处理特殊对象类型
     if (source instanceof Date) return new Date(source.getTime());
     if (source instanceof RegExp) return new RegExp(source.source, source.flags);
     if (source instanceof Map) {
       const clone = new Map();
       map.set(source, clone);
-      source.forEach((value, key) => clone.set(deep ? this.clone(key, options, map) : key, deep ? this.clone(value, options, map) : value));
+      source.forEach((value, key) => clone.set(deep ? this.clone(key, options, map) : key,deep ? this.clone(value, options, map) : value));
       return clone;
     }
+    
     if (source instanceof Set) {
       const clone = new Set();
       map.set(source, clone);
       source.forEach(value => clone.add(deep ? this.clone(value, options, map) : value));
       return clone;
     }
+
     if (ArrayBuffer.isView(source)) return new source.constructor(source.buffer.slice(0), source.byteOffset, source.byteLength);
     if (source instanceof ArrayBuffer) return source.slice(0);
     if (typeof source === 'function') return source;
     
-    // 4. 处理数组
     if (Array.isArray(source)) {
       const clone = [];
       map.set(source, clone);
@@ -60,51 +69,96 @@
       return clone;
     }
     
-    // 5. 处理普通对象
     const clone = preservePrototype ? Object.create(Object.getPrototypeOf(source)) : {};
     map.set(source, clone);
-    // 获取所有属性（包括Symbol）
     const keys = [...Object.getOwnPropertyNames(source), ...Object.getOwnPropertySymbols(source)];
     
     for (const key of keys) {
       const descriptor = Object.getOwnPropertyDescriptor(source, key);
       if (descriptor && !descriptor.enumerable) continue;
       const value = source[key];
-      if (deep) {
-        clone[key] = this.clone(value, options, map);
-      } else {
-        clone[key] = value;
-      }
+      clone[key] = deep ? this.clone(value, options, map) : value;
     }
     
     return clone;
-  };
+  }
 
   /**
-   * 深度比较两个值是否相等
-   * 支持基本类型、对象、数组、日期和正则表达式
+   * @param {Object} target - 目标对象
+   * @param {...Object} sources - 要合并的源对象
+   * @param {Object} [options={}] - 合并选项
+   * @param {string} [options.arrayBehaviour="replace"] - 数组合并策略
+   * @param {Function} [options.filterFn] - 属性过滤函数
+   * @returns {Object} 合并后的对象
    * 
-   * @param {any} a - 第一个比较值
-   * @param {any} b - 第二个比较值
-   * @returns {boolean} 是否深度相等
+   * @example
+   * // 基本合并
+   * merge({ a: 1 }, { b: 2 }); // { a: 1, b: 2 }
+   * 
+   * @example
+   * // 数组合并
+   * merge({ arr: [1, 2] }, { arr: [3, 4] }, { arrayBehaviour: "concat" }); // { arr: [1, 2, 3, 4] }
+   * 
+   * @example
+   * // 属性过滤
+   * merge({}, { public: "info", secret: "data" }, { 
+   *   arrayBehaviour: "replace",
+   *   filterFn: (key) => key !== "secret"
+   * });
+   */
+  function merge(target, ...sources) {
+    const options = typeof sources[sources.length - 1] === "object" && !Array.isArray(sources[sources.length - 1]) ? sources.pop() : {};
+    const {
+      arrayBehaviour = "replace",
+      filterFn = null
+    } = options;
+    const mergeRecursive = (target, source, depth = 1) => {
+      if (source === null || typeof source !== 'object') return source;
+      for (const key in source) {
+        if (filterFn && !filterFn(key, source[key], depth)) continue;
+        const sourceValue = source[key];
+        const targetValue = target[key];
+        if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
+          switch (arrayBehaviour) {
+            case "concat":
+              target[key] = [...targetValue, ...sourceValue];
+              break;
+            case "merge":
+              target[key] = targetValue.map((item, i) => i < sourceValue.length ? mergeRecursive(item, sourceValue[i], depth + 1) : item);
+              break;
+            default:
+              target[key] = [...sourceValue];
+          }
+        } else if (typeof sourceValue === 'object' && sourceValue !== null && typeof targetValue === 'object' && targetValue !== null) {
+          target[key] = mergeRecursive(targetValue, sourceValue, depth + 1);
+        } else {
+          target[key] = sourceValue;
+        }
+      }
+      return target;
+    };
+    for (const source of sources) target = mergeRecursive(target, source);
+    return target;
+  }
+
+  /**
+   * @param {any} a - 第一个值
+   * @param {any} b - 第二个值
+   * @returns {boolean} 是否相等
    * 
    * @example
    * // 基本类型比较
-   * deepEqual(42, 42); // true
+   * equal(42, 42); // true
    * 
    * @example
    * // 对象比较
-   * const objA = { a: 1, b: { c: 2 } };
-   * const objB = { a: 1, b: { c: 2 } };
-   * deepEqual(objA, objB); // true
+   * equal({ a: 1 }, { a: 1 }); // true
    * 
    * @example
    * // 日期比较
-   * const date1 = new Date(2023, 0, 1);
-   * const date2 = new Date(2023, 0, 1);
-   * deepEqual(date1, date2); // true
+   * equal(new Date(2023, 0, 1), new Date(2023, 0, 1)); // true
    */
-  function deepEqual(a, b) {
+  function equal(a, b) {
     if (a === b) return true;
     if (a == null || b == null) return a === b;
     if (typeof a !== 'object' || typeof b !== 'object') return a === b;
@@ -112,45 +166,35 @@
     if (a instanceof RegExp && b instanceof RegExp) return a.source === b.source && a.flags === b.flags;
     if (Array.isArray(a) && Array.isArray(b)) {
       if (a.length !== b.length) return false;
-      for (let i = 0; i < a.length; i++)  if (!deepEqual(a[i], b[i])) return false;
+      for (let i = 0; i < a.length; i++) if (!this.equal(a[i], b[i])) return false;
       return true;
     }
     const aKeys = Object.keys(a);
     const bKeys = Object.keys(b);
     if (aKeys.length !== bKeys.length) return false;
     for (const key of aKeys) {
-      if (!bKeys.includes(key)) return false;
-      if (!deepEqual(a[key], b[key])) return false;
+      if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+      if (!this.equal(a[key], b[key])) return false;
     }
     return true;
   }
 
   /**
-   * 检查目标数组是否包含指定元素集中的元素
-   * 支持多种匹配模式：全部包含、任意包含或都不包含
-   * 
-   * @param {Array} arr - 要搜索的目标数组
-   * @param {Array} elements - 需要检查是否存在的元素数组
+   * @param {Array} arr - 目标数组
+   * @param {Array} elements - 要检查的元素数组
    * @param {Object} [options={}] - 配置选项
-   * @param {string} [options.mode='all'] - 匹配模式：
-   *     'all' = 所有元素都必须存在
-   *     'any' = 至少一个元素存在
-   *     'none' = 所有元素都不存在
-   * @param {boolean} [options.caseSensitive=false] - 是否区分大小写（仅适用于字符串元素）
-   * @param {Function} [options.comparator=null] - 自定义比较函数，接收两个参数(arrItem, element)
-   *     返回boolean表示是否匹配，默认使用严格相等(===)比较
-   * @returns {boolean} 根据匹配模式返回检查结果
-   * @throws {Error} 当提供无效的匹配模式时抛出错误
+   * @param {string} [options.mode='all'] - 匹配模式: 'all', 'any', 'none'
+   * @param {boolean} [options.caseSensitive=false] - 是否区分大小写
+   * @param {Function} [options.comparator] - 自定义比较函数
+   * @returns {boolean} 检查结果
+   * 
    * @example
-   * // 检查所有元素是否存在
+   * // 检查所有元素
    * arrayContains([1, 2, 3], [2, 3]); // true
+   * 
    * @example
-   * // 不区分大小写检查任意元素是否存在
-   * arrayContains(['a', 'B'], ['b'], {mode: 'any', caseSensitive: false}); // true
-   * @example
-   * // 使用自定义比较器
-   * const caseInsensitiveCompare = (a, b) => typeof a === 'string' && typeof b === 'string' ? a.toLowerCase() === b.toLowerCase() : a === b;
-   * arrayContains(['Hello', 'World'], ['hello'], {comparator: caseInsensitiveCompare}); // true
+   * // 不区分大小写检查
+   * arrayContains(['a', 'B'], ['b'], { caseSensitive: false }); // true
    */
   function arrayContains(arr, elements, options = {}) {
     const {
@@ -158,22 +202,12 @@
       caseSensitive = false,
       comparator = null
     } = options;
-    const mainArr = [...arr];
-    if (!caseSensitive) {
-      for (let i = 0; i < mainArr.length; i++) {
-        if (typeof mainArr[i] === 'string') {
-          mainArr[i] = mainArr[i].toLowerCase();
-        }
-      }
-    }
-    const checkElements = [...elements];
-    if (!caseSensitive) {
-      for (let i = 0; i < checkElements.length; i++) {
-        if (typeof checkElements[i] === 'string') {
-          checkElements[i] = checkElements[i].toLowerCase();
-        }
-      }
-    }
+    const processValue = value => {
+      if (!caseSensitive && typeof value === 'string') return value.toLowerCase();
+      return value;
+    };
+    const mainArr = comparator ? arr : arr.map(processValue);
+    const checkElements = comparator ? elements : elements.map(processValue);
     const compare = comparator || ((a, b) => a === b);
     switch (mode) {
       case 'all':
@@ -215,7 +249,7 @@
   // 部件系统 - 用于定义和管理宏部件
   class widgetSystem {
     constructor(logger) {
-      this.log = logger || createLogger('widgetSystem');
+      this.log = logger;
       this.Macro = null;
       this.statFunctions = {};
       this.macro = [];
@@ -228,7 +262,7 @@
     }
 
      /**
-     * 定义宏（基础版）
+     * 定义宏
      * @param {string} macroName - 宏名称
      * @param {Function} macroFunction - 宏处理函数
      * @param {object} [tags] - 标签配置
@@ -346,580 +380,167 @@
 
     create() {
       const migrations = [];
+
+      const renameFunc = (data, oldPath, newPath) => {
+        const source = resolvePath(data, oldPath);
+        if (!source?.parent[source.key]) return false;
+        const value = source.parent[source.key];
+        delete source.parent[source.key];
+        const target = resolvePath(data, newPath, true);
+        target.parent[target.key] = value;
+        return true;
+      };
+
       const utils = {
         /**
          * 解析对象路径
          * @param {Object} obj - 目标对象
-         * @param {string} path - 点分隔的路径（如 "a.b.c"）
-         * @param {boolean} [createIfMissing=false] - 路径不存在时是否创建
-         * @returns {Object|null} 包含父对象和最终键名的对象，或null（路径不存在）
+         * @param {string} path - 点分隔路径 (如: 'a.b.c')
+         * @param {boolean} [createIfMissing=false] - 是否自动创建缺失路径
+         * @returns {Object|null} { parent: 父对象, key: 末级键名 } 或 null
          */
         resolvePath: (obj, path, createIfMissing = false) => {
-          const parts = path.split('.');
+          const parts = String(path).split('.');
           let current = obj;
-          
           for (let i = 0; i < parts.length - 1; i++) {
             const part = parts[i];
-            if (!current[part]) {
-              if (createIfMissing) {
-                current[part] = {};
-              } else {
-                return null;
-              }
+            if (current[part] === undefined) {
+              if (!createIfMissing) return null;
+              current[part] = {};
             }
             current = current[part];
+            if (current === null || typeof current !== 'object') {
+              if (!createIfMissing) return null;
+              current = {};
+            }
           }
-          
-          return {
-            parent: current,
-            key: parts[parts.length - 1]
-          };
+          return { parent: current, key: parts.at(-1) };
         },
-        
+
         /**
-         * 重命名字段
+         * 重命名对象属性路径
          * @param {Object} data - 目标数据对象
-         * @param {string} oldPath - 原字段路径
-         * @param {string} newPath - 新字段路径
-         * @returns {boolean} 是否成功重命名
+         * @param {string} oldPath - 原路径
+         * @param {string} newPath - 新路径
+         * @returns {boolean} 是否成功
          */
-        rename: (data, oldPath, newPath) => {
-          const source = utils.resolvePath(data, oldPath);
-          if (!source || source.parent[source.key] === undefined) return false;
-          
-          const value = source.parent[source.key];
-          delete source.parent[source.key];
-          
-          const target = utils.resolvePath(data, newPath, true);
-          target.parent[target.key] = value;
-          return true;
-        },
-        
+        rename: renameFunc,
+
         /**
-         * 删除字段
+         * 删除对象属性
          * @param {Object} data - 目标数据对象
-         * @param {string} path - 要删除的字段路径
-         * @returns {boolean} 是否成功删除
+         * @param {string} path - 点分隔路径
+         * @returns {boolean} 是否成功
          */
         remove: (data, path) => {
           const target = utils.resolvePath(data, path);
-          if (target && target.parent[target.key] !== undefined) {
+          if (target?.parent[target.key] !== undefined) {
             delete target.parent[target.key];
             return true;
           }
           return false;
         },
-        
-        move: (data, oldPath, newPath) => {
-          return utils.rename(data, oldPath, newPath);
-        },
-        
+
+        move: renameFunc,
+
         /**
-         * 转换字段值
+         * 转换属性值
          * @param {Object} data - 目标数据对象
-         * @param {string} path - 字段路径
-         * @param {Function} transformer - 值转换函数
-         * @returns {boolean} 是否成功转换
+         * @param {string} path - 点分隔路径
+         * @param {Function} transformer - 转换函数 (value) => newValue
+         * @returns {boolean} 是否成功
          */
         transform: (data, path, transformer) => {
           const target = utils.resolvePath(data, path);
-          if (target && target.parent[target.key] !== undefined) {
+          if (!target?.parent[target.key]) return false;
+          try {
             target.parent[target.key] = transformer(target.parent[target.key]);
             return true;
+          } catch {
+            return false;
           }
-          return false;
+        },
+
+        /**
+         * 填充缺失属性
+         * @param {Object} target - 目标对象
+         * @param {Object} defaults - 默认值模板对象
+         */
+        fill: (target, defaults) => {
+          const filterFn = (key, value, depth) => {
+            if (key === "version") return false;
+            return !Object.prototype.hasOwnProperty.call(target, key);
+          }
+          try {
+            maplebirch.tool.merge(target, defaults, { arrayBehaviour: "merge", filterFn});
+          } catch (err) {
+            this.log?.(`属性填充失败: ${err?.message || err}`, 'ERROR');
+          }
         }
       };
-      
+
       return Object.freeze({
         /**
          * 添加迁移脚本
-         * @param {string} fromVersion - 起始版本
-         * @param {string} toVersion - 目标版本
-         * @param {Function} migrationFn - 迁移处理函数
+         * @param {string} fromVersion - 起始版本号 (格式: 'x.y.z')
+         * @param {string} toVersion - 目标版本号 (格式: 'x.y.z')
+         * @param {Function} migrationFn - 迁移函数，格式: (data, utils) => void
          */
-        add: (fromVersion, toVersion, migrationFn) => migrations.push({ fromVersion, toVersion, migrationFn }),
-        
+        add: (fromVersion, toVersion, migrationFn) => {
+          if (typeof migrationFn !== 'function') return;
+          const exists = migrations.some(m => m.fromVersion === fromVersion && m.toVersion === toVersion);
+          if (exists) this.log?.(`重复迁移: ${fromVersion} -> ${toVersion}`, 'WARN');
+          migrations.push({ fromVersion, toVersion, migrationFn });
+        },
+
         /**
-         * 执行迁移流程
-         * @param {Object} data - 要迁移的数据对象（需包含version字段）
-         * @param {string} targetVersion - 目标版本号
+         * 执行数据迁移
+         * @param {Object} data - 待迁移的数据对象 (需包含 version 属性)
+         * @param {string} targetVersion - 要迁移到的目标版本
+         * @throws {Error} 迁移失败时抛出异常
          */
         run: (data, targetVersion) => {
-          if (!data.version) data.version = '0.0.0'; 
-          const currentVersion = data.version;
+          data.version ||= '0.0.0';
+          let currentVersion = data.version;
           if (this.#compareVersions(currentVersion, targetVersion) >= 0) return;
-          const applicableMigrations = migrations
-            .filter(m => this.#compareVersions(currentVersion, m.fromVersion) < 0 && this.#compareVersions(m.toVersion, targetVersion) <= 0)
-            .sort((a, b) => this.#compareVersions(a.toVersion, b.toVersion));
-          for (const migration of applicableMigrations) {
-            this.log(`迁移数据: ${data.version} → ${migration.toVersion}`);
-            migration.migrationFn(data, utils);
-            data.version = migration.toVersion;
+
+          const sortedMigrations = [...migrations].sort((a, b) => this.#compareVersions(a.fromVersion, b.fromVersion) ||this.#compareVersions(a.toVersion, b.toVersion));
+
+          while (this.#compareVersions(currentVersion, targetVersion) < 0) {
+            const migration = sortedMigrations.find(m =>this.#compareVersions(m.fromVersion, currentVersion) === 0 &&this.#compareVersions(m.toVersion, targetVersion) <= 0);
+            if (!migration) {
+              this.log?.(`迁移中断: ${currentVersion} -> ${targetVersion}`, 'WARN');
+              break;
+            }
+            try {
+              this.log?.(`迁移中: ${currentVersion} → ${migration.toVersion}`, 'DEBUG');
+              migration.migrationFn(data, utils);
+              data.version = currentVersion = migration.toVersion;
+            } catch (e) {
+              this.log?.(`迁移失败: ${e?.message || e}`, 'ERROR');
+              throw e;
+            }
           }
-          if (data.version !== targetVersion) data.version = targetVersion;
+          if (this.#compareVersions(currentVersion, targetVersion) < 0) {
+            this.log?.(`强制设置版本: ${targetVersion}`, 'WARN');
+            data.version = targetVersion;
+          }
         },
-        
+
         utils
       });
     }
-    
-    /**
-     * 比较版本号（内部方法）
-     * @private
-     * @param {string} a - 版本号A (格式: x.y.z)
-     * @param {string} b - 版本号B (格式: x.y.z)
-     * @returns {number} 比较结果：负数(a < b), 0(a = b), 正数(a > b)
-     */
+
     #compareVersions(a, b) {
-      const aParts = a.split('.').map(Number);
-      const bParts = b.split('.').map(Number);
-      
-      for (let i = 0; i < 3; i++) {
-        if (aParts[i] !== bParts[i]) {
-          return aParts[i] - bParts[i];
-        }
+      const parse = v => String(v || '0.0.0').split('.').map(Number);
+      const v1 = parse(a);
+      const v2 = parse(b);
+      for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
+        const diff = (v1[i] || 0) - (v2[i] || 0);
+        if (diff) return diff;
       }
       return 0;
     }
-  }
-
-  // 效果系统 - 用于管理和执行各种效果（部件、文本等）
-  class effectSystem {
-    constructor(logger) {
-      this.log = logger;
-      this.allArchiveStores = new Map(); // 所有存档的存储
-      this.currentSaveId = 'default';    // 当前存档ID
-    }
-    
-    #createNewStores() {
-      return {
-        widgets: new Map(),   // 部件存储
-        texts: new Map(),      // 文本存储
-        metadata: new Map(),   // 元数据存储
-        cleanups: new Map()    // 清理函数存储
-      };
-    }
-    
-    /**
-     * 设置当前激活的存档ID
-     * @param {string} saveId - 存档ID
-     * @returns {string} 设置的存档ID
-     */
-    setActiveSaveId(saveId) {
-      if (!saveId || saveId === 'default') {
-        this.currentSaveId = 'default';
-        this.log("激活默认存档存储", 'DEBUG');
-        return;
-      }
-      
-      if (!this.allArchiveStores.has(saveId)) {
-        this.allArchiveStores.set(saveId, this.#createNewStores());
-        this.log(`为存档初始化存储: ${saveId}`, 'DEBUG');
-      }
-      
-      if (this.currentSaveId !== saveId) {
-        this.log(`切换到存档: ${saveId}`, 'DEBUG');
-        this.currentSaveId = saveId;
-      }
-      
-      return saveId;
-    }
-    
-    #getCurrentStores() {
-      if (!this.allArchiveStores.has(this.currentSaveId)) {
-        this.allArchiveStores.set(this.currentSaveId, this.#createNewStores());
-        this.log(`初始化存储: ${this.currentSaveId}`, 'DEBUG');
-      }
-      return this.allArchiveStores.get(this.currentSaveId);
-    }
-    
-    /**
-     * 从存档数据加载效果
-     * @param {Object} saveData - 存档数据
-     * @returns {number|boolean} 加载的项目数或false（失败时）
-     */
-    loadFromSave(saveData) {
-      if (!saveData) {
-        this.log("无存档数据可加载", 'DEBUG');
-        return false;
-      }
-      
-      const stores = this.#getCurrentStores();
-      let loadedCount = 0;
-      
-      try {
-        if (saveData.widgets) {
-          Object.entries(saveData.widgets).forEach(([id, widget]) => {
-            stores.widgets.set(id, widget);
-            loadedCount++;
-          });
-        }
-        
-        if (saveData.texts) {
-          Object.entries(saveData.texts).forEach(([id, text]) => {
-            stores.texts.set(id, text);
-            loadedCount++;
-          });
-        }
-        
-        if (saveData.metadata) {
-          Object.entries(saveData.metadata).forEach(([id, meta]) => {
-            stores.metadata.set(id, meta);
-          });
-        }
-        
-        this.log(`从存档加载 ${loadedCount} 个项目 (${this.currentSaveId})`, 'DEBUG');
-        return loadedCount;
-      } catch (error) {
-        this.log(`存档数据加载失败: ${error.message}`, 'ERROR');
-        return false;
-      }
-    }
-    
-    saveToCurrentArchive() {
-      if (this.currentSaveId === 'default') {
-        this.log("跳过默认存档保存", 'DEBUG');
-        return null;
-      }
-      
-      const stores = this.#getCurrentStores();
-      const saveData = {
-        widgets: {},
-        texts: {},
-        metadata: {}
-      };
-      
-      let savedCount = 0;
-      
-      stores.widgets.forEach((widget, id) => {
-        if (Array.isArray(widget)) {
-          saveData.widgets[id] = widget;
-          savedCount++;
-        }
-      });
-      
-      stores.texts.forEach((text, id) => {
-        if (Array.isArray(text) || typeof text === 'string' || 
-            (typeof text === 'object' && text !== null)) {
-          saveData.texts[id] = text;
-          savedCount++;
-        }
-      });
-      
-      stores.metadata.forEach((meta, id) => {
-        const serializableMeta = {};
-        for (const [key, value] of Object.entries(meta)) {
-          if (typeof value !== 'function' && typeof value !== 'symbol') {
-            serializableMeta[key] = value;
-          }
-        }
-        saveData.metadata[id] = serializableMeta;
-      });
-      
-      this.log(`保存 ${savedCount} 个项目到存档: ${this.currentSaveId}`, 'DEBUG');
-      return saveData;
-    }
-    
-    /**
-     * 注册项目（内部方法）
-     * @private
-     * @param {string} type - 项目类型（'widget'或'text'）
-     * @param {string} id - 项目ID
-     * @param {*} item - 项目内容
-     * @param {Function} [cleanup] - 清理函数
-     * @param {Object} [meta] - 元数据
-     * @returns {string|boolean} 注册ID或false（失败时）
-     */
-    #registerItem(type, id, item, cleanup, meta) {
-      const stores = this.#getCurrentStores();
-      
-      if (type === 'widget' && typeof item === 'function') {
-        stores.widgets.set(id, item);
-        stores.metadata.set(id, { 
-          type,
-          created: Date.now(),
-          ...meta 
-        });
-        
-        if (typeof cleanup === 'function') {
-          stores.cleanups.set(id, cleanup);
-        }
-        
-        this.log(`注册函数部件: ${id}`, 'DEBUG');
-        return id;
-      }
-      
-      if (!item || (typeof item !== 'object' && !Array.isArray(item))) {
-        this.log(`注册失败: 无效的 ${type} 项目 (ID: ${id})`, 'ERROR');
-        return false;
-      }
-      
-      stores[type === 'widget' ? 'widgets' : 'texts'].set(id, item);
-      stores.metadata.set(id, { 
-        type,
-        created: Date.now(),
-        ...meta 
-      });
-      
-      if (typeof cleanup === 'function') {
-        stores.cleanups.set(id, cleanup);
-      }
-      
-      this.log(`注册 ${type}: ${id}`, 'DEBUG');
-      return id;
-    }
-    
-    /**
-     * 注销项目
-     * @param {string} id - 要注销的项目ID
-     * @returns {boolean} 是否成功注销
-     */
-    unregister(id) {
-      const stores = this.#getCurrentStores();
-      if (!stores.metadata.has(id)) {
-        this.log(`注销失败: ID ${id} 不存在`, 'WARN');
-        return false;
-      }
-      
-      if (stores.cleanups.has(id)) {
-        try {
-          this.log(`执行清理函数: ${id}`, 'DEBUG');
-          stores.cleanups.get(id)();
-        } catch(e) {
-          this.log(`清理函数 ${id} 错误: ${e.message}`, 'ERROR');
-        }
-        stores.cleanups.delete(id);
-      }
-      
-      stores.widgets.delete(id);
-      stores.texts.delete(id);
-      stores.metadata.delete(id);
-      
-      this.log(`已注销: ${id}`, 'DEBUG');
-      return true;
-    }
-    
-    #processResults() {
-      const stores = this.#getCurrentStores();
-      const results = [];
-      let widgetCount = 0;
-      let textCount = 0;
-      
-      stores.widgets.forEach((widget, id) => {
-        if (typeof widget === 'function') {
-          results.push({
-            type: 'function',
-            id,
-            func: widget
-          });
-          widgetCount++;
-        } else if (Array.isArray(widget)) {
-          results.push({
-            type: 'widget',
-            id,
-            command: widget[0],
-            args: widget.slice(1)
-          });
-          widgetCount += widget.length;
-        }
-      });
-      
-      stores.texts.forEach((text, id) => {
-        if (Array.isArray(text)) {
-          const textItems = text.map(t => ({
-            type: 'text',
-            id,
-            style: t.style || "span",
-            text: t.text,
-            colour: t.colour
-          }));
-          results.push(...textItems);
-          textCount += text.length;
-        } else if (typeof text === 'object' && text !== null) {
-          results.push({
-            type: 'text',
-            id,
-            style: text.style || "span",
-            text: text.text,
-            colour: text.colour
-          });
-          textCount++;
-        }
-      });
-      
-      if (results.length > 0) {
-        this.log(`生成 ${results.length} 个结果 (部件: ${widgetCount}, 文本: ${textCount})`, 'DEBUG');
-        return results;
-      }
-      
-      return null;
-    }
-    
-    /**
-     * 执行所有效果
-     * @param {Object} [context={}] - 执行上下文
-     * @param {Function} [context.element] - 创建元素的函数
-     * @param {HTMLElement} [context.container] - 文本容器
-     * @param {Function} [context.wikifier] - wikifier函数
-     */
-    executeEffects(context = {}) {
-      const stores = this.#getCurrentStores();
-      const results = this.#processResults();
-      
-      if (!results) {
-        this.log("没有效果需要执行", 'DEBUG');
-        return;
-      }
-
-      let textCount = 0;
-      let widgetCount = 0;
-      let functionCount = 0;
-      
-      results.forEach(effect => {
-        try {
-          switch (effect.type) {
-            case 'function':
-              effect.func();
-              functionCount++;
-              break;
-              
-            case 'text':
-              const { style, text, colour } = effect;
-              if (context.element) {
-                context.element(style, text, colour);
-              } else {
-                const el = document.createElement(style);
-                if (colour) el.classList.add(colour);
-                el.textContent = text;
-                if (context.container) context.container.appendChild(el);
-              }
-              textCount++;
-              break;
-              
-            case 'widget':
-              const { command, args } = effect;
-              if (context.wikifier) {
-                context.wikifier(command, ...args);
-                widgetCount++;
-              }
-              break;
-          }
-        } catch (e) {
-          this.log(`执行效果时出错 (${effect.id}): ${e.message}`, 'ERROR');
-        }
-      });
-      
-      this.log(`执行效果: 函数 ${functionCount}, 部件 ${widgetCount}, 文本 ${textCount}`, 'DEBUG');
-
-      const toRemove = [];
-      stores.metadata.forEach((meta, id) => {
-        if (!(meta.persistent || meta.keepAlive)) {
-          toRemove.push(id);
-        }
-      });
-      
-      if (toRemove.length > 0) {
-        this.log(`清理 ${toRemove.length} 个非持久化效果`, 'DEBUG');
-        toRemove.forEach(id => this.unregister(id));
-      }
-    }
-
-    cleanup() {
-      const stores = this.#getCurrentStores();
-      this.log(`执行 ${stores.cleanups.size} 个清理函数`, 'DEBUG');
-      
-      stores.cleanups.forEach((cleanup, id) => {
-        try {
-          cleanup();
-        } catch(e) {
-          this.log(`清理函数 ${id} 错误: ${e.message}`, 'ERROR');
-        }
-      });
-      
-      stores.cleanups.clear();
-    }
-
-    reset() {
-      const stores = this.#getCurrentStores();
-      this.log("重置效果系统", 'DEBUG');
-      this.cleanup();
-      stores.widgets.clear();
-      stores.texts.clear();
-      stores.metadata.clear();
-    }
-    
-    debug() {
-      const stores = this.#getCurrentStores();
-      const output = [];
-      
-      output.push(`=== 效果系统状态 (${this.currentSaveId}) ===`);
-      output.push(`注册项目总数: ${stores.metadata.size}`);
-      output.push(`持久化项目: ${Array.from(stores.metadata.values()).filter(m => m.persistent).length}`);
-      output.push(`清理函数: ${stores.cleanups.size}`);
-      output.push("\n--- 所有注册项目 ---");
-      
-      stores.metadata.forEach((meta, id) => {
-        const entry = [
-          `ID: ${id}`,
-          `类型: ${meta.type}`,
-          `创建时间: ${new Date(meta.created).toLocaleTimeString()}`,
-          `持久化: ${meta.persistent ? '是' : '否'}`,
-          `描述: ${meta.description || '无'}`
-        ];
-        output.push(entry.join(" | "));
-      });
-      
-      output.push("\n--- 状态统计 ---");
-      const types = {
-        widget: { count: 0 },
-        text: { count: 0 }
-      };
-      
-      stores.metadata.forEach(meta => {
-        types[meta.type].count++;
-      });
-      
-      output.push(`部件: ${types.widget.count} 个`);
-      output.push(`文本: ${types.text.count} 个`);
-      
-      if (maplebirch && typeof maplebirch.log === 'function') {
-        output.forEach(line => maplebirch.log(line, 'DEBUG'));
-      } else {
-        output.forEach(line => console.log(line));
-      }
-      
-      return output;
-    }
-    
-    registerWidget = (id, widget, cleanup, meta) => this.#registerItem('widget', id, widget, cleanup, meta);
-    registerText = (id, text, cleanup, meta) => this.#registerItem('text', id, text, cleanup, meta);
-    
-    get widgetList() {
-      const stores = this.#getCurrentStores();
-      return Array.from(stores.widgets, ([id]) => ({
-        id,
-        type: 'widget',
-        ...(stores.metadata.get(id) || {})
-      }));
-    }
-    
-    get textList() {
-      const stores = this.#getCurrentStores();
-      return Array.from(stores.texts, ([id]) => ({
-        id,
-        type: 'text',
-        ...(stores.metadata.get(id) || {})
-      }));
-    }
-    
-    get allItems() {
-      return [...this.widgetList, ...this.textList];
-    }
-    
-    save = this.saveToCurrentArchive.bind(this);
-    load = this.loadFromSave.bind(this);
-    getAllResults = this.#processResults.bind(this);
   }
 
   // 随机数生成系统 - 提供伪随机数生成和状态管理
@@ -1080,10 +701,315 @@
     }
   }
 
+  // 文本系统 - 用于注册和渲染文本片段
+/**
+ *   - `text(content: string, style?: string)`：添加文本（可选样式），自动添加空格
+ *   - `line(content?: string, style?: string)`：添加换行（可带文本内容）
+ *   - `wikify(content: string)`：解析并添加维基语法文本
+ *   - `raw(content: any)`：直接添加原始内容（DOM节点/字符串）
+ *   - `ctx: object`：渲染上下文数据
+ * 
+ * 所有方法支持链式调用，例如：
+ *   text("你好").line("世界").text("！", "bold");
+ * 
+ * @example // 基本注册和渲染
+ * // 注册处理器
+ * text.reg("welcome", ({ text }) => {
+ *   text("欢迎来到奇幻世界！");
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<maplebirchTextOutput "welcome">>
+ * 
+ * // 生成结果：
+ * // <span>欢迎来到奇幻世界！ </span>
+ * 
+ * @example // 带样式的文本
+ * // 注册处理器
+ * text.reg("warning", ({ text, line }) => {
+ *   text("危险区域！", "red").line("请小心前进", "yellow");
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<maplebirchTextOutput "warning">>
+ * 
+ * // 生成结果：
+ * // <span class="red">危险区域！ </span><br>
+ * // <span class="yellow">请小心前进 </span>
+ * 
+ * @example // 使用上下文
+ * // 注册处理器
+ * text.reg("character_info", ({ text, ctx }) => {
+ *   text(`姓名：${ctx.name}`)
+ *     .text(`职业：${ctx.class}`)
+ *     .text(`等级：${ctx.level}`);
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<set $player = { name: "艾拉", class: "游侠", level: 12 }>>
+ * <<maplebirchTextOutput "character_info" $player>>
+ * 
+ * // 生成结果：
+ * // <span>姓名：艾拉 </span>
+ * // <span>职业：游侠 </span>
+ * // <span>等级：12 </span>
+ * 
+ * @example // 维基语法解析
+ * // 注册处理器
+ * text.reg("npc_dialogue", ({ text, wikify, ctx }) => {
+ *   text(`${ctx.npcName}:`).line();
+ *   wikify(`"旅途小心，$player。[[前往${ctx.location}->NextScene]]"`);
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<set $npc = { npcName: "老巫师", location: "黑森林" }>>
+ * <<maplebirchTextOutput "npc_dialogue" $npc>>
+ * 
+ * // 生成结果：
+ * // <span>老巫师: </span><br>
+ * // <span class="macro-text">"旅途小心，小明。</span>
+ * // <a class="link-internal" href="NextScene">前往黑森林</a>
+ * // <span class="macro-text">"</span>
+ * 
+ * @example // 组合元素与动态内容
+ * // 注册处理器
+ * text.reg("quest", ({ text, line, raw, ctx }) => {
+ *   text(`任务：${ctx.title}`, "quest-title").line(ctx.description).line();
+ *   
+ *   const progress = document.createElement("progress");
+ *   progress.value = ctx.progress;
+ *   progress.max = 100;
+ *   raw(progress);
+ *   
+ *   line(`进度：${ctx.progress}%`, "small-text");
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<set $quest = {
+ *   title: "击败洞穴巨魔",
+ *   description: "清除洞穴中的巨魔威胁",
+ *   progress: 30
+ * }>>
+ * <<maplebirchTextOutput "quest" $quest>>
+ * 
+ * // 生成结果：
+ * // <span class="quest-title">任务：击败洞穴巨魔 </span><br>
+ * // <span>清除洞穴中的巨魔威胁 </span><br>
+ * // <progress value="30" max="100"></progress><br>
+ * // <span class="small-text">进度：30% </span>
+ * 
+ * @example // 嵌套渲染
+ * // 注册处理器
+ * text.reg("scene_container", async ({ text, raw, ctx }) => {
+ *   text("=== 场景开始 ===").line();
+ *   
+ *   const nestedFrag = await text.renderFragment([
+ *     "location_description",
+ *     "npc_dialogue"
+ *   ], ctx);
+ *   
+ *   raw(nestedFrag);
+ *   
+ *   text("=== 场景结束 ===").line();
+ * });
+ * 
+ * text.reg("location_description", ({ text, ctx }) => {
+ *   text(`你来到了${ctx.location}。`).line();
+ * });
+ * 
+ * text.reg("npc_dialogue", ({ text, ctx }) => {
+ *   text(`${ctx.npcName}说：`).text(ctx.dialogue);
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<set $sceneCtx = {
+ *   location: "神秘洞穴",
+ *   npcName: "守护者",
+ *   dialogue: "这里藏着古老的宝藏。"
+ * }>>
+ * <<maplebirchTextOutput "scene_container" $sceneCtx>>
+ * 
+ * // 生成结果：
+ * // <span>=== 场景开始 === </span><br>
+ * // <span>你来到了神秘洞穴。 </span><br>
+ * // <span>守护者说： </span><span>这里藏着古老的宝藏。 </span>
+ * // <span>=== 场景结束 === </span><br>
+ */
+  class textSystem {
+    constructor(logger, rng) {
+      this.log = logger;
+      this.store = new Map();
+      this.rng = rng;
+      this.Wikifier = null;
+    }
+
+    _getWikifier(wikifier) {
+      if (!wikifier) return false;
+      this.Wikifier = wikifier;
+      return true;
+    }
+
+    /**
+     * 注册文本处理器函数
+     * @param {string} key - 要注册的文本片段标识键
+     * @param {function} handler - 文本生成函数。接收优化后的渲染工具对象：
+     *   - `text(content: string, style?: string)`：添加文本（可选样式），自动处理空格
+     *   - `line(content?: string, style?: string)`：添加换行（可带文本内容）
+     *   - `wikify(content: string)`：解析并添加维基语法文本
+     *   - `raw(content: any)`：直接添加原始内容（DOM节点/字符串）
+     *   - `ctx: object`：渲染上下文数据（context）
+     * @param {string} [id] - 可选的自定义处理器ID
+     * @example // 基本文本
+     * text.reg("welcome", ({ text }) => {
+     *   text("欢迎来到冒险世界！");
+     * });
+     * @example // 样式文本+换行
+     * text.reg("warning", ({ text, line }) => {
+     *   text("危险区域！", "red-text")
+     *     .line("请小心前进", "yellow-text");
+     * });
+     * @example // 维基语法+上下文
+     * text.reg("npc_dialogue", ({ text, wikify, ctx }) => {
+     *   text(`${ctx.npcName}:`).line();
+     *   wikify(`"你好旅行者，[[前往${ctx.location}->NextScene]]"`);
+     * });
+     * @example // 组合元素
+     * text.reg("quest", ({ text, line, raw }) => {
+     *   text("任务：击败巨魔", "quest-title")
+     *     .line("奖励：50金币", "gold-text")
+     *     .line();
+     *   const progress = document.createElement("progress");
+     *   progress.value = 30;
+     *   raw(progress);
+     * });
+     */
+    reg(key, handler, id) {
+      if (!key || typeof handler !== 'function') {
+        this.log('注册失败: 参数无效', 'WARN');
+        return false;
+      }
+      if (!this.store.has(key)) this.store.set(key, []);
+      const finalId = id ?? `ts_${this.rng.get({ min: 0, max: 0xFFFFFFFF })}`;
+      this.store.get(key).push({ id: finalId, fn: handler });
+      this.log(`已注册处理器 [${key}] (ID: ${finalId})`, 'DEBUG');
+      return finalId;
+    }
+
+    unreg(key, idOrHandler) {
+      if (!this.store.has(key)) return false;
+      if (!idOrHandler) {
+        this.store.delete(key);
+        this.log(`已清除键值所有处理器 [${key}]`, 'DEBUG');
+        return true;
+      }
+      const originalCount = this.store.get(key).length;
+      const arr = this.store.get(key).filter(h => h.id !== idOrHandler && h.fn !== idOrHandler);
+      if (arr.length) {
+        this.store.set(key, arr);
+        const removedCount = originalCount - arr.length;
+        this.log(`已移除键值 [${key}] 的 ${removedCount} 个处理器`, 'DEBUG');
+      } else {
+        this.store.delete(key);
+        this.log(`已移除键值所有处理器 [${key}]`, 'DEBUG');
+      }
+      return true;
+    }
+
+    clear() {
+      const keyCount = this.store.size;
+      this.store.clear();
+      this.log(`已清除所有键值 (共 ${keyCount} 个)`, 'DEBUG');
+    }
+
+    async renderFragment(keys, context = {}) {
+      const fragment = document.createDocumentFragment();
+      const tools = {
+        ctx: context,
+        text: (content, style) => {
+          if (!content) return tools;
+          const el = document.createElement('span');
+          if (style) el.classList.add(style);
+          el.textContent = (content == null ? '' : String(content)) + ' ';
+          fragment.appendChild(el);
+          return tools;
+        },
+        line: (content, style) => {
+          fragment.appendChild(document.createElement('br'));
+          if (content) tools.text(content, style);
+          return tools;
+        },
+        wikify: content => {
+          if (this.Wikifier) {
+            fragment.append(this.Wikifier.wikifyEval(String(content)));
+          } else {
+            tools.text(content);
+          }
+          return tools;
+        },
+        raw: content => {
+          if (content instanceof Node) {
+            fragment.appendChild(content);
+          } else {
+            fragment.appendChild(document.createTextNode(String(content)));
+          }
+          return tools;
+        }
+      };
+      const list = Array.isArray(keys) ? keys.slice() : (keys == null ? [] : [keys]);
+      for (const key of list) {
+        if (!this.store.has(key)) {
+          this.log(`渲染片段: 未找到键值 [${key}]`, 'DEBUG');
+          continue;
+        }
+        const handlers = this.store.get(key).slice();
+        this.log(`开始渲染键值 [${key}] (${handlers.length} 个处理器)`, 'DEBUG');
+        for (const { fn } of handlers) {
+          try {
+            const res = fn(tools);
+            if (res instanceof Promise) await res;
+          } catch (e) {
+            this.log(`处理器错误 [${key}]: ${e?.message || e}`, 'ERROR');
+          }
+        }
+      }
+
+      return fragment;
+    }
+
+    async renderToMacroOutput(macro, keys, context = {}) {
+      if (!keys) return;
+      try {
+        const frag = await this.renderFragment(keys, context);
+        if (macro?.output?.append) {
+          macro.output.append(frag);
+        } else if (macro?.output?.appendChild) {
+          macro.output.appendChild(frag);
+        } else {
+          document.body.appendChild(frag);
+        }
+      } catch (e) {
+        this.log(`渲染到宏输出失败: ${e?.message || e}`, 'ERROR');
+      }
+    }
+
+    makeMacroHandler(options = {}) {
+      const cfg = { allowCSV: true, ...options };
+      const self = this;
+      return function() {
+        const raw = this.args && this.args.length ? this.args[0] : null;
+        let keys = raw;
+        if (cfg.allowCSV && typeof raw === 'string' && raw.includes(',')) {
+          keys = raw.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        (async () => await self.renderToMacroOutput(this, keys, {}))();
+      };
+    }
+  }
+
   // 模块提示系统 - 用于显示和搜索模块提示信息
   class modhintSystem {
     constructor(logger) {
-      this.log = logger || createLogger('modhint');;
+      this.log = logger;;
     }
     
     #insertBefore(newElement, targetElement) {
@@ -1360,13 +1286,11 @@
               this.#updateTwineStatus(`导航失败: ${err.message}`, false);
             }
           }, 600);
-          
           return { 
             success: true, 
             message: `导航到: ${passage}`
           };
         }
-        
         const $temp = $('<div>').appendTo(document.body).hide();
         $.wiki(code, $temp);
         $temp.remove();
@@ -1413,7 +1337,7 @@
   // 框架系统 - 用于管理和渲染各种框架部件
   class frameworks {
     constructor(logger) {
-      this.log = logger || createLogger('framework');
+      this.log = logger;
 
       this.data = {
         Init                    : [], // 初始化脚本-静态变量(如setup)
@@ -1484,34 +1408,33 @@
           <<setupOptions>>
           <div class="settingsGrid">
             <div class="settingsHeader options">
-              <span class="gold"><<= maplebirch.lang.t("Maplebirch Frameworks")>></span>
+              <span class="gold"><<= maplebirch.t("Maplebirch Frameworks")>></span>
             </div>
             <div class="settingsToggleItem">
-              <span class="gold"><<= maplebirch.lang.t("Current Mods Language Setting")>>:</span>
+              <span class="gold"><<= maplebirch.t("Current Mods Language Setting")>>:</span>
               <<set _selectedLang to maplebirch.lang.language>>
               <<set _langOptions = {
-                [maplebirch.lang.t('English')]: "EN",
-                [maplebirch.lang.t('Chinese')]: "CN",
-                [maplebirch.lang.t('Japanese')]: "JP"
+                [maplebirch.t('English')]: "EN",
+                [maplebirch.t('Chinese')]: "CN",
+                [maplebirch.t('Japanese')]: "JP"
               }>>
               <<listbox "_selectedLang" autoselect>>
                 <<optionsfrom _langOptions>>
               <</listbox>>
             </div>
             <div class="settingsToggleItem">
-              <<set _debugChoice to $maplebirch.options.debug is true ? 'enable' : 'disable'>>
-              <label><<checkbox "$maplebirch.options.debug" false true autocheck>><<= maplebirch.lang.t('DEBUGMode')>></label>
+              <label><<checkbox "$options.maplebirch.debug" false true autocheck>><<= maplebirch.t('DEBUGMode')>></label>
             </div>
             <div class="settingsToggleItemWide">
-              <span class="gold"><<= maplebirch.lang.autoTranslate('秋枫白桦') + ' ' + maplebirch.lang.autoTranslate('侧边栏位置选择')>>：</span>
+              <span class="gold"><<= maplebirch.t('Maplebirch',true) + maplebirch.autoTranslate('侧边栏位置选择')>>：</span>
               <span class="tooltip-anchor linkBlue" tooltip="在下次打开界面时更新">(?)</span>
               <br>
               <<set _modHintLocation = {
-                [maplebirch.lang.t('mobile client')]: "mobile",
-                [maplebirch.lang.t('desktop client')]: "desktop",
-                [maplebirch.lang.t('disable')]: "disable"
+                [maplebirch.t('mobile client')]: "mobile",
+                [maplebirch.t('desktop client')]: "desktop",
+                [maplebirch.t('disable')]: "disable"
               }>>
-              <<listbox "$maplebirch.options.modHint" autoselect>>
+              <<listbox "$options.maplebirch.modHint" autoselect>>
                 <<optionsfrom _modHintLocation>>
               <</listbox>>
             </div>
@@ -1519,17 +1442,17 @@
         Cheats : `
           <div class="settingsGrid">
             <div class="settingsHeader options">
-              <span class="gold"><<= maplebirch.lang.t("Mods Cheats")>></span>
+              <span class="gold"><<= maplebirch.t("Mods Cheats")>></span>
             </div>
-            <<if $maplebirch.options.debug>>
-              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$maplebirch.options.V" false true autocheck>> V <<= maplebirch.lang.t('permission')>></label></div>
-              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$maplebirch.options.T" false true autocheck>> T <<= maplebirch.lang.t('permission')>></label></div>
-              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$maplebirch.options.maplebirch" false true autocheck>> Maplebirch <<= maplebirch.lang.t('permission')>></label></div>
-              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$maplebirch.options.window" false true autocheck>> window <<= maplebirch.lang.t('permission')>>(完全权限)</label></div>
+            <<if $options.maplebirch.debug>><<run maplebirch.trigger("update")>>
+              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.V" false true autocheck>> V <<= maplebirch.t('permission')>></label></div>
+              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.T" false true autocheck>> T <<= maplebirch.t('permission')>></label></div>
+              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.maplebirch" false true autocheck>> Maplebirch <<= maplebirch.t('permission')>></label></div>
+              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.window" false true autocheck>> window <<= maplebirch.t('permission')>>(完全权限)</label></div>
               <div id="ConsoleCheat" class="settingsToggleItemWide">
-                <<set _CodeCheater to maplebirch.lang.t('Code Cheater')>>
+                <<set _CodeCheater to maplebirch.t('Code Cheater')>>
                 <details class="JSCheatConsole">
-                  <summary class="JSCheatConsole">JavaScript <<= maplebirch.lang.t('Code Cheater')>></summary>
+                  <summary class="JSCheatConsole">JavaScript <<= maplebirch.t('Code Cheater')>></summary>
                   <div class="searchButtons">
                     <div class="input-row">
                       <<textbox '_maplebirchJSCheatConsole' ''>>
@@ -1541,7 +1464,7 @@
                   </div>
                 </details>
                 <details class="TwineCheatConsole">
-                  <summary class="TwineCheatConsole">Twine <<= maplebirch.lang.t('Code Cheater')>></summary>
+                  <summary class="TwineCheatConsole">Twine <<= maplebirch.t('Code Cheater')>></summary>
                   <div class="searchButtons">
                     <div class="input-row">
                       <<textbox '_maplebirchTwineCheatConsole' ''>>
@@ -1585,9 +1508,9 @@
           { src: '\t\t</div>\n\t</div>', applybefore: '\t\t\t<<maplebirchWeaponBox>>\n\t\t' }
         ],
         overlayReplace: [
-          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleSaves">>', applybefore : '\t<<set $_name to maplebirch.lang.t("Mods Settings")>>\n\t\t<<button $_name>>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>\n\t\t<</button>>\n\t' },
-          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleOptions">>', applybefore : '\t<<set $_name to maplebirch.lang.t("Mods")>>\n\t\t<<button $_name>>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #cheatsShown>><<maplebirchCheats>><</replace>>\n\t\t\t<<run $("#customOverlayContent").scrollTop(0);>>\n\t\t<</button>>\n\t' },
-          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleFeats">>', applybefore : '\t<<set $_name to maplebirch.lang.t("Mods Statistics")>>\n\t\t<<button $_name>>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchStatistics>><</replace>>\n\t\t<</button>>\n\t' }
+          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleSaves">>', applybefore : '\t<<set $_name to maplebirch.t("Mods Settings")>>\n\t\t<<button $_name>>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>\n\t\t<</button>>\n\t' },
+          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleOptions">>', applybefore : '\t<<set $_name to maplebirch.t("Mods")>>\n\t\t<<button $_name>>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #cheatsShown>><<maplebirchCheats>><</replace>>\n\t\t\t<<run $("#customOverlayContent").scrollTop(0);>>\n\t\t<</button>>\n\t' },
+          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleFeats">>', applybefore : '\t<<set $_name to maplebirch.t("Mods Statistics")>>\n\t\t<<button $_name>>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchStatistics>><</replace>>\n\t\t<</button>>\n\t' }
         ],
         'Options Overlay': [
           { src: '<</widget>>\n\n<<widget "setFont">>', applybefore : '\t<<maplebirchInformation>>\n' }
@@ -1602,20 +1525,19 @@
           { src: '\t</div>\n\t<br>', applybefore: '\t<<maplebirchStatusSocial>>\n\t' }
         ],
         'Widgets Named Npcs': [
-          { src: '<!-- Default cases for all other NNPCs -->\n\t\t<<default>>', applyafter: '\n\t\t<<if Object.keys(maplebirch.npc.data).includes(_npc) && maplebirch.tool.widget.Macro.has(_npc+"relationshiptext")>>\n\t\t\t<<= maplebirch.lang.autoTranslate(_npc)>><<= "<<"+_npc+"relationshiptext>>">>\n\t\t<<else>>' },
-          { srcmatch: /\t\t\t<<NPC_CN_NAME _npc>>|\t\t\t_npc/, to: '\t\t\t<<= maplebirch.lang.autoTranslate(_npc)>>' },
-          { src: '\<</if>>\n\t<</switch>>', to: '<</if>>\n\t\t<</if>>\n\t<</switch>>' },
-          { src: '\<</if>>\n<</widget>>\n\n<<widget "initNNPCClothes">>', applybefore: '\t<<maplebirchNPCinit _nam>>\n\t' }
+          { srcmatch: /\t\t\t<<NPC_CN_NAME _npc>>|\t\t\t_npc/, to: '\t\t<<if Object.keys(maplebirch.npc.data).includes(_npc) && maplebirch.tool.widget.Macro.has(_npc+"relationshiptext")>>\n\t\t\t<<= maplebirch.autoTranslate(_npc)>><<= "<<"+_npc+"relationshiptext>>">>\n\t\t<<else>>\n\t\t\t<<= maplebirch.autoTranslate(_npc)>>' },
+          { src: '<</if>>\n\t<</switch>>\n<</widget>>', to: '<</if>>\n\t\t<</if>>\n\t<</switch>>\n<</widget>>' },
+          { src: '<</if>>\n<</widget>>\n\n<<widget "initNNPCClothes">>', applybefore: '\t<<maplebirchNPCinit _nam>>\n\t' }
         ],
         'Widgets Settings': [
-          { srcmatch: /<<set\s+_npcList\s*\[\s*clone\s*\(\s*\$NPCNameList\s*\[\s*\$_i\s*\]\s*\)\s*(?:\.replace\s*\(\s*"[^"]+"\s*,\s*"[^"]+"\s*\)\s*)*\]\s+to\s+clone\s*\(\s*\$_i\s*\)\s*>>/, to: '<<set _npcList[maplebirch.lang.autoTranslate(clone($NPCNameList[$_i]))] to clone($_i)>>' },
-          { srcmatch: /<<run delete _npcList\["(?:象牙怨灵|Ivory Wraith)"\]>>/, to: '<<run delete _npcList[maplebirch.lang.autoTranslate("Ivory Wraith")]>>' },
-          { srcmatch: /\t<<NPC_CN_NAME \$NPCName\[_npcId\].nam>>|\t\$NPCName\[_npcId\].nam/, to: '\t<<= maplebirch.lang.autoTranslate($NPCName[_npcId].nam)>>' },
-          { srcmatch: /\$NPCName\[_npcId\]\.title|<<print\s+\$NPCName\s*\[\s*\_npcId\s*\]\s*\.title\s*(\s*\.replace\s*\(\s*"[^"]+"\s*,\s*"[^"]+"\s*\)\s*)+>>/, to: '\t<<= maplebirch.lang.autoTranslate($NPCName[_npcId].title)>>' },
+          { srcmatch: /<<set\s+_npcList\s*\[\s*clone\s*\(\s*\$NPCNameList\s*\[\s*\$_i\s*\]\s*\)\s*(?:\.replace\s*\(\s*"[^"]+"\s*,\s*"[^"]+"\s*\)\s*)*\]\s+to\s+clone\s*\(\s*\$_i\s*\)\s*>>/, to: '<<set _npcList[maplebirch.autoTranslate(clone($NPCNameList[$_i]))] to clone($_i)>>' },
+          { srcmatch: /<<run delete _npcList\["(?:象牙怨灵|Ivory Wraith)"\]>>/, to: '<<run delete _npcList[maplebirch.autoTranslate("Ivory Wraith")]>>' },
+          { srcmatch: /\t<<NPC_CN_NAME \$NPCName\[_npcId\].nam>>|\t\$NPCName\[_npcId\].nam/, to: '\t<<= maplebirch.autoTranslate($NPCName[_npcId].nam)>>' },
+          { srcmatch: /\$NPCName\[_npcId\]\.title|<<print\s+\$NPCName\s*\[\s*\_npcId\s*\]\s*\.title\s*(\s*\.replace\s*\(\s*"[^"]+"\s*,\s*"[^"]+"\s*\)\s*)+>>/, to: '\t<<= maplebirch.autoTranslate($NPCName[_npcId].title)>>' },
         ],
         Widgets: [
           { src: 'T.getStatConfig = function(stat) {', applybefore: 'maplebirch.npc.applyStatDefaults(statDefaults);\n\t\t\t' },
-          { srcmatchgroup: /\t_npcData.nam|\t<<NPC_CN_NAME _npcData.nam>>/g, to: '\t<<= maplebirch.lang.autoTranslate(_npcData.nam)>>' },
+          { srcmatchgroup: /\t_npcData.nam|\t<<NPC_CN_NAME _npcData.nam>>/g, to: '\t<<= maplebirch.autoTranslate(_npcData.nam)>>' },
         ],
         Traits: [
           { src: '<div id="traitListsSearch">', applybefore: '<<run maplebirch.tool.other.initTraits(_traitLists)>>\n\t' }
@@ -1958,7 +1880,7 @@
      * @param {string} title - 段落标题
      * @returns {Object} 处理后的段落
      */
-    patchPassage(passage, title) { 
+    async patchPassage(passage, title) { 
       if (!this.patchedPassage[title]) {
         if (passage.tags.includes('widget')) {
           if (Object.keys(this.widgetPassage).length > 0) {
@@ -2256,7 +2178,7 @@
     }
 
     constructor(logger) {
-      this.log = logger || createLogger('modhint');
+      this.log = logger;
       this.traitsTitle = [];
       this.traitsData = [];
       this.locationUpdates = {};
@@ -2413,35 +2335,32 @@
     }
 
     #deepMergeLocationConfig(target, source) {
-      const result = maplebirch.tool.clone(target);
-      if (source.folder) result.folder = source.folder;
-      const layers = ['base', 'emissive', 'reflective', 'layerTop'];
-      layers.forEach(layer => {
-        if (source[layer]) {
-          result[layer] = result[layer] || {};
-          for (const [elementName, elementConfig] of Object.entries(source[layer])) {
-            if (result[layer][elementName]) {
-              result[layer][elementName] = {
-                ...result[layer][elementName],
-                ...elementConfig
-              };
-            } else {
-              result[layer][elementName] = elementConfig;
-            }
-          }
-        }
-      });
-      return result;
+      const filterFn = (key, value, depth) => {
+        if (depth === 1) return key === "folder" || ['base', 'emissive', 'reflective', 'layerTop'].includes(key);
+        return true;
+      }
+      return maplebirch.tool.merge(target, source, { arrayBehaviour: "merge", filterFn });
     }
   }
 
   class toolsModule {
+    static tools = {
+      widget: widgetSystem,
+      migration: migrationSystem,
+      random: randomSystem,
+      text: textSystem,
+      modhint: modhintSystem,
+      console: consoleTools,
+      framework: frameworks,
+      other: othersSystem,
+    }
+
     constructor() {
       this.createLogger = createLogger;
       this.widget = new widgetSystem(createLogger('widget'));
       this.migration = new migrationSystem(createLogger('migration'));
-      this.effect = new effectSystem(createLogger('effect'));
       this.random = new randomSystem(createLogger('random'));
+      this.text = new textSystem(createLogger('text'), this.random)
       this.modhint = new modhintSystem(createLogger('modhint'));
       this.console = new consoleTools(createLogger('console'));
       this.framework = new frameworks(createLogger('framework'));
@@ -2449,57 +2368,22 @@
       this.other = new othersSystem(createLogger('other'));
     }
     
-    clone = universalCopy;
-    equal = deepEqual;
+    clone = clone;
+    merge = merge;
+    equal = equal;
     contains = arrayContains;
     loadImg = loadImageWithModLoader;
 
     async preInit() {
-      maplebirch.on(':onLoad', (variables) => {
-        const saveId = variables.saveId;
-        this.effect.setActiveSaveId(saveId);
-        if (V.maplebirch?.effect) {
-          this.effect.loadFromSave(V.maplebirch.effect);
-          log(`从存档加载效果数据: ${saveId}`);
-        } else {
-          this.effect.reset();
-          log(`新存档初始化: ${saveId}`);
-        }
-      }, 2, 'effect');
+      maplebirch.once(':definewidget', () => {
+        this.widget.defineMacro('maplebirchTextOutput', () => this.text.makeMacroHandler());
+      });
       
-      maplebirch.on(':onSave', (variables) => {
-        const saveId = variables.saveId;
-        const effectData = this.effect.saveToCurrentArchive(); 
-        if (effectData) {
-          if (typeof V.maplebirch !== 'object') V.maplebirch = {};
-          V.maplebirch.effect = effectData;
-          log(`保存效果数据到存档: ${saveId}`);
-        }
-      }, 2, 'effect');
-      
-      maplebirch.on(':storyready', (variables) => {
-        const saveId = variables.saveId;
-        if (State.passage === 'Start' || State.passage === 'Downgrade Waiting Room') return;
-        if (saveId) {
-          this.effect.setActiveSaveId(saveId);
-          if (V.maplebirch?.effect) {
-            this.effect.loadFromSave(V.maplebirch.effect);
-            log(`从全局状态恢复效果数据: ${saveId}`, 'DEBUG');
-          } else {
-            log(`初始化新存档效果数据: ${saveId}`, 'DEBUG');
-          }
-        } else {
-          this.effect.setActiveSaveId('default');
-          this.effect.reset();
-          log("初始化默认效果状态");
-        }
-      }, 2, 'effect');
-
       maplebirch.once(':finally', () => {
         this.linkzone.removeZones();
         this.linkzone.apply({ debug: true });
-      }, 3);
-      maplebirch.on(':passagedisplay', () => this.linkzone.apply(), 3, 'applylinkzone');
+      });
+      maplebirch.on(':passagedisplay', () => this.linkzone.apply(), 'applylinkzone');
     }
 
     Init() {
