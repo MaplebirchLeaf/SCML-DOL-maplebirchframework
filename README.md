@@ -1018,15 +1018,17 @@ maplebirchFrameworks.addStats({
 </details>
 
 ### 致谢
-- 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 制作的Modloader和所支持的功能。
-- 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 大神开发了Modloader以及所有预置模组、[Number_Sir](https://github.com/NumberSir) 大佬开发了模组编写助手，以及两位魔法师在模组开发群里提供的教程和指导。
-- 感谢 [狐千月](https://github.com/emicoto) 制作的 [简易框架](https://github.com/emicoto/SCMLSimpleFramework) 。
-- 感谢 [苯环](https://github.com/Nephthelana) 、[零环](https://github.com/ZeroRing233) 、 [丧心](https://github.com/MissedHeart) 的代码指导。
-- 感谢 污度孤儿中国模组制作群 的新人引导。
+在此，我想向所有支持、帮助过这个项目的朋友们表达最诚挚的感谢：  
+- 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 开发的Modloader系统，为模组开发提供了基础支持。
+- 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 、[Number_Sir](https://github.com/NumberSir) 开发的模组编写助手工具，提升了开发效率。
+- 感谢 [狐千月](https://github.com/emicoto) 制作的 [简易框架](https://github.com/emicoto/SCMLSimpleFramework) 提供了重要的功能参考。
+- 感谢 [苯环](https://github.com/Nephthelana) 、[零环](https://github.com/ZeroRing233) 、 [丧心](https://github.com/MissedHeart) 给予的技术指导。
+- 感谢 污度孤儿中国模组制作群 提供的交流环境和新手引导。
 
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
