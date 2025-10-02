@@ -16,7 +16,7 @@
         - [时间事件使用示例](#时间事件使用示例)
     - [时间旅行](#时间旅行)
         - [使用示例](#使用示例)
-        - [选项参数](#选项参数(二选一))
+        - [选项参数](#选项参数)
     - [音频管理](#音频管理)
         - [导入音频文件](#导入音频文件)
         - [使用示例](#使用示例)
@@ -24,15 +24,23 @@
     - [变量迁徙](#变量迁徙)
         - [使用示例](#使用示例)
         - [主要方法](#主要方法)
-        - [工具集](#工具集(utils))
+        - [工具集](#工具集)
     - [随机数生成](#随机数生成)
     - [文本片段](#文本片段)
+        - [注册文本](#注册文本)
+        - [输出文本](#输出文本)
     - [作弊控制台](#作弊控制台)
     - [​​区域注册](#​​区域注册)
+        - [添加内容到指定区域](#添加内容到指定区域)
+        - [注册初始化函数](#注册初始化函数)
     - [​​简易弹窗](#​​​​简易弹窗)
     - [特质注册](#特质注册)
     - [地点注册](#地点注册)
     - [NPC注册](#NPC注册)
+        - [NPC的基本数据](#NPC的基本数据)
+        - [添加自定义状态](#添加自定义状态)
+        - [NPC的关系文本](#NPC的关系文本)
+        - [NPC属性详解](#NPC属性详解)
 - [致谢](#致谢)
 - [未实现的功能构想](#未实现的功能构想)
 
@@ -45,23 +53,23 @@
 
 | 提供的功能 | 映射方法使用 | 对应路径 |
 | :-: | :-: | :-: |
-| 导入语言文件 | maplebirchFrameworks.addLanguage / simplebirchFrameworks.addLanguage | maplebirch.lang.importAllLanguages |
-| 注册时间事件 | maplebirchFrameworks.addTimeEvent / simplebirchFrameworks.addTimeEvent | maplebirch.state.regTimeEvent |
-| 时间旅行 | maplebirchFrameworks.timeTravel / simplebirchFrameworks.timeTravel | maplebirch.state.timeTravel |
-| 导入音频文件 | maplebirchFrameworks.addAudio / simplebirchFrameworks.addAudio | maplebirch.audio.importAllAudio |
-| 获取音频播放实例 | maplebirchFrameworks.getPlayer / simplebirchFrameworks.getPlayer | maplebirch.audio.getPlayer |
-| 变量迁徙实例 | maplebirchFrameworks.migration / simplebirchFrameworks.migration | maplebirch.tool.migration.create |
-| 获取随机值 | maplebirchFrameworks.getRandom / simplebirchFrameworks.getRandom | maplebirch.tool.random.get |
-| 注册文本片段 | maplebirchFrameworks.addText / simplebirchFrameworks.addText | maplebirch.tool.text.reg |
-| addto区域注册 | maplebirchFrameworks.addto / simplebirchFrameworks.addto | maplebirch.tool.framework.addTo |
-| 初始化函数脚本 | maplebirchFrameworks.onInit / simplebirchFrameworks.onInit | maplebirch.tool.framework.onInit |
-| 添加特质 | maplebirchFrameworks.addTraits / simplebirchFrameworks.addTraits | maplebirch.tool.other.addTraits |
-| 添加地点 | maplebirchFrameworks.addLocation / simplebirchFrameworks.addLocation | maplebirch.tool.other.configureLocation |
-| 添加NPC | maplebirchFrameworks.addNPC / simplebirchFrameworks.addNPC | maplebirch.npc.add |
-| 添加NPC状态 | maplebirchFrameworks.addStats / simplebirchFrameworks.addStats | maplebirch.npc.addStats |
+| 导入语言文件 | `maplebirchFrameworks.addLanguage` / `simplebirchFrameworks.addLanguage` | `maplebirch.lang.importAllLanguages` |
+| 注册时间事件 | `maplebirchFrameworks.addTimeEvent` / `simplebirchFrameworks.addTimeEvent` | `maplebirch.state.regTimeEvent` |
+| 时间旅行 | `maplebirchFrameworks.timeTravel` / `simplebirchFrameworks.timeTravel` | `maplebirch.state.timeTravel` |
+| 导入音频文件 | `maplebirchFrameworks.addAudio` / `simplebirchFrameworks.addAudio` | `maplebirch.audio.importAllAudio` |
+| 获取音频播放实例 | `maplebirchFrameworks.getPlayer` / `simplebirchFrameworks.getPlayer` | `maplebirch.audio.getPlayer` |
+| 变量迁徙实例 | `maplebirchFrameworks.migration` / `simplebirchFrameworks.migration` | `maplebirch.tool.migration.create` |
+| 获取随机值 | `maplebirchFrameworks.getRandom` / `simplebirchFrameworks.getRandom` | `maplebirch.tool.random.get` |
+| 注册文本片段 | `maplebirchFrameworks.addText` / `simplebirchFrameworks.addText` | `maplebirch.tool.text.reg` |
+| addto区域注册 | `maplebirchFrameworks.addto` / `simplebirchFrameworks.addto` | `maplebirch.tool.framework.addTo` |
+| 初始化函数脚本 | `maplebirchFrameworks.onInit` / `simplebirchFrameworks.onInit` | `maplebirch.tool.framework.onInit` |
+| 添加特质 | `maplebirchFrameworks.addTraits` / `simplebirchFrameworks.addTraits` | `maplebirch.tool.other.addTraits` |
+| 添加地点 | `maplebirchFrameworks.addLocation` / `simplebirchFrameworks.addLocation` | `maplebirch.tool.other.configureLocation` |
+| 添加NPC | `maplebirchFrameworks.addNPC` / `simplebirchFrameworks.addNPC` | `maplebirch.npc.add` |
+| 添加NPC状态 | `maplebirchFrameworks.addStats` / `simplebirchFrameworks.addStats` | `maplebirch.npc.addStats` |
 
 <details>
-<summary>现已实现的功能</summary>
+<summary>点击查看现已实现的功能</summary>
     
 | 功能模块 | 核心作用 |
 | :-: | :-: |
@@ -463,7 +471,7 @@ maplebirch.events.on(':onTimeTravel', (data) => {
   console.log(`方向: ${data.direction}, 时间差: ${data.diffSeconds}秒`);
 });
 ```
-  #### 选项参数(二选一)
+  #### 选项参数
 ```
 A. 精确时间点模式:
   - target: DateTime对象 或
@@ -578,262 +586,402 @@ migrator.utils.fill(userData, { settings: { theme: 'dark' } });
 - `create()`: 创建迁移器实例，返回包含add/run/utils的对象
 - `add(fromVersion, toVersion, migrationFn)`: 添加迁移脚本
 - `run(data, targetVersion)`: 执行数据迁移
-  #### 工具集(utils):
+  #### 工具集
 - `resolvePath(obj, path, createIfMissing)`: 解析对象路径
 - `rename/move(data, oldPath, newPath)`: 重命名/移动属性
 - `remove(data, path)`: 删除属性
 - `transform(data, path, transformer)`: 转换属性值
 - `fill(target, defaults, options)`: 填充缺失属性
-  
  ### 随机数生成
+  + `const num1 = maplebirchFrameworks.getRandom();` // 1-100的随机整数  
+  + `const num2 = maplebirchFrameworks.getRandom(10);` // 0-9的随机整数  
+  + `const num3 = maplebirchFrameworks.getRandom({min:5, max:10});` // 5-10的随机整数  
+  + `const num4 = maplebirchFrameworks.getRandom({min:1, max:5, float:true});` // 1-5的随机浮点数  
+  + `const item = maplebirchFrameworks.getRandom(['a','b','c']);` // 随机选择数组元素  
  ### 文本片段
- ### 作弊控制台
- ### 区域注册
- ### 特质注册
- ### 地点注册
- ### NPC注册
+  #### 注册文本
+  - 使用 maplebirchFrameworks.addText 方法注册文本处理器
+```
+// 基本文本片段
+maplebirchFrameworks.addText('welcome', (t) => {
+  t.text('欢迎来到游戏世界！');
+  t.line('在这里你将开始一段奇妙的冒险。');
+});
 
+// 带样式的文本片段
+maplebirchFrameworks.addText('warning', (t) => {
+  t.text('危险警告！', 'red-text');
+  t.line('前方发现敌人，请做好准备！');
+});
 
-#### addto区域快捷插入
-  与原来的**简易框架**一致，在对应区域插入widget或函数，详情看下方图片。 
-1. `maplebirchFramework.addTo(zone, ...widgets)` - 将部件添加到指定UI区域  
-2. `maplebirchFramework.onInit(...widgets)` - 注册游戏初始化逻辑  
-框架已挂载到全局对象：`maplebirch.tool.framework`   
-可通过以下方式使用：  
- - `maplebirchFramework.addTo` 映射到 `maplebirch.tool.framework.addTo`  
- - `maplebirchFramework.onInit` 映射到 `maplebirch.tool.framework.onInit`  
-```
-  ======================== 方法详解 ========================
-  1. maplebirchFramework.onInit(...widgets)
-    注册游戏初始化时执行的逻辑
-  
-    参数：
-      ...widgets - 支持多种类型的初始化项：
-        - 字符串: 宏命令名称 (如 'setupPlayerData')
-        - 函数: 直接执行的JS函数
-        - 对象: 包含init方法的对象
-  
-    执行时机：游戏启动时（StoryInit段落）
-  
-  2. maplebirchFramework.addTo(zone, ...widgets)
-    向指定UI区域添加内容
-  
-    参数：
-      zone - 目标区域名称 (字符串)
-      ...widgets - 支持多种类型的UI内容：
-        - 字符串: 宏命令名称 (如 'displayPlayerName')
-        - 函数: 返回HTML/宏字符串的函数
-        - 对象: 带条件的UI配置
-```
-  
-- 框架提供多个预定义区域供添加内容：  
-```
-| 区域名称                | 位置说明                 |
-|-------------------------|--------------------------|
-| `Header`                | 页面顶部                 |
-| `Footer`                | 页面底部                 |
-| `Options`               | 选项菜单                 |
-| `StatusBar`             | 状态栏                   |
-| `Information`           | 信息区域                 |
-| `BeforeLinkZone`        | 选项链接前               |
-| `AfterLinkZone`         | 选项链接后               |
-| `CharaDescription`      | 角色描述区               |
-| `DegreesBox`            | 属性区域                 |
-| `SkillsBox`             | 技能区域                 |
-| `SchoolSubjectsBox`     | 学科区域                 |
-| `HintMobile`            | 移动端提示区             |
-| `Journal`               | 日志尾部                 |
-| `Init`                  | 初始化脚本区域           |
-| `Cheats`                | 作弊栏区域               |
-| `Statistics`            | 统计栏区域               |
-| `CaptionDescription`    | 标题描述区域             |
-| `MenuBig`               | 大菜单区域               |
-| `MenuSmall`             | 小菜单区域               |
-| `CaptionAfterDescription`| 标题描述后区域           |
-| `StatsMobile`           | 移动端状态区域           |
-| `DegreesBonusDisplay`   | 属性加成显示区域         |
-| `SkillsBonusDisplay`    | 技能加成显示区域         |
-| `SubjectBoxBonusDisplay`| 学科加成显示区域         |
-| `SchoolMarksText`       | 成绩文本区域             |
-| `WeaponBox`             | 武器框区域               |
-| `Reputation`            | 声誉显示区域             |
-| `Fame`                  | 知名度显示区域           |
-| `StatusSocial`          | 社交状态区域             |
-| `NPCinit`               | NPC初始化区域            |
-```
-- 当使用对象作为widget参数时，支持以下配置：
-```
-{
-  widget: 'macroName',     // 必需：宏命令名称
-  exclude: ['Passage1'],   // 可选：排除的段落名称
-  match: /Chapter\d+/,    // 可选：匹配段落名称的正则
-  passage: ['Settings']    // 可选：仅在这些段落显示
-}
-```
-- 使用示例：
-```
- // 示例1：初始化玩家数据
-  maplebirchFramework.onInit(() => {
-    if (!V.playerModData) {
-      V.playerModData = {
-        modPoints: 0,
-        modLevel: 1
-      };
-    }
-  });
-  
-  // 示例2：添加页脚信息
-  maplebirchFramework.addTo('Footer', () => {
-    return `模组版本: 1.0 | 点数: ${V.playerModData?.modPoints || 0}`;
-  });
-  
-  // 示例3：添加带条件的选项按钮
-  maplebirchFramework.addTo('Options', {
-    widget: 'modSettingsButton',
-    exclude: ['Battle', 'Combat'] // 战斗场景不显示
-  });
-  
-  // 示例4：添加多个初始化项
-  maplebirchFramework.onInit(
-    'initModSystem',           // 宏命令
-    initModData,               // 函数
-    { init: modConfig.init }   // 对象
-  );
-  
-  // 示例5：添加动态状态显示
-  maplebirchFramework.addTo('StatusBar', () => {
-  return `模组等级: ${V.playerModData?.modLevel || 1}`;
+// 使用维基语法的文本片段
+maplebirchFrameworks.addText('choice', (t) => {
+  t.text('请选择你的行动：');
+  t.wikify('[[攻击敌人|战斗]] [[悄悄离开|逃跑]]');
+});
+
+// 带动态数据的文本片段
+maplebirchFrameworks.addText('greet', (t) => {
+  t.text(`你好，${t.ctx.playerName}！`, 'greeting');
+  t.line(`今天是${t.ctx.day}，天气${t.ctx.weather}`);
+});
+
+// 组合多个元素的复杂片段
+maplebirchFrameworks.addText('treasure', (t) => {
+  t.text('你发现了宝藏！', 'gold-text');
+  t.line();
+  t.text(`里面装着${t.ctx.itemName}`, 'item-desc');
+  t.line();
+  t.raw('<button id="takeTreasure">拾取</button>');
 });
 ```
+  #### 输出文本
+  - 使用 <<maplebirchTextOutput>> 宏输出注册的文本片段
+```
+// 输出单个片段
+<<maplebirchTextOutput "welcome">>
 
+// 输出多个片段（按顺序显示）
+<<maplebirchTextOutput "welcome, warning">>
+
+// 传递上下文数据
+<<maplebirchTextOutput "greet" {
+  playerName: "冒险者",
+  day: "星期一",
+  weather: "晴朗"
+}>>
+
+// 组合使用
+<<maplebirchTextOutput "welcome, treasure" {
+  itemName: "黄金宝箱"
+}>>
+<<maplebirchTextOutput "个性化问候" { name: "玩家名称" }>>
+```
+ ### 作弊控制台
+ + 在游戏中允许作弊以及便携调试数据
 <details>
   <summary>点击查看图片</summary>
-  <img width="846" height="990" alt="image" src="https://github.com/user-attachments/assets/0fc25fa2-4bd9-4323-b17e-6d3a77376e1d" />
-</details>  
+   <img width="926" height="618" alt="image" src="https://github.com/user-attachments/assets/3539c6a0-b7ed-4c98-a815-5462eeefbea9" />
+</details>
 
-#### 简易弹窗
-  使用特殊的`<<maplebirchReplace>>`宏来弹窗。
+ ### 区域注册
+ - 沿袭[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的addto区域注册，对区域进行了优化和修改。
+<details>
+  <summary>点击查看详细区域</summary>
+    
+   | 区域名称                 | 位置说明                |
+   | :---------------------: | :---------------------: |
+   | `Header`                | 页面顶部                 |
+   | `Footer`                | 页面底部                 |
+   | `Options`               | 选项菜单                 |
+   | `StatusBar`             | 状态栏                   |
+   | `Information`           | 信息区域                 |
+   | `BeforeLinkZone`        | 选项链接前               |
+   | `AfterLinkZone`         | 选项链接后               |
+   | `CharaDescription`      | 角色描述区               |
+   | `DegreesBox`            | 属性区域                 |
+   | `SkillsBox`             | 技能区域                 |
+   | `SchoolSubjectsBox`     | 学科区域                 |
+   | `HintMobile`            | 移动端提示区             |
+   | `Journal`               | 日志尾部                 |
+   | `Init`                  | 初始化脚本区域           |
+   | `Cheats`                | 作弊栏区域               |
+   | `Statistics`            | 统计栏区域               |
+   | `CaptionDescription`    | 标题描述区域             |
+   | `MenuBig`               | 大菜单区域               |
+   | `MenuSmall`             | 小菜单区域               |
+   | `CaptionAfterDescription`| 标题描述后区域          |
+   | `StatsMobile`           | 移动端状态区域           |
+   | `DegreesBonusDisplay`   | 属性加成显示区域         |
+   | `SkillsBonusDisplay`    | 技能加成显示区域         |
+   | `SubjectBoxBonusDisplay`| 学科加成显示区域         |
+   | `SchoolMarksText`       | 成绩文本区域             |
+   | `WeaponBox`             | 武器框区域               |
+   | `Reputation`            | 声誉显示区域             |
+   | `Fame`                  | 知名度显示区域           |
+   | `StatusSocial`          | 社交状态区域             |
+   | `NPCinit`               | NPC初始化区域            |
+</details>
+
+  #### 添加内容到指定区域
+  - 支持三种内容类型
+1. 字符串：直接作为宏名称使用
+2. 函数：动态生成内容，返回字符串或宏代码
+3. 对象：带条件的宏配置（支持`exclude`/`match`/`passage`等条件）
+  - 条件渲染参数说明
+1. `exclude`: 字符串或数组，指定不显示该内容的段落
+2. `match`: 正则表达式，匹配段落标题
+3. `passage`: 字符串或数组，指定显示该内容的段落
+```
+示例：
+// 添加简单宏
+maplebirchFrameworks.addTo('Header', 'customHeader');
+
+// 添加动态生成的内容
+maplebirchFrameworks.addTo('StatusBar', () => {
+  return `<<print "生命值: ${V.player.health}">>`;
+});
+
+// 添加带条件的宏（排除特定段落）
+maplebirchFrameworks.addTo('Options', {
+  widget: 'debugOptions',
+  exclude: ['MainMenu'] // 在主菜单不显示
+});
+
+// 添加带条件的宏（匹配特定段落）
+maplebirchFrameworks.addTo('Journal', {
+  widget: 'questLog',
+  match: /Chapter\d+/ // 在所有章节段落显示
+});
+
+// 添加带条件的宏（指定段落）
+maplebirchFrameworks.addTo('Information', {
+  widget: 'tutorialHints',
+  passage: ['Tutorial', 'Introduction'] // 仅在教程段落显示
+});
+
+// 组合条件（在战斗场景显示但排除过场动画）
+maplebirchFrameworks.addTo('StatusBar', {
+  widget: 'combatStatus',
+  passage: ['Battle', 'BossFight'],
+  exclude: 'Cutscene'
+});
+```
+  #### 注册初始化函数
+ - 注册在游戏初始化时需要执行的函数，用于设置初始变量、加载数据等
+```
+maplebirchFrameworks.onInit(() => {
+  setup.modEnabled = true;
+  console.log('模组已激活');
+});
+
+// 注册带参数的初始化函数
+maplebirchFrameworks.onInit((playerName) => {
+  V.player.modName = playerName;
+}, '玩家名称');
+
+// 注册多个初始化函数
+maplebirchFrameworks.onInit(
+  initPlayerData,
+  loadModSettings,
+  setupEventListeners
+);
+
+// 注册异步初始化函数
+maplebirchFrameworks.onInit(async () => {
+  const data = await fetchPlayerData();
+  Object.assign(V.player, data);
+});
+
+// 错误处理
+maplebirchFrameworks.onInit(() => {
+  try {
+    // 可能出错的代码
+  } catch (e) {
+    console.error('初始化失败:', e);
+  }
+});
+```
+ ### ​​简易弹窗
+  + 使用`<<maplebirchReplace>>`宏来进行便携弹窗，基本用法 `<<maplebirchReplace "弹窗键名">>`
 ```
 示例:
+<!-- 基础弹窗 -->
+<<maplebirchReplace "基础弹窗">>
 
-<<maplebirchReplace "maplebirchModHint" "title">>
+<!-- 带标题的弹窗 -->
+<<maplebirchReplace "设置弹窗" "title">>
 
-<<widget 'maplebirchModHint'>>  
+<!-- 自定义弹窗 -->  // 此方法与 简易框架 的 <<iModReplace>> 一致
+<<maplebirchReplace "自定义弹窗" "customize">>
+```
+ + 弹窗定义模板
+```
+<<widget '弹窗键名'>>
+  <!-- 弹窗内容 -->
+  这里是弹窗主体内容
 <</widget>>
 
-<<widget 'titleMaplebirchModHint'>>  
-  <<setupTabs>>  
-  <div id="overlayTabs" class="tab">  
-    <<closeButtonMobile>>  
-  </div>  
-  <<closeButton>>  
+<<widget 'title弹窗键名'>>
+  <!-- 弹窗标题栏 -->
+  <<setupTabs>>
+  <div id="overlayTabs" class="tab">
+    <<closeButtonMobile>>
+  </div>
+  <<closeButton>>
 <</widget>>
-
-弹出带有'titleMaplebirchModHint'标题的首页面'maplebirchModHint'的弹窗。
-
-<<maplebirchReplace 'maplebirchModHint'>> 单弹窗无标题。
-
-<<maplebirchReplace 'maplebirchModHint' 'customize'>> 自定义 通过 <<print 'maplebirchModHint'>> 使用你的自设弹窗。
 ```
-#### 特质添加
-  便携添加特质，可重复添加下方为汉化包汉化后的中英文特质标题映射，输入对应英文进你的特质标题即可为对应特质区域添加特质(可修改原版特质)。
-<details>
-  <summary>点击查看图片</summary>
-  <img width="438" height="247" alt="image" src="https://github.com/user-attachments/assets/7b2fd514-4819-4a5f-832c-5ca9bd00d1bf" />
-</details>  
+ ### 特质注册
+  - 原版特质对照
+| 英文类别名称        | 中文类别名称 |
+| :----------------: | :---------: |
+| General Traits     | 一般特质     |
+| Medicinal Traits   | 医疗特质     |
+| Special Traits     | 特殊特质     |
+| School Traits      | 学校特质     |
+| Trauma Traits      | 创伤特质     |
+| NPC Traits         | NPC特质      |
+| Hypnosis Traits    | 催眠特质     |
+| Acceptance Traits  | 接纳特质     |
+ - 使用 `maplebirchFrameworks.addTraits(...data)` 添加或更新角色特质
+```
+特质对象结构：
+{
+  title: "特质类别", // 如"一般特质" (支持函数)
+  name: "特质名称",  // 如"勇敢" (支持函数)
+  colour: "颜色值",  // 支持函数或字符串
+  has: true/false,   // 是否拥有该特质 (支持函数)
+  text: "描述文本"   // 特质详细描述 (支持函数)
+}
 
-```
-示例:  
-maplebirch.tool.other.addTraits({  
-  title: 特质标题,  
-  name: '一个名字',                      // 特质名字  
-  colour: 'red',                        // 文字颜色(或自己css?)   
-  has: true, <-这是默认触发              // 触发条件  
-  text: '这是一个特质'                   // 特质说明  
-},{  
-  title: "General Traits",  
-  name: () => {maplebirch.lang.t('XX') / maplebirch.lang.autoTranslate('XX')},     // 函数态，这里是导入翻译数据后按语言显示名称，你也可以按自己条件写判断不同时候的名称，例如原版牛化。  
-  colour: () => {},                                                                // 同理  
-  has: () => {}    
-  text: () => {}     
-});  
-```
+示例：
+// 添加新特质
+maplebirchFrameworks.addTraits({
+  title: "特殊特质",
+  name: "魔法亲和",
+  colour: "purple",
+  has: () => V.player.magicAffinity,
+  text: "对魔法元素有天然的亲和力"
+});
 
-#### 地点创建
-  便携为你的地点添加右上角贴图，详情请查看原版对应的**setup.LocationImages**变量
+// 动态名称和类别
+maplebirchFrameworks.addTraits({
+  title: () => V.player.isStudent ? "学生特质" : "成人特质",
+  name: () => `时间管理-${V.player.level}`,
+  colour: "green",
+  has: true,
+  text: "更有效地安排时间"
+});
+
+// 批量添加特质
+maplebirchFrameworks.addTraits(
+  { title: "一般特质", name: "勇敢", colour: "blue", has: true, text: "面对危险时更加镇定" },
+  { title: "学校特质", name: "学霸", colour: "gold", has: () => V.player.grades > 90, text: "学习效率提高20%" }
+);
 ```
-/**
-地点配置方法（添加/更新）
+ ### 地点注册
+  + 使用 `maplebirchFrameworks.addLocation(locationId, config, options = {})` 定制游戏地点
+```
+参数说明：
 @param {string} locationId - 地点ID
 @param {object} config - 配置对象
 @param {object} [options] - 配置选项
-@param {boolean} [options.overwrite=false] - 是否覆盖整个配置
-@param {string} [options.layer] - 指定操作图层
-@param {string} [options.element] - 指定操作元素
+  - overwrite: 是否覆盖整个配置 (默认false)
+  - layer: 指定操作图层 (base/emissive/reflective/layerTop)
+  - element: 指定操作元素
 
-示例1：添加新地点
-configureLocation('magic_academy', {
+示例：
+// 添加新地点
+maplebirchFrameworks.addLocation('magic_academy', {
   folder: 'magic_academy',
   base: { main: { image: 'main.png' } }
 });
 
-示例2：更新特定元素
-configureLocation('lake_ruin', {
+// 更新特定元素
+maplebirchFrameworks.addLocation('lake_ruin', {
   condition: () => Weather.bloodMoon && !Weather.isSnow
 }, { layer: 'base', element: 'bloodmoon' });
 
-示例3：完全覆盖地点
-configureLocation('cafe', {
+// 完全覆盖地点配置
+maplebirchFrameworks.addLocation('cafe', {
   folder: 'cafe_remastered',
   base: { ... }
 }, { overwrite: true });
 
-示例4：添加新图层元素
-configureLocation('forest', {
+// 添加新图层元素
+maplebirchFrameworks.addLocation('forest', {
   image: 'fireflies.png',
   animation: { frameDelay: 300 }
 }, { layer: 'emissive', element: 'fireflies' });
- */
 ```
-#### NPC注册
- 为你的模组便携添加npc，详情看**下方图片**，或去代码指定位置，选择你的npc数据。
+ ### NPC注册
+ #### NPC的基本数据
+ - 添加NPC角色 (maplebirchFrameworks.addNPC)
 ```
-// 添加一个名为Lily的狐狸NPC **(三个大括号是必要的，如果不要请在对应位置写false)**  
-npc.add({
-  nam: "Lily",         // NPC唯一名称（必需）
-  gender: "f",         // 女性（m/f/none）
-  title: "dancer"      // 头衔
-  type: "human",       // 人类种族 （如果你可以解决战斗问题，你可以换全新种族）
-}, 
-{  // NPC配置（可选）
-  important: true,     // 标记为重要NPC（显示在状态栏）
-  love: { maxValue: 30 },  // 设置好感度上限
-  dom: { maxValue: 20 }    // 设置支配值上限
-},
-{  // 翻译数据（可选）
-  "Lily": {             
-    CN: "莉莉",        // 中文翻译
-    EN: "Lily"         // 英文原文
-}
+添加NPC角色 (maplebirchFrameworks.addNPC(npcData, config, translationsData))
+----------------------------------------------
+向游戏中添加新的NPC角色或更新现有NPC
+
+@param {Object} npcData - NPC数据对象
+@param {string} npcData.nam - NPC唯一名称（必需）
+@param {string} [npcData.title] - NPC称号
+@param {string} [npcData.gender="f"] - 性别 (m/f/none)
+@param {string} [npcData.type="human"] - 种族类型
+@param {Object} [config] - NPC配置选项
+  - important: 是否重要NPC（显示在状态栏）
+  - special: 是否为特殊NPC
+  - loveInterest: 是否为恋爱NPC
+@param {Object} [translationsData] - 翻译数据对象
+
+示例：
+// 添加新NPC
+maplebirchFrameworks.addNPC({
+  nam: "艾莉丝",
+  title: "魔法导师",
+  gender: "f",
+  type: "精灵",
+  description: "一位神秘的精灵魔法师",
+  eyeColour: "紫色",
+  hairColor: "银色"
+}, {
+  important: true,
+  special: false
+}, {
+  "艾莉丝": { EN: "Alice", CN: "艾莉丝" },
+  "魔法导师": { EN: "Magic Mentor", CN: "魔法导师" }
 });
 
-// 添加新状态"arcana"并修改现有状态"purity"
-npc.addStats({
-  arcana: {           // 新状态-奥秘值
-    min: 0,           // 最小值0
-    max: 100,         // 最大值100
-    position: 3       // 插入到状态列表第4个位置
+// 更新现有NPC
+maplebirchFrameworks.addNPC({
+  nam: "罗宾",
+  title: "商店老板",
+  gender: "m",
+  newStat: 50 // 添加新状态
+});
+
+// 动态属性
+maplebirchFrameworks.addNPC({
+  nam: "季节精灵",
+  title: () => `季节守护者-${Season.current()}`,
+  gender: "none",
+  description: () => `掌管${Season.current()}季节的精灵`
+});
+```
+ #### 添加自定义状态
+ - 添加或更新NPC的自定义状态系统(maplebirchFrameworks.addStats(statsObject))
+```
+@param {Object} statsObject - 状态配置对象
+@param {Object} statsObject[statName] - 状态配置
+  - min: 状态最小值
+  - max: 状态最大值
+  - position: 在状态列表中的位置 (数字索引/"first"/"last"/"secondLast")
+
+示例：
+// 添加新状态
+maplebirchFrameworks.addStats({
+  trust: {
+    min: 0,
+    max: 100,
+    position: "secondLast" // 显示在倒数第二位
   },
-  purity: {           // 修改现有状态-纯洁值
-    max: 200          // 调整最大值为200（原值100）
-  },
-  corruption: {       // 修改现有状态-堕落值
-    min: -50,         // 允许负值
-    position: "last"  // 移动到列表末尾
+  loyalty: {
+    min: 0,
+    max: 10,
+    position: 3 // 显示在第四位
+  }
+});
+
+// 更新现有状态
+maplebirchFrameworks.addStats({
+  love: {
+    min: -100, // 允许负值
+    max: 100,
+    position: "first" // 移动到第一位
   }
 });
 ```
-+ 然后关于npc关系文本的快捷注册需要你写相应的**宏`<<widget>>`**
+ #### NPC的关系文本
+- 在sugarcube中填写你的NPC的关系文本 **`<<widget '(你的npc名字)relationshiptext'>>`**
 ```
 <<widget '(你的npc名字)relationshiptext'>>
   <<if $NPCName[_i].love gte $npclovehigh>>
@@ -863,177 +1011,11 @@ npc.addStats({
   <</if>>
 <</widget>>
 ```
-
+  #### NPC属性详解
 <details>
   <summary>点击查看图片</summary>
-  <img width="510" height="1083" alt="image" src="https://github.com/user-attachments/assets/5e5c5625-2eab-4c15-9d86-eaa0da4b0da0" />
-</details> 
-
-#### 音频管理  
- 在js中通过 **`await maplebirch.audio.importAllAudio(你的模组名);`** 来导入你的数据文件。
-```
-根目录/  
-└── audio/  
-    ├── XX.mpd
-    ├── xx.wav  
-    └── 音频文件
-```
-- `maplebirch.audio.getPlayer('my-mod');` : 获取播放器   
-```
-示例:  
- 播放音频  
- maplebirch.audio.getPlayer('my-mod').play('background-music', {  
-  loop: true, // 单曲循环  
-  volume: 0.7  
- });  
-
-maplebirch.audio.getPlayer('my-mod').togglePause('background-music'); // 暂停音频
-maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
-
-默认行为​​：play(key, { loop: true })会循环100次
-​​无限循环​​：play(key, { loop: true, loopCount: Infinity })会无限循环
-​​自定义次数​​：play(key, { loop: true, loopCount: 5 })会循环5次
-
-```
-#### 文本注册
-
-通过 **`maplebirch.tool.text.reg`** 或者 **`maplebirchFramework.regText`** 来注册文本链接
-
-```
-/**
-  - `text(content: string, style?: string)`：添加文本（可选样式），自动添加空格
-  - `line(content?: string, style?: string)`：添加换行（可带文本内容）
-  - `wikify(content: string)`：解析并添加维基语法文本
-  - `raw(content: any)`：直接添加原始内容（DOM节点/字符串）
-  - `ctx: object`：渲染上下文数据
-
-所有方法支持链式调用，例如：
-  text("你好").line("世界").text("！", "bold");
-
-@example // 基本注册和渲染
-// 注册处理器
-text.reg("welcome", ({ text }) => {
-  text("欢迎来到奇幻世界！");
-});
-
-// 在SugarCube中使用
-<<maplebirchTextOutput "welcome">>
-
-// 生成结果：
-// <span>欢迎来到奇幻世界！ </span>
-
-@example // 带样式的文本
-// 注册处理器
-text.reg("warning", ({ text, line }) => {
-  text("危险区域！", "red").line("请小心前进", "yellow");
-});
-
-// 在SugarCube中使用
-<<maplebirchTextOutput "warning">>
-
-// 生成结果：
-// <span class="red">危险区域！ </span><br>
-// <span class="yellow">请小心前进 </span>
-
-@example // 使用上下文
-// 注册处理器
-text.reg("character_info", ({ text, ctx }) => {
-  text(`姓名：${ctx.name}`)
-    .text(`职业：${ctx.class}`)
-    .text(`等级：${ctx.level}`);
-});
-
-// 在SugarCube中使用
-<<set $player = { name: "艾拉", class: "游侠", level: 12 }>>
-<<maplebirchTextOutput "character_info" $player>>
-
-// 生成结果：
-// <span>姓名：艾拉 </span>
-// <span>职业：游侠 </span>
-// <span>等级：12 </span>
-
-@example // 维基语法解析
-// 注册处理器
-text.reg("npc_dialogue", ({ text, wikify, ctx }) => {
-  text(`${ctx.npcName}:`).line();
-  wikify(`"旅途小心，$player。[[前往${ctx.location}->NextScene]]"`);
-});
-
-// 在SugarCube中使用
-<<set $npc = { npcName: "老巫师", location: "黑森林" }>>
-<<maplebirchTextOutput "npc_dialogue" $npc>>
-
-// 生成结果：
-// <span>老巫师: </span><br>
-// <span class="macro-text">"旅途小心，小明。</span>
-// <a class="link-internal" href="NextScene">前往黑森林</a>
-// <span class="macro-text">"</span>
-
-@example // 组合元素与动态内容
-// 注册处理器
-text.reg("quest", ({ text, line, raw, ctx }) => {
-  text(`任务：${ctx.title}`, "quest-title").line(ctx.description).line();
-  
-  const progress = document.createElement("progress");
-  progress.value = ctx.progress;
-  progress.max = 100;
-  raw(progress);
-  
-  line(`进度：${ctx.progress}%`, "small-text");
-});
-
-// 在SugarCube中使用
-<<set $quest = {
-  title: "击败洞穴巨魔",
-  description: "清除洞穴中的巨魔威胁",
-  progress: 30
-}>>
-<<maplebirchTextOutput "quest" $quest>>
-
-// 生成结果：
-// <span class="quest-title">任务：击败洞穴巨魔 </span><br>
-// <span>清除洞穴中的巨魔威胁 </span><br>
-// <progress value="30" max="100"></progress><br>
-// <span class="small-text">进度：30% </span>
-
-@example // 嵌套渲染
-// 注册处理器
-text.reg("scene_container", async ({ text, raw, ctx }) => {
-  text("=== 场景开始 ===").line();
-  
-  const nestedFrag = await text.renderFragment([
-    "location_description",
-    "npc_dialogue"
-  ], ctx);
-  
-  raw(nestedFrag);
-  
-  text("=== 场景结束 ===").line();
-});
-
-text.reg("location_description", ({ text, ctx }) => {
-  text(`你来到了${ctx.location}。`).line();
-});
-
-text.reg("npc_dialogue", ({ text, ctx }) => {
-  text(`${ctx.npcName}说：`).text(ctx.dialogue);
-});
-
-// 在SugarCube中使用
-<<set $sceneCtx = {
-  location: "神秘洞穴",
-  npcName: "守护者",
-  dialogue: "这里藏着古老的宝藏。"
-}>>
-<<maplebirchTextOutput "scene_container" $sceneCtx>>
-
-// 生成结果：
-// <span>=== 场景开始 === </span><br>
-// <span>你来到了神秘洞穴。 </span><br>
-// <span>守护者说： </span><span>这里藏着古老的宝藏。 </span>
-// <span>=== 场景结束 === </span><br>
- */
-```
+  <img width="588" height="882" alt="image" src="https://github.com/user-attachments/assets/52f37940-9424-4efc-9a5a-e7e64f9d51ac" />
+</details>
 
 ### 致谢
 - 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 制作的Modloader和所支持的功能。
@@ -1045,6 +1027,7 @@ text.reg("npc_dialogue", ({ text, ctx }) => {
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
