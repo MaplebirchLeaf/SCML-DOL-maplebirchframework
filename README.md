@@ -1,21 +1,45 @@
 # SCML-DOL-maplebirchframework
-依赖Sugarcube2 ModLoader为DOL设计的框架系统
+基于 Sugarcube2 ModLoader 为 DOL 游戏设计的模块化开发框架，旨在简化游戏扩展模组的开发流程
 <hr>
 
-  **maplebirchframework** 是为使用 Sugarcube2 ModLoader 的DOL游戏设计的MOD内容添加框架，用于简化游戏扩展模组的开发过程。
-  
-  本框架现有**事件注册**、**多语言管理**、**模块管理器**、**简便变量迁徙**、**随机数**、**游戏内置作弊器**、**addto区域快捷插入**(包含游戏内侧边栏几乎所有功能，除成就、存档)、**简易弹窗**、**特质添加**、**地点创建**(左上角地点图片)、**时间事件**(已让游戏支持-9999年-9999年，公元纪年)、**NPC注册(包括创新属性)[<font color=#DC143C>!!!不会像简框一样重载有爆红!!!</font>]**、**音频管理**。
+当前框架包含以下核心功能：
++ 事件注册系统
++ 多语言管理
++ 模块管理器
++ 变量迁移工具
+
+随机数生成器
+
+游戏内置作弊器
+
+addto 区域快捷插入（覆盖游戏内侧边栏几乎所有功能，除成就和存档）
+
+简易弹窗系统
+
+特质添加工具
+
+地点创建系统（左上角地点图片）
+
+时间事件系统（支持 -9999 年至 9999 年，公元纪年）
+
+NPC 注册系统（包含创新属性，避免重载时出现错误）
+
+音频管理系统
+
+文本注册系统
 
 - [安装方式说明](#安装方式说明)
 - [反馈与讨论方式](#反馈与讨论方式)
 - [详细内容介绍](#详细内容介绍)
     - [多语言管理](#多语言管理)
+    - [变量迁徙](#变量迁徙)
     - [addto区域快捷插入](#addto区域快捷插入)
     - [特质添加](#特质添加)
     - [地点创建](#地点创建)
     - [时间事件](#时间事件)
     - [NPC注册](#NPC注册)
     - [音频管理](#音频管理)
+    - [文本注册](#文本注册)
 - [致谢](#致谢)
 - [未实现的功能构想](#未实现的功能构想)
 
@@ -48,11 +72,11 @@
     'addLocation': 'tool.other.configureLocation',  // 配置位置
     'addTimeEvent': 'state.regTimeEvent',           // 添加时间事件
     'addNPC': 'npc.add',                            // 添加NPC
-    'addStats': 'npc.addStats',                     // 添加状态
+    'addStats': 'npc.addStats',                     // 添加状态 
     'addto': 'tool.framework.addTo',                // 添加到区域
-    'onInit': 'tool.framework.onInit',              // 初始化脚本
+    'addText': 'tool.text.reg',                     // 添加注册文本
+    'onInit': 'tool.framework.onInit',              // 初始化回调
     'importLang': 'lang.importAllLanguages',        // 导入语言
-    'autoLang': 'lang.autoTranslate',               // 自动翻译
     'getRandom': 'tool.random.get',                 // 获取随机值
     'migration': 'tool.migration.create',           // 创建迁移
     'importAudio': 'audio.importAllAudio',          // 导入音频
@@ -174,7 +198,7 @@ audioPlayer.play('spell_cast', { volume: 0.8 });
     ├── en.json  
     └── jp.json
 ```
-在js中通过 **`await maplebirch.lang.importAllLanguages(你的模组名);`** 来导入你的数据文件。  
+通过 **`await maplebirch.lang.importAllLanguages(你的模组名);`** 或者 **`await maplebirchFrameworks.importLang(你的模组名);`** 来导入你的数据文件。  
 - `maplebirch.t(键名)` : 根据键名转换翻译。  
 - `maplebirch.autoTranslate(任意语言数据)` : 自动根据当前语言自动转换。
 - `maplebirch.lang.t(键名)` : 根据键名转换翻译。  
@@ -187,6 +211,118 @@ audioPlayer.play('spell_cast', { volume: 0.8 });
  maplebirch.lang.t('key') 在中文 输出'键'。在英文输出 'key'。
  maplebirch.autoTranslate('键') 在中文 输出'键'。在英文输出 'key'。
  maplebirch.lang.autoTranslate('键') 在中文 输出'键'。在英文输出 'key'。
+```
+
+#### 变量迁徙
+通过 **`maplebirchFrameworks.migration();`** 或者 **`maplebirch.tool.migration.create();`** 来创建你模组的变量迁徙规则。 
+```
+ 迁移路径：
+ 0.0.0 → 1.0.0: 初始化存档
+ 1.0.0 → 1.1.0: 重命名属性 + 删除属性
+ 1.1.0 → 1.2.0: 转换数值 + 添加新系统
+
+// 创建迁移系统实例
+const migrator = maplebirch.tool.migration.create();
+
+// 0.0.0 → 1.0.0: 初始化存档
+migrator.add('0.0.0', '1.0.0', (data, { fill }) => {
+  fill(data, {
+    version: '1.0.0',
+    player: {
+      name: '冒险者',
+      hp: 100,
+      mp: 50,
+      coins: 0,
+      items: ['剑', '药水']
+    }
+  });
+});
+
+// 1.0.0 → 1.1.0: 重命名和删除
+migrator.add('1.0.0', '1.1.0', (data, { rename, remove }) => {
+  // 重命名属性
+  rename(data, 'player.hp', 'player.health');
+  rename(data, 'player.mp', 'player.mana');
+  
+  // 删除旧属性
+  remove(data, 'player.items');
+});
+
+// 1.1.0 → 1.2.0: 转换和添加新系统
+migrator.add('1.1.0', '1.2.0', (data, { transform, fill }) => {
+  // 转换金币为银币 (1金币 = 100银币)
+  transform(data, 'player.coins', coins => coins * 100);
+  
+  // 添加新系统
+  fill(data, {
+    skills: ['攻击'],
+    achievements: []
+  });
+});
+
+// 使用示例
+function upgradeSave(save) {
+  migrator.run(save, '1.2.0');
+  return save;
+}
+
+// 示例1: 全新玩家存档
+const newSave = upgradeSave({});
+结果:
+{
+  version: '1.2.0',
+  player: {
+    name: '冒险者',
+    health: 100,  // 重命名
+    mana: 50,     // 重命名
+    coins: 0      // 转换为0银币
+  },
+  skills: ['攻击'],  // 新增
+  achievements: []   // 新增
+}
+
+// 示例2: 老玩家存档升级
+const oldSave = upgradeSave({
+  player: {
+    name: '战士',
+    hp: 150,
+    mp: 30,
+    coins: 50,
+    items: ['斧头', '盾牌']
+  }
+});
+结果:
+{
+  version: '1.2.0',
+  player: {
+    name: '战士',
+    health: 150,  // 重命名
+    mana: 30,     // 重命名
+    coins: 5000   // 50金币 → 5000银币
+  },
+  skills: ['攻击'],  // 新增
+  achievements: []   // 新增
+  // items属性被删除
+}
+
+// 示例3: 部分升级到1.1.0
+const midSave = upgradeSave({
+  player: {
+    hp: 80,
+    coins: 10
+  }
+}, '1.1.0');
+结果:
+{
+  version: '1.1.0',
+  player: {
+    name: '冒险者', // 默认值
+    health: 80,    // 重命名
+    mana: 50,      // 默认值
+    coins: 10      // 未转换
+  }
+  // items属性被删除
+}
 ```
 
 #### addto区域快捷插入
@@ -607,6 +743,145 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 ​​自定义次数​​：play(key, { loop: true, loopCount: 5 })会循环5次
 
 ```
+#### 文本注册
+
+通过 **`maplebirch.tool.text.reg`** 或者 **`maplebirchFramework.regText`** 来注册文本链接
+
+```
+/**
+ *   - `text(content: string, style?: string)`：添加文本（可选样式），自动添加空格
+ *   - `line(content?: string, style?: string)`：添加换行（可带文本内容）
+ *   - `wikify(content: string)`：解析并添加维基语法文本
+ *   - `raw(content: any)`：直接添加原始内容（DOM节点/字符串）
+ *   - `ctx: object`：渲染上下文数据
+ * 
+ * 所有方法支持链式调用，例如：
+ *   text("你好").line("世界").text("！", "bold");
+ * 
+ * @example // 基本注册和渲染
+ * // 注册处理器
+ * text.reg("welcome", ({ text }) => {
+ *   text("欢迎来到奇幻世界！");
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<maplebirchTextOutput "welcome">>
+ * 
+ * // 生成结果：
+ * // <span>欢迎来到奇幻世界！ </span>
+ * 
+ * @example // 带样式的文本
+ * // 注册处理器
+ * text.reg("warning", ({ text, line }) => {
+ *   text("危险区域！", "red").line("请小心前进", "yellow");
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<maplebirchTextOutput "warning">>
+ * 
+ * // 生成结果：
+ * // <span class="red">危险区域！ </span><br>
+ * // <span class="yellow">请小心前进 </span>
+ * 
+ * @example // 使用上下文
+ * // 注册处理器
+ * text.reg("character_info", ({ text, ctx }) => {
+ *   text(`姓名：${ctx.name}`)
+ *     .text(`职业：${ctx.class}`)
+ *     .text(`等级：${ctx.level}`);
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<set $player = { name: "艾拉", class: "游侠", level: 12 }>>
+ * <<maplebirchTextOutput "character_info" $player>>
+ * 
+ * // 生成结果：
+ * // <span>姓名：艾拉 </span>
+ * // <span>职业：游侠 </span>
+ * // <span>等级：12 </span>
+ * 
+ * @example // 维基语法解析
+ * // 注册处理器
+ * text.reg("npc_dialogue", ({ text, wikify, ctx }) => {
+ *   text(`${ctx.npcName}:`).line();
+ *   wikify(`"旅途小心，$player。[[前往${ctx.location}->NextScene]]"`);
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<set $npc = { npcName: "老巫师", location: "黑森林" }>>
+ * <<maplebirchTextOutput "npc_dialogue" $npc>>
+ * 
+ * // 生成结果：
+ * // <span>老巫师: </span><br>
+ * // <span class="macro-text">"旅途小心，小明。</span>
+ * // <a class="link-internal" href="NextScene">前往黑森林</a>
+ * // <span class="macro-text">"</span>
+ * 
+ * @example // 组合元素与动态内容
+ * // 注册处理器
+ * text.reg("quest", ({ text, line, raw, ctx }) => {
+ *   text(`任务：${ctx.title}`, "quest-title").line(ctx.description).line();
+ *   
+ *   const progress = document.createElement("progress");
+ *   progress.value = ctx.progress;
+ *   progress.max = 100;
+ *   raw(progress);
+ *   
+ *   line(`进度：${ctx.progress}%`, "small-text");
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<set $quest = {
+ *   title: "击败洞穴巨魔",
+ *   description: "清除洞穴中的巨魔威胁",
+ *   progress: 30
+ * }>>
+ * <<maplebirchTextOutput "quest" $quest>>
+ * 
+ * // 生成结果：
+ * // <span class="quest-title">任务：击败洞穴巨魔 </span><br>
+ * // <span>清除洞穴中的巨魔威胁 </span><br>
+ * // <progress value="30" max="100"></progress><br>
+ * // <span class="small-text">进度：30% </span>
+ * 
+ * @example // 嵌套渲染
+ * // 注册处理器
+ * text.reg("scene_container", async ({ text, raw, ctx }) => {
+ *   text("=== 场景开始 ===").line();
+ *   
+ *   const nestedFrag = await text.renderFragment([
+ *     "location_description",
+ *     "npc_dialogue"
+ *   ], ctx);
+ *   
+ *   raw(nestedFrag);
+ *   
+ *   text("=== 场景结束 ===").line();
+ * });
+ * 
+ * text.reg("location_description", ({ text, ctx }) => {
+ *   text(`你来到了${ctx.location}。`).line();
+ * });
+ * 
+ * text.reg("npc_dialogue", ({ text, ctx }) => {
+ *   text(`${ctx.npcName}说：`).text(ctx.dialogue);
+ * });
+ * 
+ * // 在SugarCube中使用
+ * <<set $sceneCtx = {
+ *   location: "神秘洞穴",
+ *   npcName: "守护者",
+ *   dialogue: "这里藏着古老的宝藏。"
+ * }>>
+ * <<maplebirchTextOutput "scene_container" $sceneCtx>>
+ * 
+ * // 生成结果：
+ * // <span>=== 场景开始 === </span><br>
+ * // <span>你来到了神秘洞穴。 </span><br>
+ * // <span>守护者说： </span><span>这里藏着古老的宝藏。 </span>
+ * // <span>=== 场景结束 === </span><br>
+ */
+```
 
 ### 致谢
 - 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 制作的Modloader和所支持的功能。
@@ -617,8 +892,8 @@ maplebirch.audio.getPlayer('my-mod').setVolume(0.5);  // 设置音量
 
 ### 未实现的功能构想
 
-
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
