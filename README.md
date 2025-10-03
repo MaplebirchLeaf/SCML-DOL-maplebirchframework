@@ -671,6 +671,7 @@ maplebirchFrameworks.addText('treasure', (t) => {
 </details>
 
  ### 区域注册
+ 
  - 沿袭[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的addto区域注册，对区域进行了优化和修改。
 <details>
   <summary>点击查看详细区域</summary>
@@ -1035,3 +1036,4 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
