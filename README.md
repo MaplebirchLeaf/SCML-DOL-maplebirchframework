@@ -148,6 +148,12 @@
   - 使用 `maplebirch.once(evt[触发的时机], handler[需要触发的函数], desc = ''[你注册事件的标识符])` 进行一次性事件注册，即生效一次后删除
   - 使用 `maplebirch.off(evt[触发的时机], identifier[已注册事件的标识符])` 进行删除已注册的回调事件
   - 使用 `maplebirch.trigger(evt[触发的时机], ...args[需要传导的上下文变量])` 进行触发以及传递环境变量
+
+<details>
+  <summary>框架默认的事件类型(慎用不稳定!)</summary>
+  <img width="788" height="490" alt="image" src="https://github.com/user-attachments/assets/eafee98a-0400-403d-839b-984050f59f48" />
+</details>
+
  ### 模块管理
   + **~~!!![警告]慎用此功能!!!,作者写得实在太烂了(~~**  
 ```
@@ -1028,6 +1034,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
