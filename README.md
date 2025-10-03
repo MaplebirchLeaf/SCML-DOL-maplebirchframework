@@ -105,7 +105,7 @@
 ```
 <details>
   <summary>点击查看图片</summary>
-  <img width="1837" height="1182" alt="image" src="https://github.com/user-attachments/assets/59f70994-0709-4661-be53-5496967f0679" />
+  <img width="654" height="1102" alt="image" src="https://github.com/user-attachments/assets/9a38dde3-6812-4627-811b-2f11751919a9" />
 </details>
 
 
@@ -1028,6 +1028,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
