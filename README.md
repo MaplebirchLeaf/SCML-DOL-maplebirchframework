@@ -675,38 +675,39 @@ maplebirchFrameworks.addText('treasure', (t) => {
 <details>
   <summary>点击查看详细区域</summary>
     
-   | 区域名称                 | 位置说明                |
-   | :---------------------: | :---------------------: |
-   | `Header`                | 页面顶部                 |
-   | `Footer`                | 页面底部                 |
-   | `Options`               | 选项菜单                 |
-   | `StatusBar`             | 状态栏                   |
-   | `Information`           | 信息区域                 |
-   | `BeforeLinkZone`        | 选项链接前               |
-   | `AfterLinkZone`         | 选项链接后               |
-   | `CharaDescription`      | 角色描述区               |
-   | `DegreesBox`            | 属性区域                 |
-   | `SkillsBox`             | 技能区域                 |
-   | `SchoolSubjectsBox`     | 学科区域                 |
-   | `HintMobile`            | 移动端提示区             |
-   | `Journal`               | 日志尾部                 |
-   | `Init`                  | 初始化脚本区域           |
-   | `Cheats`                | 作弊栏区域               |
-   | `Statistics`            | 统计栏区域               |
-   | `CaptionDescription`    | 标题描述区域             |
-   | `MenuBig`               | 大菜单区域               |
-   | `MenuSmall`             | 小菜单区域               |
-   | `CaptionAfterDescription`| 标题描述后区域          |
-   | `StatsMobile`           | 移动端状态区域           |
-   | `DegreesBonusDisplay`   | 属性加成显示区域         |
-   | `SkillsBonusDisplay`    | 技能加成显示区域         |
-   | `SubjectBoxBonusDisplay`| 学科加成显示区域         |
-   | `SchoolMarksText`       | 成绩文本区域             |
-   | `WeaponBox`             | 武器框区域               |
-   | `Reputation`            | 声誉显示区域             |
-   | `Fame`                  | 知名度显示区域           |
-   | `StatusSocial`          | 社交状态区域             |
-   | `NPCinit`               | NPC初始化区域            |
+| 区域名称                 | 位置说明                |
+| :---------------------: | :---------------------: |
+| `Init`                  | 初始化脚本区域（静态变量/Setup） |
+| `DataInit`              | 初始化变量区域（读档/新游戏时注入模组变量） |
+| `Header`                | 页面顶部区域             |
+| `Footer`                | 页面底部区域             |
+| `Information`           | 信息栏区域               |
+| `Options`               | 选项菜单区域             |
+| `Cheats`                | 作弊栏区域               |
+| `Statistics`            | 统计栏区域               |
+| `Journal`               | 日志尾部区域             |
+| `BeforeLinkZone`        | 选项链接前区域           |
+| `AfterLinkZone`         | 选项链接后区域           |
+| `CaptionDescription`    | 标题描述区域             |
+| `StatusBar`             | 状态栏区域               |
+| `MenuBig`               | 大菜单区域               |
+| `MenuSmall`             | 小菜单区域               |
+| `CaptionAfterDescription`| 标题描述后区域           |
+| `HintMobile`            | 移动端提示区（疼痛图标上方） |
+| `StatsMobile`           | 移动端状态区域（疼痛等状态显示） |
+| `CharaDescription`      | 角色描述区域             |
+| `DegreesBonusDisplay`   | 属性加成显示区域         |
+| `DegreesBox`            | 属性显示区域             |
+| `SkillsBonusDisplay`    | 技能加成显示区域         |
+| `SkillsBox`             | 技能显示区域             |
+| `SubjectBoxBonusDisplay`| 学科加成显示区域         |
+| `SchoolSubjectsBox`     | 学科显示区域             |
+| `SchoolMarksText`       | 成绩显示区域             |
+| `WeaponBox`             | 武器显示区域             |
+| `Reputation`            | 声誉显示区域             |
+| `Fame`                  | 知名度显示区域           |
+| `StatusSocial`          | 自定义社交状态区域       |
+| `NPCinit`               | 原版NPC初遇初始化区域    |
 </details>
 
   #### 添加内容到指定区域
@@ -1034,18 +1035,3 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
