@@ -665,51 +665,52 @@ maplebirchFrameworks.addText('treasure', (t) => {
 ```
  ### 作弊控制台
  + 在游戏中允许作弊以及便携调试数据
+
 <details>
   <summary>点击查看图片</summary>
    <img width="926" height="618" alt="image" src="https://github.com/user-attachments/assets/3539c6a0-b7ed-4c98-a815-5462eeefbea9" />
 </details>
 
  ### addto区域注册
-  - 沿袭了[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的addto区域注册，对区域进行了优化和修改。
+ + 沿袭了[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的addto区域注册，对区域进行了优化和修改。
 
-  <details>
-    <summary>点击查看详细区域</summary>
+<details>
+ <summary>点击查看详细区域</summary>
     
-    | 区域名称                 | 位置说明                |
-    | :---------------------: | :---------------------: |
-    | `Init`                  | 初始化脚本区域（静态变量/Setup） |
-    | `DataInit`              | 初始化变量区域（读档/新游戏时注入模组变量） |
-    | `Header`                | 页面顶部区域             |
-    | `Footer`                | 页面底部区域             |
-    | `Information`           | 信息栏区域               |
-    | `Options`               | 选项菜单区域             |
-    | `Cheats`                | 作弊栏区域               |
-    | `Statistics`            | 统计栏区域               |
-    | `Journal`               | 日志尾部区域             |
-    | `BeforeLinkZone`        | 选项链接前区域           |
-    | `AfterLinkZone`         | 选项链接后区域           |
-    | `CaptionDescription`    | 标题描述区域             |
-    | `StatusBar`             | 状态栏区域               |
-    | `MenuBig`               | 大菜单区域               |
-    | `MenuSmall`             | 小菜单区域               |
-    | `CaptionAfterDescription`| 标题描述后区域           |
-    | `HintMobile`            | 移动端提示区（疼痛图标上方） |
-    | `StatsMobile`           | 移动端状态区域（疼痛等状态显示） |
-    | `CharaDescription`      | 角色描述区域             |
-    | `DegreesBonusDisplay`   | 属性加成显示区域         |
-    | `DegreesBox`            | 属性显示区域             |
-    | `SkillsBonusDisplay`    | 技能加成显示区域         |
-    | `SkillsBox`             | 技能显示区域             |
-    | `SubjectBoxBonusDisplay`| 学科加成显示区域         |
-    | `SchoolSubjectsBox`     | 学科显示区域             |
-    | `SchoolMarksText`       | 成绩显示区域             |
-    | `WeaponBox`             | 武器显示区域             |
-    | `Reputation`            | 声誉显示区域             |
-    | `Fame`                  | 知名度显示区域           |
-    | `StatusSocial`          | 自定义社交状态区域       |
-    | `NPCinit`               | 原版NPC初遇初始化区域    |
-  </details>
+| 区域名称                 | 位置说明                |
+| :---------------------: | :---------------------: |
+| `Init`                  | 初始化脚本区域（静态变量/Setup） |
+| `DataInit`              | 初始化变量区域（读档/新游戏时注入模组变量） |
+| `Header`                | 页面顶部区域             |
+| `Footer`                | 页面底部区域             |
+| `Information`           | 信息栏区域               |
+| `Options`               | 选项菜单区域             |
+| `Cheats`                | 作弊栏区域               |
+| `Statistics`            | 统计栏区域               |
+| `Journal`               | 日志尾部区域             |
+| `BeforeLinkZone`        | 选项链接前区域           |
+| `AfterLinkZone`         | 选项链接后区域           |
+| `CaptionDescription`    | 标题描述区域             |
+| `StatusBar`             | 状态栏区域               |
+| `MenuBig`               | 大菜单区域               |
+| `MenuSmall`             | 小菜单区域               |
+| `CaptionAfterDescription`| 标题描述后区域           |
+| `HintMobile`            | 移动端提示区（疼痛图标上方） |
+| `StatsMobile`           | 移动端状态区域（疼痛等状态显示） |
+| `CharaDescription`      | 角色描述区域             |
+| `DegreesBonusDisplay`   | 属性加成显示区域         |
+| `DegreesBox`            | 属性显示区域             |
+| `SkillsBonusDisplay`    | 技能加成显示区域         |
+| `SkillsBox`             | 技能显示区域             |
+| `SubjectBoxBonusDisplay`| 学科加成显示区域         |
+| `SchoolSubjectsBox`     | 学科显示区域             |
+| `SchoolMarksText`       | 成绩显示区域             |
+| `WeaponBox`             | 武器显示区域             |
+| `Reputation`            | 声誉显示区域             |
+| `Fame`                  | 知名度显示区域           |
+| `StatusSocial`          | 自定义社交状态区域       |
+| `NPCinit`               | 原版NPC初遇初始化区域    |
+</details>
 
   #### 添加内容到指定区域
   - 支持三种内容类型
@@ -1036,6 +1037,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
