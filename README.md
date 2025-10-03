@@ -670,8 +670,9 @@ maplebirchFrameworks.addText('treasure', (t) => {
    <img width="926" height="618" alt="image" src="https://github.com/user-attachments/assets/3539c6a0-b7ed-4c98-a815-5462eeefbea9" />
 </details>
 
-### addto区域注册
- - 沿袭[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的addto区域注册，对区域进行了优化和修改。
+ ### addto区域注册
+  - 沿袭了[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的addto区域注册，对区域进行了优化和修改。
+
 <details>
   <summary>点击查看详细区域</summary>
     
@@ -1035,5 +1036,6 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
