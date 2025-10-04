@@ -936,8 +936,8 @@ maplebirchFrameworks.addNPC({
   important: true,
   special: false
 }, {
-  "艾莉丝": { EN: "Alice", CN: "艾莉丝" },
-  "魔法导师": { EN: "Magic Mentor", CN: "魔法导师" }
+  "Alice": { EN: "Alice", CN: "艾莉丝" },
+  "Magic Mentor": { EN: "Magic Mentor", CN: "魔法导师" }
 });
 
 // 更新现有NPC
@@ -1037,6 +1037,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
