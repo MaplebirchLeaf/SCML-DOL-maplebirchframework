@@ -928,7 +928,7 @@ maplebirchFrameworks.addNPC({
   nam: "艾莉丝",
   title: "魔法导师",
   gender: "f",
-  type: "精灵",
+  type: "human",
   description: "一位神秘的精灵魔法师",
   eyeColour: "紫色",
   hairColor: "银色"
@@ -1037,6 +1037,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
