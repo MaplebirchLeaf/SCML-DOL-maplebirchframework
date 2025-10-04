@@ -925,8 +925,8 @@ maplebirchFrameworks.addLocation('forest', {
 示例：
 // 添加新NPC
 maplebirchFrameworks.addNPC({
-  nam: "艾莉丝",
-  title: "魔法导师",
+  nam: "Alice",
+  title: "Magic Mentor",
   gender: "f",
   type: "human",
   description: "一位神秘的精灵魔法师",
@@ -942,15 +942,15 @@ maplebirchFrameworks.addNPC({
 
 // 更新现有NPC
 maplebirchFrameworks.addNPC({
-  nam: "罗宾",
-  title: "商店老板",
+  nam: "Robin",
+  title: "shop boss",
   gender: "m",
   newStat: 50 // 添加新状态
 });
 
 // 动态属性
 maplebirchFrameworks.addNPC({
-  nam: "季节精灵",
+  nam: "Seasonal Elves",
   title: () => `季节守护者-${Season.current()}`,
   gender: "none",
   description: () => `掌管${Season.current()}季节的精灵`
@@ -1037,6 +1037,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
