@@ -22,6 +22,7 @@
         - [导入音频文件](#导入音频文件)
         - [使用示例](#使用示例)
         - [参数说明](#参数说明)
+        - [addonPlugin注册](#addonPlugin注册)
     - [变量迁徙](#变量迁徙)
         - [使用示例](#使用示例)
         - [主要方法](#主要方法)
@@ -185,9 +186,7 @@
   #### addonPlugin注册
 ```
 "language": true, // 布尔值：导入所有默认语言
-
 "language": ["CN", "EN"], // 数组：导入指定语言
-
 "language": { // 对象：自定义语言配置
   "CN": {
     "file": "translations/chinese.json" // 自定义文件路径
@@ -619,6 +618,12 @@ play() 方法选项:
   - allowOverlap: 是否允许多个实例同时播放 (默认false)
   - stopOthers: 是否停止其他正在播放的同名音频 (默认false)
   - onEnded: 播放结束回调函数
+```
+
+  #### addonPlugin注册
+```
+"audio": true, // 布尔型：默认的 根目录/audio/ 的文件夹下的音频文件
+"audio": "music", // 字符串型：自定义的 根目录/music/ 的文件夹下的音频文件
 ```
  ### 变量迁徙
   #### 使用示例
@@ -1090,6 +1095,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
