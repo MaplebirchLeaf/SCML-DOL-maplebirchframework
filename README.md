@@ -862,7 +862,7 @@ maplebirchFrameworks.onInit(() => {
   "framework": [
     // 类型1: 简单部件注入
     {
-      "addto": "区域名称", // 必需: 注入区域 (left/right/center等)
+      "addto": "区域名称", // 必需: 注入区域 (Header等)
       "widget": "部件名称" // 必需: 部件宏名称
     },
     // 类型2: 条件部件注入
@@ -1194,6 +1194,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
