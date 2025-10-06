@@ -115,6 +115,9 @@
   <img width="1848" height="1192" alt="image" src="https://github.com/user-attachments/assets/dd8aca44-0619-4f1f-bec5-8d1f2f30f5f4" />
 </details>
 
++ 第三种自助 `addonPlugin` 声明依赖
+
+
 ## 反馈与讨论方式
  (暂无)，或在**污度孤儿中国模组制作群**联系我。
 
@@ -125,8 +128,7 @@
     根目录/  
     └── translations/  
         ├── cn.json  
-        ├── en.json  
-        └── jp.json
+        └── en.json  
   ```
   - 导入你的翻译文件(三个函数任选其一):  
   ```
@@ -1037,6 +1039,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
