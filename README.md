@@ -117,6 +117,42 @@
 
 + 第三种自助 `addonPlugin` 声明依赖
 
+```
+"addonPlugin": [
+    {
+      "modName": "maplebirch",
+      "addonName": "maplebirchAddon",
+      "modVersion": "^2.4.0",
+      "params": {
+        "language": [],
+        "audio": "",
+        "framework": [
+          {
+            "addto": "",
+            "widget": ""
+          },
+          {
+            "addto": "",
+            "widget": {
+              "widget": "",
+              "exclude": [],
+              "passage": [],
+              "match": ""
+            }
+          },
+          {
+            "traits": []
+          }
+        ],
+        "npc": [
+          {
+            "data": {},
+            "state": {}
+          }
+        ]
+      }
+    }
+```
 
 ## 反馈与讨论方式
  (暂无)，或在**污度孤儿中国模组制作群**联系我。
@@ -1039,6 +1075,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
