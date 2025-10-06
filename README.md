@@ -7,7 +7,7 @@
 - [反馈与讨论方式](#反馈与讨论方式)
 - [功能介绍与示例](#功能介绍与示例)
     - [多语言管理](#多语言管理)
-        - [addonPlugin注册](#addonPlugin注册)
+        - [语言addonPlugin注册](#语言addonPlugin注册)
     - [事件注册](#事件注册)
     - [模块管理](#模块管理)
     - [时间事件](#时间事件)
@@ -22,7 +22,7 @@
         - [导入音频文件](#导入音频文件)
         - [使用示例](#使用示例)
         - [参数说明](#参数说明)
-        - [addonPlugin注册](#addonPlugin注册)
+        - [音频addonPlugin注册](#音频addonPlugin注册)
     - [变量迁徙](#变量迁徙)
         - [使用示例](#使用示例)
         - [主要方法](#主要方法)
@@ -183,7 +183,7 @@
     在sugarcube环境中使用 <<= maplebirch.t(键名)>> / <<= maplebirch.autoTranslate(任意语言数据)>>显示
     <<= XX>> 等效于 <<print XX>>
   ```
-  #### addonPlugin注册
+  #### 语言addonPlugin注册
 ```
 "language": true, // 布尔值：导入所有默认语言
 "language": ["CN", "EN"], // 数组：导入指定语言
@@ -620,7 +620,7 @@ play() 方法选项:
   - onEnded: 播放结束回调函数
 ```
 
-  #### addonPlugin注册
+  #### 音频addonPlugin注册
 ```
 "audio": true, // 布尔型：默认的 根目录/audio/ 的文件夹下的音频文件
 "audio": "music", // 字符串型：自定义的 根目录/music/ 的文件夹下的音频文件
@@ -1095,6 +1095,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
