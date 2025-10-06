@@ -35,14 +35,17 @@
     - [addto区域注册](#addto区域注册)
         - [添加内容到指定区域](#添加内容到指定区域)
         - [注册初始化函数](#注册初始化函数)
+        - [区域addonPlugin注册](#区域addonPlugin注册)
     - [​​简易弹窗](#​​​​简易弹窗)
     - [特质注册](#特质注册)
+        - [特质addonPlugin注册](#特质addonPlugin注册)
     - [地点注册](#地点注册)
     - [NPC注册](#NPC注册)
         - [NPC的基本数据](#NPC的基本数据)
         - [添加自定义状态](#添加自定义状态)
         - [NPC的关系文本](#NPC的关系文本)
         - [NPC属性详解](#NPC属性详解)
+        - [NPC的addonPlugin注册](#NPC的addonPlugin注册)
 - [致谢](#致谢)
 - [未实现的功能构想](#未实现的功能构想)
 
@@ -185,15 +188,17 @@
   ```
   #### 语言addonPlugin注册
 ```
-"language": true, // 布尔值：导入所有默认语言
-"language": ["CN", "EN"], // 数组：导入指定语言
-"language": { // 对象：自定义语言配置
-  "CN": {
-    "file": "translations/chinese.json" // 自定义文件路径
-  },
-  "EN": {
-    "file": "translations/english.json" // 自定义文件路径
-  }
+"params": {
+  "language": true, // 布尔值：导入所有默认语言
+  "language": ["CN", "EN"], // 数组：导入指定语言
+  "language": { // 对象：自定义语言配置
+    "CN": {
+      "file": "translations/chinese.json" // 自定义文件路径
+    },
+    "EN": {
+      "file": "translations/english.json" // 自定义文件路径
+    }
+}
 ```
  ### 事件注册
   - 使用 `maplebirch.on(evt[触发的时机], handler[需要触发的函数], desc = ''[你注册事件的标识符])` 进行事件注册
@@ -622,8 +627,10 @@ play() 方法选项:
 
   #### 音频addonPlugin注册
 ```
-"audio": true, // 布尔型：默认的 根目录/audio/ 的文件夹下的音频文件
-"audio": "music", // 字符串型：自定义的 根目录/music/ 的文件夹下的音频文件
+"params": {
+  "audio": true, // 布尔型：默认的 根目录/audio/ 的文件夹下的音频文件
+  "audio": "music", // 字符串型：自定义的 根目录/music/ 的文件夹下的音频文件
+}
 ```
  ### 变量迁徙
   #### 使用示例
@@ -849,6 +856,28 @@ maplebirchFrameworks.onInit(() => {
   }
 });
 ```
+ #### 区域addonPlugin注册
+```
+"params": {
+  "framework": [
+    // 类型1: 简单部件注入
+    {
+      "addto": "区域名称", // 必需: 注入区域 (left/right/center等)
+      "widget": "部件名称" // 必需: 部件宏名称
+    },
+    // 类型2: 条件部件注入
+    {
+      "addto": "区域名称",
+      "widget": {
+        "widget": "部件名称", // 必需: 部件宏名称
+        "exclude": ["场景1", "场景2"], // 可选: 排除的场景
+        "passage": ["场景3", "场景4"], // 可选: 包含的场景
+        "match": "关键词" // 可选: 包含关键词的场景
+      }
+    },
+  ]
+}
+```
  ### ​​简易弹窗
   + 使用`<<maplebirchReplace>>`宏来进行便携弹窗，基本用法 `<<maplebirchReplace "弹窗键名">>`
 ```
@@ -926,6 +955,38 @@ maplebirchFrameworks.addTraits(
   { title: "学校特质", name: "学霸", colour: "gold", has: () => V.player.grades > 90, text: "学习效率提高20%" }
 );
 ```
+  #### 特质addonPlugin注册
+```
+"params": {
+  "framework": [
+    {
+      "traits": [
+        {
+          "title": "特质标题", // 必需: 特质标题
+          "name": "特质名称", // 必需: 特质名称
+          "colour": "red", // css颜色
+          "has": "V.traits === true", // 可选: 激活条件(JS表达式)
+          "text": "特质描述" // 可选: 描述文本
+        },
+        {
+          "title": "特质标题", // 必需: 特质标题
+          "name": "特质名称", // 必需: 特质名称
+          "colour": "blue", // css颜色
+          "has": "false", // 可选: 布尔型
+          "text": "特质描述" // 可选: 描述文本
+        },
+        {
+          "title": "特质标题", // 必需: 特质标题
+          "name": "特质名称", // 必需: 特质名称
+          "colour": "red", // css颜色
+          "has": "true", // 可选: 布尔型
+          "text": "特质描述" // 可选: 描述文本
+        }
+      ]
+    }
+  ]
+}
+```
  ### 地点注册
   + 使用 `maplebirchFrameworks.addLocation(locationId, config, options = {})` 定制游戏地点
 ```
@@ -969,16 +1030,20 @@ maplebirchFrameworks.addLocation('forest', {
 ----------------------------------------------
 向游戏中添加新的NPC角色或更新现有NPC
 
+向NPC管理器中添加一个新NPC角色
+@param {Object} manager - NPC管理器实例
 @param {Object} npcData - NPC数据对象
 @param {string} npcData.nam - NPC唯一名称（必需）
-@param {string} [npcData.title] - NPC称号
+@param {string} [npcData.title] - NPC的称号
 @param {string} [npcData.gender="f"] - 性别 (m/f/none)
 @param {string} [npcData.type="human"] - 种族类型
 @param {Object} [config] - NPC配置选项
-  - important: 是否重要NPC（显示在状态栏）
-  - special: 是否为特殊NPC
-  - loveInterest: 是否为恋爱NPC
+@param {string[]} [config.loveAlias] - NPC的好感别称数组 [CN, EN]
+@param {boolean} [config.important=false] - 是否重要NPC（显示在状态栏）
+@param {boolean} [config.special=false] - 是否为特殊NPC
+@param {boolean} [config.loveInterest=false] - 是否为恋爱NPC
 @param {Object} [translationsData] - 翻译数据对象
+@returns {boolean} 添加成功返回true，失败返回false
 
 示例：
 // 添加新NPC
@@ -991,6 +1056,8 @@ maplebirchFrameworks.addNPC({
   eyeColour: "紫色",
   hairColor: "银色"
 }, {
+  loveAlias: ['爱意', 'Love']
+  loveInterest: true,
   important: true,
   special: false
 }, {
@@ -998,21 +1065,6 @@ maplebirchFrameworks.addNPC({
   "Magic Mentor": { EN: "Magic Mentor", CN: "魔法导师" }
 });
 
-// 更新现有NPC
-maplebirchFrameworks.addNPC({
-  nam: "Robin",
-  title: "shop boss",
-  gender: "m",
-  newStat: 50 // 添加新状态
-});
-
-// 动态属性
-maplebirchFrameworks.addNPC({
-  nam: "Seasonal Elves",
-  title: () => `季节守护者-${Season.current()}`,
-  gender: "none",
-  description: () => `掌管${Season.current()}季节的精灵`
-});
 ```
  #### 添加自定义状态
  - 添加或更新NPC的自定义状态系统(maplebirchFrameworks.addStats(statsObject))
@@ -1084,6 +1136,53 @@ maplebirchFrameworks.addStats({
   <img width="588" height="882" alt="image" src="https://github.com/user-attachments/assets/52f37940-9424-4efc-9a5a-e7e64f9d51ac" />
 </details>
 
+  #### NPC的addonPlugin注册
+```
+"params": {
+  "npc": [
+    {
+      "data": {
+        "nam": "Alice", // NPC唯一标识符 (必需)
+        "title": "Magic Mentor", // NPC头衔
+        "gender": "f", // 性别 (m/f/none)
+        "type": "human", // NPC类型 (human/wolf/demon等)
+        "description": "一位神秘的精灵魔法师", // 描述文本
+        "eyeColour": "紫色", // 眼睛颜色
+        "hairColor": "银色" // 头发颜色
+      },
+      "config": {
+        "loveAlias": ["爱意", "Love"], // 好感度别名 [中文, 英文]
+        "loveInterest": true, // 是否为可恋爱NPC
+        "important": true, // 是否为重要NPC
+        "special": false // 是否为特殊NPC
+      },
+      "translations": {
+        "Alice": { // NPC名称翻译
+          "EN": "Alice",
+          "CN": "艾莉丝"
+        },
+        "Magic Mentor": { // NPC头衔翻译
+          "EN": "Magic Mentor",
+          "CN": "魔法导师"
+        }
+      },
+      "state": {
+        "trust": { // 信任值配置
+          "min": 0, // 最小值
+          "max": 100, // 最大值
+          "position": "secondLast" // 显示位置 (secondLast: 倒数第二位)
+        },
+        "loyalty": { // 忠诚度配置
+          "min": 0,
+          "max": 10,
+          "position": 3 // 显示位置 (数字索引: 第4位)
+        }
+      }
+    }
+  ]
+}
+```
+
 ### 致谢
 在此，我想向所有支持、帮助过这个项目的朋友们表达最诚挚的感谢：  
 - 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 开发的Modloader系统，为模组开发提供了基础支持。
@@ -1095,6 +1194,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
