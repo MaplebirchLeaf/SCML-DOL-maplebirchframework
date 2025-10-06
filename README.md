@@ -115,7 +115,7 @@
   <img width="1848" height="1192" alt="image" src="https://github.com/user-attachments/assets/dd8aca44-0619-4f1f-bec5-8d1f2f30f5f4" />
 </details>
 
-+ 第三种自助 `addonPlugin` 声明依赖
++ 第三种自助 `addonPlugin` 声明依赖，**详情**看对应区块说明
 
 ```
 "addonPlugin": [
@@ -181,6 +181,20 @@
     在sugarcube环境中使用 <<= maplebirch.t(键名)>> / <<= maplebirch.autoTranslate(任意语言数据)>>显示
     <<= XX>> 等效于 <<print XX>>
   ```
+  #### addonPlugin注册  
+```
+"language": true, // 布尔值：导入所有默认语言
+
+"language": ["CN", "EN"], // 数组：导入指定语言
+
+"language": { // 对象：自定义语言配置
+  "CN": {
+    "file": "translations/chinese.json" // 自定义文件路径
+  },
+  "EN": {
+    "file": "translations/english.json" // 自定义文件路径
+  }
+```
  ### 事件注册
   - 使用 `maplebirch.on(evt[触发的时机], handler[需要触发的函数], desc = ''[你注册事件的标识符])` 进行事件注册
   - 使用 `maplebirch.once(evt[触发的时机], handler[需要触发的函数], desc = ''[你注册事件的标识符])` 进行一次性事件注册，即生效一次后删除
@@ -1075,6 +1089,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
