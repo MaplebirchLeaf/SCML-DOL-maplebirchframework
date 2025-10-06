@@ -39,15 +39,16 @@
       if (methodPaths[prop]) {
         return (...args) => {
           const path = methodPaths[prop];
-          const tool = path.split('.').reduce((obj, key) => obj?.[key], maplebirch);
-          if (!tool) return false;
+          const pathParts = path.split('.');
+          const methodName = pathParts.pop();
+          const context = pathParts.reduce((obj, key) => obj?.[key], maplebirch);
+          if (!context || typeof context[methodName] !== 'function') return false;
           if (prop === 'addto') {
             const [zoneName, ...restArgs] = args;
             const targetZone = zoneMap[zoneName] || zoneName;
-            if (typeof tool === 'function' && maplebirch.tool?.framework) return tool.call(maplebirch.tool.framework, targetZone, ...restArgs);
-            return false;
+            return context[methodName].call(context, targetZone, ...restArgs);
           }
-          return tool?.(...args);
+          return context[methodName].call(context, ...args);
         };
       }
       return maplebirch[prop];

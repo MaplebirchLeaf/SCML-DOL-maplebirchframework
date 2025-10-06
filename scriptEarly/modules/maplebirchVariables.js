@@ -5,7 +5,7 @@
   }
 
   const maplebirch = window.maplebirch;
-  const currentVersion = '1.0.0';
+  const currentVersion = '1.0.1';
 
   class variablesModule {
     static check() {
@@ -47,15 +47,6 @@
       dawn:     {},
     }
 
-    static npc = {
-      robin:    {},
-      sydney:   {},
-      kylar:    {},
-      whitney:  {},
-      alex:     {},
-      vivian:   {},
-    }
-
     static character = {
       carrying:   {},
       attribute:  {}
@@ -67,35 +58,24 @@
       backpack: 'none'
     }
 
-    static location = {
-      temple: {},
-    }
-
-    static orchard = {
-      tendingvars: {},
-      FruitSeeds: {
-        know: [],
-        unlock: [] 
-      }
-    }
-
     static combat = {
+      npcList: [],
+      enemy:   {},
       sex: {},
     }
 
+    static player = {
+      clothing: {}
+    }
+
     static defaultVar = {
+      audio:      variablesModule.audio,
       time:       variablesModule.time,
-      npc:        variablesModule.npc,
       character:  variablesModule.character,
       inventory:  variablesModule.inventory,
-      location:   variablesModule.location,
-      orchard:    variablesModule.orchard,
       combat:     variablesModule.combat,
-      audio:      variablesModule.audio,
-      player:  {},
-      npcList: [],
-      enemy:   {},
-      effect:  {},
+      player:     variablesModule.player,
+      npc:        {},
     };
     
     constructor() {
@@ -105,22 +85,15 @@
       this.log = null;
     }
 
-    setupMigrations() {
-      if (this.migrationSystem) return;
-      this.migrationSystem = this.tool.migration.create();
-      this.migrationSystem.add('0.0.0', '1.0.0', (data, utils) => {
-        const defaults = this.tool.clone(variablesModule.defaultVar);
-        if (!data || Object.keys(data).length === 0 || !data.version || data.version === '0.0.0') {
-          Object.assign(data, defaults);
-          data.version = '1.0.0';
-          return;
-        }
-        try {
-          utils.fill(data, defaults);
-        } catch (e) {
-          this.log(`迁移合并默认值失败: ${e?.message || e}`, 'ERROR');
-        }
-        data.version = '1.0.0';
+    #mapProcessing() {
+      let worn = V.worn;
+      Object.defineProperty(V.maplebirch.player, 'clothing', {
+        get: () => worn,
+        set: (val) => { worn = val; V.worn = val; },
+      });
+      Object.defineProperty(V, 'worn', {
+        get: () => worn,
+        set: (val) => { worn = val; V.maplebirch.player.clothing = val; },
       });
     }
 
@@ -129,36 +102,43 @@
       this.log = this.tool.createLogger('var');
       maplebirch.once(':passageinit', () => variablesModule.check());
       maplebirch.once(':finally', () => variablesModule.check());
-      this.setupMigrations();
+      if (this.migrationSystem) return;
+      this.migrationSystem = this.tool.migration.create();
     }
 
     Init() {
-      if (maplebirch.state.passage.title === 'Start2') {
-        V.maplebirch = this.tool.clone({
-          ...variablesModule.defaultVar,
-          version: this.version
-        });
-        this.log(`新游戏数据初始化完成 (v${this.version})`, 'DEBUG');
-        return;
-      }
       try {
+        if (maplebirch.state.passage.title === 'Start2') {
+          V.maplebirch = this.tool.clone({
+            ...variablesModule.defaultVar,
+            version: this.version
+          });
+          this.log(`新游戏数据初始化完成 (v${this.version})`, 'DEBUG');
+          return;
+        }
         this.migrationSystem.run(V.maplebirch, this.version);
-        this.log?.(`存档数据迁移完成 (→ v${this.version})`, 'DEBUG');
-      } catch (e) {}
+        $.wiki('<<maplebirchDataInit>>');
+        this.log(`存档数据迁移完成 (→ v${this.version})`, 'DEBUG');
+      } catch (e) {
+        this.log(`出现错误：${e?.message || e}`, 'ERROR');
+      }
+      
     }
 
     loadInit() {
-      variablesModule.check();
       try {
+        variablesModule.check();
         this.migrationSystem.run(V.maplebirch, this.version);
+        $.wiki('<<maplebirchDataInit>>');
         this.log(`读档迁移/修正完成 (→ v${this.version})`, 'DEBUG');
       } catch (e) {
         this.log(`读档迁移出错: ${e?.message || e}`, 'ERROR');
       }
+      
     }
 
     postInit() {
-      if (!V.maplebirch.version || V.maplebirch.version !== this.version) {
+      if (!V.maplebirch?.version || V.maplebirch?.version !== this.version) {
         try {
           this.migrationSystem.run(V.maplebirch, this.version);
           this.log(`存档数据修正完成 (→ v${this.version})`, 'DEBUG');
@@ -166,6 +146,7 @@
           this.log(`后初始化迁移出错: ${e?.message || e}`, 'ERROR');
         }
       }
+      this.#mapProcessing();
     }
   }
 

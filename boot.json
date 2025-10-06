@@ -2,10 +2,9 @@
   "name": "maplebirch",
   "nickName": {
     "en": "Maplebirch",
-    "cn": "秋枫白桦",
-    "jp": "秋楓白樺"
+    "cn": "秋枫白桦"
   },
-  "version": "2.3.9",
+  "version": "2.4.2",
   "styleFileList": [
     "styles/maplebirchDefault.css",
     "styles/maplebirchPanel​.css"
@@ -14,6 +13,7 @@
     "game/03-JavaScript/maplebirchDefineMacros.js"
   ],
   "scriptFileList_preload":[
+    "dataUpdate/maplebirchData-v1.js",
     "game/03-JavaScript/maplebirchSFcompatible.js"
   ],
   "scriptFileList_earlyload": [
@@ -46,8 +46,7 @@
   "additionFile": [
     "README.md",
     "translations/en.json",
-    "translations/cn.json",
-    "translations/jp.json"
+    "translations/cn.json"
   ],
   "addonPlugin": [
     {

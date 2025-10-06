@@ -6,7 +6,259 @@
 
   const maplebirch = window.maplebirch;
 
+  class ModAudioPlayer {
+    constructor(audioManager, modName) {
+      this.audioManager = audioManager;        // 音频管理器实例
+      this.modName = modName;                  // 所属模块名称
+      this.activeSources = new Map();          // 当前活动的音频源
+      this.pausedStates = new Map();           // 暂停状态的音频
+      this.volume = 1.0;                       // 全局音量
+      this.globalGainNode = null;              // 全局增益节点
+      this.loopCounters = new Map();           // 音频循环计数器
+      this.defaultLoopCount = 100;             // 默认循环次数
+      this.initGainNode();                     // 初始化增益节点
+    }
+
+    initGainNode() {
+      if (!this.audioManager.audioContext) return;
+      this.globalGainNode = this.audioManager.audioContext.createGain();
+      this.globalGainNode.connect(this.audioManager.audioContext.destination);
+      this.globalGainNode.gain.value = this.volume;
+    }
+
+    play(key, options = {}) {
+      if (!this.audioManager.audioBuffers.has(key)) {
+        maplebirch.log(`[AudioPlayer] Audio not found: ${key}`, 'WARN');
+        return null;
+      }
+
+      const baseFullKey = `${this.modName}:${key}`;
+      const allowOverlap = !!options.allowOverlap;
+      const instanceKey = allowOverlap ? `${baseFullKey}|${Date.now()}|${Math.random().toString(36).slice(2,6)}` : baseFullKey;
+
+      if (!allowOverlap && this.activeSources.has(baseFullKey)) {
+        if (options.stopOthers === false) {
+          return null;
+        } else {
+          const existing = this.activeSources.get(baseFullKey);
+          try { existing.source.stop(); } catch(e) {}
+          this.activeSources.delete(baseFullKey);
+          this.loopCounters.delete(baseFullKey);
+        }
+      }
+
+      if (options.stopOthers) {
+        this.stopAll();
+      }
+
+      const source = this.audioManager.audioContext.createBufferSource();
+      source.buffer = this.audioManager.audioBuffers.get(key);
+      const gainNode = this.audioManager.audioContext.createGain();
+      gainNode.gain.value = (options.volume !== undefined) ? options.volume : this.volume;
+      source.connect(gainNode);
+      gainNode.connect(this.globalGainNode || this.audioManager.audioContext.destination);
+      const startTime = this.audioManager.audioContext.currentTime;
+      const offset = options.offset || 0;
+      const duration = options.duration;
+      const loopRequested = !!options.loop;
+      const loopCount = (options.loopCount !== undefined) ? options.loopCount : (loopRequested ? Infinity : 1);
+
+      if (loopRequested && loopCount === Infinity) {
+        source.loop = true;
+        if (options.loopStart !== undefined) source.loopStart = options.loopStart;
+        if (options.loopEnd !== undefined) source.loopEnd = options.loopEnd;
+        this.loopCounters.set(instanceKey, Infinity);
+      } else if (loopRequested && loopCount > 1) {
+        this.loopCounters.set(instanceKey, loopCount);
+      }
+
+      try {
+        source.start(startTime, offset, duration);
+      } catch (e) {
+        maplebirch.log(`[AudioPlayer] Failed to start source for ${key}`, 'WARN', e);
+        return null;
+      }
+
+      const audioSource = {
+        source,
+        gainNode,
+        startTime,
+        playStartTime: startTime,
+        currentOffset: offset,
+        options,
+        key: instanceKey,
+        logicalKey: baseFullKey
+      };
+
+      this.activeSources.set(instanceKey, audioSource);
+      source.onended = () => {
+        source.disconnect();
+        gainNode.disconnect();
+        const lc = this.loopCounters.get(instanceKey);
+
+        if (lc === Infinity) {
+          this.activeSources.delete(instanceKey);
+          this.loopCounters.delete(instanceKey);
+          if (options.onEnded) options.onEnded();
+          return;
+        }
+
+        if (lc && lc > 1) {
+          this.loopCounters.set(instanceKey, lc - 1);
+          source.disconnect();
+          gainNode.disconnect();
+          setTimeout(() => {
+            this.play(key, {
+              ...options,
+              offset: 0,
+              loop: lc - 1 > 0 && !!options.loop,
+              loopCount: lc - 1,
+              stopOthers: false,
+              allowOverlap: false
+            });
+          }, 0);
+          this.activeSources.delete(instanceKey);
+          return;
+        }
+
+        this.activeSources.delete(instanceKey);
+        this.loopCounters.delete(instanceKey);
+        if (options.onEnded) options.onEnded();
+      };
+
+      return audioSource;
+    }
+
+    stop(key) {
+      const baseFullKey = `${this.modName}:${key}`;
+      const matchKey = Array.from(this.activeSources.keys()).find(k => k.startsWith(baseFullKey));
+
+      if (matchKey) {
+        const audioSource = this.activeSources.get(matchKey);
+        try {
+          audioSource.source.stop();
+          audioSource.source.disconnect();
+          audioSource.gainNode.disconnect();
+        } catch(e) {}
+        this.activeSources.delete(matchKey);
+        this.loopCounters.delete(matchKey);
+      }
+      
+      this.pausedStates.delete(baseFullKey);
+    }
+
+    stopAll() {
+      this.activeSources.forEach((source, k) => {
+        try { source.source.stop(); } catch(e) {}
+        this.loopCounters.delete(k);
+      });
+      this.activeSources.clear();
+      this.pausedStates.clear();
+    }
+
+    setVolume(volume) {
+      this.volume = volume;
+      if (this.globalGainNode) {
+        this.globalGainNode.gain.value = volume;
+      }
+      this.activeSources.forEach(source => {
+        try { source.gainNode.gain.value = volume; } catch(e) {}
+      });
+    }
+
+    setVolumeFor(key, volume) {
+      const baseFullKey = `${this.modName}:${key}`;
+      const matchKey = Array.from(this.activeSources.keys()).find(k => k.startsWith(baseFullKey));
+      if (matchKey) {
+        const audioSource = this.activeSources.get(matchKey);
+        audioSource.gainNode.gain.value = volume;
+      }
+    }
+
+    togglePause(key) {
+      const baseFullKey = `${this.modName}:${key}`;
+      const matchKey = Array.from(this.activeSources.keys()).find(k => k.startsWith(baseFullKey));
+
+      if (matchKey) {
+        const audioSource = this.activeSources.get(matchKey);
+        const currentTime = this.audioManager.audioContext.currentTime;
+        const elapsed = currentTime - audioSource.playStartTime;
+        const currentOffset = (audioSource.currentOffset || 0) + elapsed;
+
+        try { 
+          audioSource.source.stop();
+          audioSource.source.disconnect();
+          audioSource.gainNode.disconnect();
+        } catch (e) {}
+        this.activeSources.delete(matchKey);
+        this.pausedStates.set(baseFullKey, {
+          offset: currentOffset,
+          options: {
+            ...audioSource.options,
+            loop: !!audioSource.source.loop,
+            loopStart: audioSource.source.loopStart,
+            loopEnd: audioSource.source.loopEnd
+          }
+        });
+
+        return { status: 'paused', offset: currentOffset };
+      }
+
+      if (this.pausedStates.has(baseFullKey)) {
+        const pausedState = this.pausedStates.get(baseFullKey);
+        this.pausedStates.delete(baseFullKey);
+        const audioSource = this.play(key, {
+          ...pausedState.options,
+          offset: pausedState.offset,
+          stopOthers: false,
+          allowOverlap: false
+        });
+
+        if (audioSource) {
+          return { status: 'resumed', audioSource };
+        } else {
+          this.pausedStates.set(baseFullKey, pausedState);
+          return { status: 'failed' };
+        }
+      }
+
+      return { status: 'not-found' };
+    }
+
+    isPlaying() {
+      const playingKeys = new Set();
+      for (const [fullKey] of this.activeSources) {
+        const prefix = `${this.modName}:`;
+        if (!fullKey.startsWith(prefix)) continue;
+        const rest = fullKey.substring(prefix.length);
+        const logical = rest.split('|')[0];
+        playingKeys.add(logical);
+      }
+      return Array.from(playingKeys);
+    }
+
+    get audioKeys() {
+      return Array.from(this.audioManager.audioBuffers.keys());
+    }
+
+    getDuration(key) {
+      const buffer = this.audioManager.audioBuffers.get(key);
+      return buffer ? buffer.duration : 0;
+    }
+
+    setLoopCount(key, count) {
+      const baseFullKey = `${this.modName}:${key}`;
+      Array.from(this.activeSources.keys()).forEach(k => {
+        if (k.startsWith(baseFullKey)) {
+          this.loopCounters.set(k, count);
+        }
+      });
+    }
+  };
+
   class AudioManager {
+    static ModAudioPlayer = ModAudioPlayer
+
     static arrayBufferToBase64(buffer) {
       let binary = '';
       const bytes = new Uint8Array(buffer);
@@ -23,10 +275,10 @@
     }
 
     constructor() {
-      this.audioContext = null;
-      this.audioBuffers = new Map();
-      this.modPlayers = new Map();
-      this.initAudioContext();
+      this.audioContext = null;            // Web Audio API上下文
+      this.audioBuffers = new Map();       // 音频缓冲区
+      this.modPlayers = new Map();         // 模块播放器实例
+      this.initAudioContext();             // 初始化音频上下文
     }
 
     initAudioContext() {
@@ -162,244 +414,6 @@
       this.initStorage();
     }
   }
-
-  AudioManager.ModAudioPlayer = class {
-    constructor(audioManager, modName) {
-      this.audioManager = audioManager;
-      this.modName = modName;
-      this.activeSources = new Map();
-      this.pausedStates = new Map();
-      this.volume = 1.0;
-      this.globalGainNode = null;
-      this.loopCounters = new Map();
-      this.defaultLoopCount = 100;
-      this.initGainNode();
-    }
-
-    initGainNode() {
-      if (!this.audioManager.audioContext) return;
-      this.globalGainNode = this.audioManager.audioContext.createGain();
-      this.globalGainNode.connect(this.audioManager.audioContext.destination);
-      this.globalGainNode.gain.value = this.volume;
-    }
-
-    play(key, options = {}) {
-      if (!this.audioManager.audioBuffers.has(key)) {
-        maplebirch.log(`[AudioPlayer] Audio not found: ${key}`, 'WARN');
-        return null;
-      }
-
-      const baseFullKey = `${this.modName}:${key}`;
-      const allowOverlap = !!options.allowOverlap;
-      const instanceKey = allowOverlap ? `${baseFullKey}|${Date.now()}|${Math.random().toString(36).slice(2,6)}` : baseFullKey;
-
-      if (!allowOverlap && this.activeSources.has(baseFullKey)) {
-        if (options.stopOthers === false) {
-          return null;
-        } else {
-          const existing = this.activeSources.get(baseFullKey);
-          try { existing.source.stop(); } catch(e) {}
-          this.activeSources.delete(baseFullKey);
-          this.loopCounters.delete(baseFullKey);
-        }
-      }
-
-      if (options.stopOthers) {
-        this.stopAll();
-      }
-
-      const source = this.audioManager.audioContext.createBufferSource();
-      source.buffer = this.audioManager.audioBuffers.get(key);
-      const gainNode = this.audioManager.audioContext.createGain();
-      gainNode.gain.value = (options.volume !== undefined) ? options.volume : this.volume;
-      source.connect(gainNode);
-      gainNode.connect(this.globalGainNode || this.audioManager.audioContext.destination);
-      const startTime = this.audioManager.audioContext.currentTime;
-      const offset = options.offset || 0;
-      const duration = options.duration;
-      const loopRequested = !!options.loop;
-      const loopCount = (options.loopCount !== undefined) ? options.loopCount : (loopRequested ? Infinity : 1);
-
-      if (loopRequested && loopCount === Infinity) {
-        source.loop = true;
-        if (options.loopStart !== undefined) source.loopStart = options.loopStart;
-        if (options.loopEnd !== undefined) source.loopEnd = options.loopEnd;
-        this.loopCounters.set(instanceKey, Infinity);
-      } else if (loopRequested && loopCount > 1) {
-        this.loopCounters.set(instanceKey, loopCount);
-      }
-
-      try {
-        source.start(startTime, offset, duration);
-      } catch (e) {
-        maplebirch.log(`[AudioPlayer] Failed to start source for ${key}`, 'WARN', e);
-        return null;
-      }
-
-      const audioSource = {
-        source,
-        gainNode,
-        startTime,
-        playStartTime: startTime,
-        currentOffset: offset,
-        options,
-        key: instanceKey,
-        logicalKey: baseFullKey
-      };
-
-      this.activeSources.set(instanceKey, audioSource);
-      source.onended = () => {
-        const lc = this.loopCounters.get(instanceKey);
-
-        if (lc === Infinity) {
-          this.activeSources.delete(instanceKey);
-          this.loopCounters.delete(instanceKey);
-          if (options.onEnded) options.onEnded();
-          return;
-        }
-
-        if (lc && lc > 1) {
-          this.loopCounters.set(instanceKey, lc - 1);
-          setTimeout(() => {
-            this.play(key, {
-              ...options,
-              offset: 0,
-              loop: lc - 1 > 0 && !!options.loop,
-              loopCount: lc - 1,
-              stopOthers: false,
-              allowOverlap: false
-            });
-          }, 0);
-          this.activeSources.delete(instanceKey);
-          return;
-        }
-
-        this.activeSources.delete(instanceKey);
-        this.loopCounters.delete(instanceKey);
-        if (options.onEnded) options.onEnded();
-      };
-
-      return audioSource;
-    }
-
-    stop(key) {
-      const baseFullKey = `${this.modName}:${key}`;
-      const matchKey = Array.from(this.activeSources.keys()).find(k => k.startsWith(baseFullKey));
-
-      if (matchKey) {
-        const audioSource = this.activeSources.get(matchKey);
-        try { audioSource.source.stop(); } catch(e) {}
-        this.activeSources.delete(matchKey);
-        this.loopCounters.delete(matchKey);
-      }
-      
-      this.pausedStates.delete(baseFullKey);
-    }
-
-    stopAll() {
-      this.activeSources.forEach((source, k) => {
-        try { source.source.stop(); } catch(e) {}
-        this.loopCounters.delete(k);
-      });
-      this.activeSources.clear();
-      this.pausedStates.clear();
-    }
-
-    setVolume(volume) {
-      this.volume = volume;
-      if (this.globalGainNode) {
-        this.globalGainNode.gain.value = volume;
-      }
-      this.activeSources.forEach(source => {
-        try { source.gainNode.gain.value = volume; } catch(e) {}
-      });
-    }
-
-    setVolumeFor(key, volume) {
-      const baseFullKey = `${this.modName}:${key}`;
-      const matchKey = Array.from(this.activeSources.keys()).find(k => k.startsWith(baseFullKey));
-      if (matchKey) {
-        const audioSource = this.activeSources.get(matchKey);
-        audioSource.gainNode.gain.value = volume;
-      }
-    }
-
-    togglePause(key) {
-      const baseFullKey = `${this.modName}:${key}`;
-      const matchKey = Array.from(this.activeSources.keys()).find(k => k.startsWith(baseFullKey));
-
-      if (matchKey) {
-        const audioSource = this.activeSources.get(matchKey);
-        const currentTime = this.audioManager.audioContext.currentTime;
-        const elapsed = currentTime - audioSource.playStartTime;
-        const currentOffset = (audioSource.currentOffset || 0) + elapsed;
-
-        try { audioSource.source.stop(); } catch (e) {}
-        this.activeSources.delete(matchKey);
-        this.pausedStates.set(baseFullKey, {
-          offset: currentOffset,
-          options: {
-            ...audioSource.options,
-            loop: !!audioSource.source.loop,
-            loopStart: audioSource.source.loopStart,
-            loopEnd: audioSource.source.loopEnd
-          }
-        });
-
-        return { status: 'paused', offset: currentOffset };
-      }
-
-      if (this.pausedStates.has(baseFullKey)) {
-        const pausedState = this.pausedStates.get(baseFullKey);
-        this.pausedStates.delete(baseFullKey);
-        const audioSource = this.play(key, {
-          ...pausedState.options,
-          offset: pausedState.offset,
-          stopOthers: false,
-          allowOverlap: false
-        });
-
-        if (audioSource) {
-          return { status: 'resumed', audioSource };
-        } else {
-          this.pausedStates.set(baseFullKey, pausedState);
-          return { status: 'failed' };
-        }
-      }
-
-      return { status: 'not-found' };
-    }
-
-    isPlaying() {
-      const playingKeys = new Set();
-      for (const [fullKey] of this.activeSources) {
-        const prefix = `${this.modName}:`;
-        if (!fullKey.startsWith(prefix)) continue;
-        const rest = fullKey.substring(prefix.length);
-        const logical = rest.split('|')[0];
-        playingKeys.add(logical);
-      }
-      return Array.from(playingKeys);
-    }
-
-    get audioKeys() {
-      return Array.from(this.audioManager.audioBuffers.keys());
-    }
-
-    getDuration(key) {
-      const buffer = this.audioManager.audioBuffers.get(key);
-      return buffer ? buffer.duration : 0;
-    }
-
-    setLoopCount(key, count) {
-      const baseFullKey = `${this.modName}:${key}`;
-      Array.from(this.activeSources.keys()).forEach(k => {
-        if (k.startsWith(baseFullKey)) {
-          this.loopCounters.set(k, count);
-        }
-      });
-    }
-  };
 
   await maplebirch.register('audio', new AudioManager(), []);
 })();

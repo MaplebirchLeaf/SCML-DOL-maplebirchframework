@@ -9,8 +9,7 @@
   const createDateFormatters = () => {
     const getFormattedDate = function(date, includeWeekday = false) {
       const lang = maplebirch.Language || 'EN';
-      const useLang = lang === 'CN';
-      if (useLang) {
+      if (lang === 'CN') {
         const formattedDate = `${date.month}月${date.day}日`;
         return includeWeekday ? `${formattedDate} ${date.weekDayName}` : formattedDate;
       }
@@ -30,8 +29,7 @@
     };
     const getShortFormattedDate = function(date) {
       const lang = maplebirch.Language || 'EN';
-      const useLang = lang === 'CN';
-      if (useLang) {
+      if (lang === 'CN') {
         return `${date.month}月${date.day}日`;
       }
       switch (V.options.dateFormat) {
@@ -114,10 +112,8 @@
       try { ok = !!this.cond(timeData); }
       catch (e) { maplebirch.log(`[TimeEvent:${this.id}] cond error:`, 'ERROR', e); }
       if (!ok) return false;
-
       try { this.action(timeData); }
       catch (e) { maplebirch.log(`[TimeEvent:${this.id}] action error:`, 'ERROR', e) }
-      
       return !!this.once;
     }
 
@@ -458,6 +454,7 @@
         } else {
           throw new Error("无效的时间旅行参数");
         }
+
         const prevDate = new DateTime(Time.date);
         const diffSeconds = targetDate.timeStamp - prevDate.timeStamp;
         Time.setDate(targetDate);

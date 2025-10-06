@@ -1,5 +1,5 @@
-(() => {
-  const frameworkVersion = '2.3.9';
+(async() => {
+  const frameworkVersion = '2.4.2';
   const lastUpdate = '2025.09.26';
   const lastModifiedBy = '楓樺葉';
   const DEBUGMODE = false;
@@ -65,7 +65,7 @@
   }
 
   class LanguageManager {
-    static DEFAULT_LANGS = ['EN', 'CN', 'JP'];
+    static DEFAULT_LANGS = ['EN', 'CN'];
     static DEFAULT_IMPORT_CONCURRENCY = 2;    // 默认并发导入数
     static DEFAULT_BATCH_SIZE = 500;          // 默认批处理大小
     static DEFAULT_PRELOAD_YIELD = 500;       // 默认预加载让步间隔
@@ -90,7 +90,6 @@
     #detectLanguage() {
       const lang = navigator.language || navigator.userLanguage || 'en';
       if (lang.includes('zh')) return 'CN';
-      if (lang.includes('ja')) return 'JP';
       return 'EN';
     }
 
@@ -521,6 +520,7 @@
         ':coreReady':           [], // (本)框架核心完成
         ':expectedmodulecount': [], // (本)框架模块就绪
         ':dataImport':          [], // 数据导入时机(即modloader可用时机)
+        ':dataInit':            [], // 框架提供的模组V变量注册接口
         ':onSave':              [], // 保存
         ':loadSaveData':        [], // 加载存档数据
         ':onLoad':              [], // 读档
@@ -1144,7 +1144,10 @@
     maplebirch.on(':passagerender', async () => {
       let retryCount = 0;
       const tryPostInit = async () => {
-        if (maplebirch.modules.initPhase.mainInitCompleted) {
+        if (maplebirch.modules.initPhase.loadInitExecuted) {
+          await maplebirch.postInit();
+        } else if (maplebirch.modules.initPhase.mainInitCompleted) {
+          if (maplebirch.onLoad) return;
           await maplebirch.postInit();
         } else if (retryCount < 5) {
           retryCount++;

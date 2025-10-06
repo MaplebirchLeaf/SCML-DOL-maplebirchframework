@@ -1199,6 +1199,7 @@
 
       this.data = {
         Init                    : [], // 初始化脚本-静态变量(如setup)
+        DataInit                : [], // 初始化变量( 读档 或 开始游戏 时注入你模组需要注入的变量)
         Header                  : [], // 页眉
         Footer                  : [], // 页脚
         Information             : [], // 信息栏
@@ -1259,6 +1260,7 @@
       };
       this.default = {
         Init   : '<<run maplebirch.tool.framework.storyInit()>>',
+        DataInit:'<<run maplebirch.trigger(":dataInit");>>',
         Header : '',
         Footer : '<<maplebirchFrameworkVersions>>',
         Information : '<<maplebirchFrameworkInfo>>',
@@ -1274,7 +1276,6 @@
               <<set _langOptions = {
                 [maplebirch.t('English')]: "EN",
                 [maplebirch.t('Chinese')]: "CN",
-                [maplebirch.t('Japanese')]: "JP"
               }>>
               <<listbox "_selectedLang" autoselect>>
                 <<optionsfrom _langOptions>>
@@ -1392,6 +1393,8 @@
           { srcmatch: /<<run delete _npcList\["(?:象牙怨灵|Ivory Wraith)"\]>>/, to: '<<run delete _npcList[maplebirch.autoTranslate("Ivory Wraith")]>>' },
           { srcmatch: /\t<<NPC_CN_NAME \$NPCName\[_npcId\].nam>>|\t\$NPCName\[_npcId\].nam/, to: '\t<<= maplebirch.autoTranslate($NPCName[_npcId].nam)>>' },
           { srcmatch: /\$NPCName\[_npcId\]\.title|<<print\s+\$NPCName\s*\[\s*\_npcId\s*\]\s*\.title\s*(\s*\.replace\s*\(\s*"[^"]+"\s*,\s*"[^"]+"\s*\)\s*)+>>/, to: '\t<<= maplebirch.autoTranslate($NPCName[_npcId].title)>>' },
+          { srcmatch: /<<if _npcList\[\$NPCName\[_npcId\]\.nam(?:\.replace\([^)]+\))*\] is undefined>>/g, to: '<<if _npcList[maplebirch.lang.t($NPCName[_npcId].nam)] is undefined>>' },
+          { src: '\t\t\t</span>\n\t\t</div>\n\t\t<div class="settingsToggleItem">\n\t\t\t<span class="gold">', applybefore: '\t\t\t<<if $debug is 1>>| <label><<radiobutton "$NPCName[_npcId].pronoun" "n" autocheck>><<= maplebirch.lang.t("hermaphrodite")+"/"+maplebirch.lang.t("asexual")>></label><</if>>\n' },
         ],
         Widgets: [
           { src: 'T.getStatConfig = function(stat) {', applybefore: 'maplebirch.npc.applyStatDefaults(statDefaults);\n\t\t\t' },
