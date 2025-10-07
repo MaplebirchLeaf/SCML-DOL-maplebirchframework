@@ -632,6 +632,41 @@ play() 方法选项:
   "audio": "music", // 字符串型：自定义的 根目录/music/ 的文件夹下的音频文件
 }
 ```
+ ### 灵活的条件匹配
++ 这个类提供了多种匹配模式，包括精确匹配、范围匹配、集合匹配、子串匹配、正则匹配和比较匹配
+```
+- case(condition, result)        : 添加精确匹配条件
+- caseRange(min, max, result)     : 添加数字范围匹配
+- caseIn(values, result)          : 添加集合匹配
+- caseIncludes(substrings, result): 添加子串匹配
+- caseRegex(regex, result)        : 添加正则表达式匹配
+- caseCompare(comparator, value, result): 添加比较匹配
+- else(result)                    : 设置默认结果
+- match(input)                    : 执行匹配并返回结果
+```
++ 演示示例
+```
+// 年龄分类器
+const ageClassifier = new SelectCase()
+  .caseRange(0, 12, '儿童')       // 范围匹配
+  .caseRange(13, 19, '青少年')     // 范围匹配
+  .caseRange(20, 64, '成人')       // 范围匹配
+  .caseCompare('>=', 65, '老年人')  // 比较匹配
+  .else('无效年龄');               // 默认结果
+
+ageClassifier.match(5);   // 返回'儿童'
+
+// 错误代码解析器
+const errorParser = new SelectCase()
+  .case(404, '未找到')               // 精确匹配
+  .case(500, '服务器错误')            // 精确匹配
+  .caseIn([401, 403], '认证错误')     // 集合匹配
+  .caseIncludes('timeout', '超时错误') // 子串匹配
+  .caseRegex(/^5\d{2}$/, '5xx服务器错误') // 正则匹配
+  .else('未知错误');                  // 默认结果
+
+errorParser.match(503);   // '5xx服务器错误'
+```
  ### 变量迁徙
   #### 使用示例
 ```
@@ -1194,6 +1229,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
