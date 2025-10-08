@@ -55,7 +55,7 @@
 
 - 对于原来使用[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的模组，可以直接将[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)替换成[**秋枫白桦框架**](https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchframework)尝试执行，基本兼容了原依赖[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的模组(如: [**猫咖出租屋**](https://github.com/Maomaoi/Degrees-of-Lewdity-Cattery))，但不兼容强依赖的模组(如: [**泰拉瑞亚拓展**](https://github.com/Nephthelana/DOL-Terra-Expanding-Modd/))，以及我之前的秋枫白桦拓展。  
 
-- 提供了映射接口 `maplebirchFrameworks` 和 `simplebirchFrameworks` 对 `maplebirch` 的映射和快捷使用，以及防止大幅破坏原结构。
+- 提供了映射接口 `maplebirchFrameworks` 和 `simplebirchFrameworks` 对 `maplebirch` 的映射和快捷使用，以防止大幅破坏原结构。
 
 | 提供的功能 | 映射方法使用 | 对应路径 |
 | :-: | :-: | :-: |
@@ -1230,6 +1230,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
