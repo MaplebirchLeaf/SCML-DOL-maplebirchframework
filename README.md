@@ -914,8 +914,9 @@ maplebirchFrameworks.onInit(() => {
   ]
 }
 ```
+
  ### ​​简易弹窗
-  + 使用`<<maplebirchReplace>>`宏来进行便携弹窗，基本用法 `<<maplebirchReplace "弹窗键名">>`
++ 使用`<<maplebirchReplace>>`宏来进行便携弹窗，基本用法 `<<maplebirchReplace "弹窗键名">>`
 ```
 示例:
 <!-- 基础弹窗 -->
@@ -1230,6 +1231,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
