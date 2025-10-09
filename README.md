@@ -566,6 +566,14 @@ B. 相对时间偏移模式:
     ├── xx.wav  
     └── 音频文件等
 ```
+  + 需要在你的 **`boot.json`** 文件中的 **`"additionFile"`** 填写你的文件路径，否则你的**音频文件**将不会被载入
+```
+示例：
+"additionFile": [
+  "audio/BiSH - innocent arrogance.mp3",
+  "audio/Lizz Robinett,Lowlander - Bad Apple ~Reprise~ (English Version).mp3"
+],
+```
   #### 使用示例
 ```
 // 1. 从文件添加音频
@@ -1257,6 +1265,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
