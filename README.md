@@ -639,7 +639,7 @@ play() 方法选项:
 ```
 "params": {
   "audio": true, // 布尔型：默认的 根目录/audio/ 的文件夹下的音频文件
-  "audio": "music", // 字符串型：自定义的 根目录/music/ 的文件夹下的音频文件
+  "audio": ["music", "audio"], // 数组型：自定义的 根目录/music/ 和 根目录/audio/ 文件夹下的音频文件
 }
 ```
  ### 灵活的条件匹配
@@ -1265,6 +1265,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
