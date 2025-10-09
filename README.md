@@ -66,7 +66,7 @@
 | 导入音频文件 | `maplebirchFrameworks.addAudio` / `simplebirchFrameworks.addAudio` | `maplebirch.audio.importAllAudio` |
 | 获取音频播放实例 | `maplebirchFrameworks.getPlayer` / `simplebirchFrameworks.getPlayer` | `maplebirch.audio.getPlayer` |
 | 变量迁徙实例 | `maplebirchFrameworks.migration` / `simplebirchFrameworks.migration` | `maplebirch.tool.migration.create` |
-| 获取随机值 | `maplebirchFrameworks.getRandom` / `simplebirchFrameworks.getRandom` | `maplebirch.tool.random.get` |
+| 获取随机值 | `maplebirchFrameworks.getRand` / `simplebirchFrameworks.getRand` | `maplebirch.tool.rand.get` |
 | 注册文本片段 | `maplebirchFrameworks.addText` / `simplebirchFrameworks.addText` | `maplebirch.tool.text.reg` |
 | addto区域注册 | `maplebirchFrameworks.addto` / `simplebirchFrameworks.addto` | `maplebirch.tool.framework.addTo` |
 | 初始化函数脚本 | `maplebirchFrameworks.onInit` / `simplebirchFrameworks.onInit` | `maplebirch.tool.framework.onInit` |
@@ -1231,6 +1231,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
