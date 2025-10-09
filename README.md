@@ -707,44 +707,70 @@ migrator.utils.fill(userData, { settings: { theme: 'dark' } });
   + `const num4 = maplebirchFrameworks.getRandom({min:1, max:5, float:true});` // 1-5的随机浮点数  
   + `const item = maplebirchFrameworks.getRandom(['a','b','c']);` // 随机选择数组元素  
  ### 文本片段
+ + 核心方法
+```
+- reg(key, handler, [id]): 注册处理器
+- unreg(key, [idOrHandler]): 注销处理器
+```
+ + 渲染工具链说明 (handler的't'参数)
+```
+- text(content, style): 添加文本(可选CSS类)
+- line(content, style): 添加换行+文本
+- wikify(content): 解析维基语法
+- raw(content): 添加原始HTML/节点
+- box(content, style): 添加带样式的容器
+```
   #### 注册文本
   - 使用 maplebirchFrameworks.addText 方法注册文本处理器
 ```
-// 基本文本片段
-maplebirchFrameworks.addText('welcome', (t) => {
+// 基本文本
+maplebirchFrameworks.addText('welcome', t => {
   t.text('欢迎来到游戏世界！');
-  t.line('在这里你将开始一段奇妙的冒险。');
+  t.line('开始你的冒险旅程吧！');
 });
-
-// 带样式的文本片段
-maplebirchFrameworks.addText('warning', (t) => {
+// 带样式文本
+maplebirchFrameworks.addText('warning', t => {
   t.text('危险警告！', 'red-text');
   t.line('前方发现敌人，请做好准备！');
 });
-
-// 使用维基语法的文本片段
-maplebirchFrameworks.addText('choice', (t) => {
-  t.text('请选择你的行动：');
-  t.wikify('[[攻击敌人|战斗]] [[悄悄离开|逃跑]]');
+// 使用 <<link>> 宏的交互选项
+maplebirchFrameworks.addText('choice', t => {
+  t.text('请选择行动：');
+  t.wikify('<<link "攻击">><<goto "combat">><</link>>');
+  t.wikify('<<link "逃跑">><<goto "escape">><</link>>');
+  t.wikify('<<link "对话">><<goto "talk">><</link>>');
 });
-
-// 带动态数据的文本片段
-maplebirchFrameworks.addText('greet', (t) => {
-  t.text(`你好，${t.ctx.playerName}！`, 'greeting');
-  t.line(`今天是${t.ctx.day}，天气${t.ctx.weather}`);
+// 带图标和样式的链接
+maplebirchFrameworks.addText('styled_links', t => {
+  t.wikify('<<link "查看地图" "map-link">><<run showMap()>><</link>>');
+  t.wikify('<<link "打开背包" "inventory-link">><<run openInventory()>><</link>>');
 });
-
-// 组合多个元素的复杂片段
-maplebirchFrameworks.addText('treasure', (t) => {
-  t.text('你发现了宝藏！', 'gold-text');
-  t.line();
-  t.text(`里面装着${t.ctx.itemName}`, 'item-desc');
-  t.line();
-  t.raw('<button id="takeTreasure">拾取</button>');
+// 带条件的交互选项
+maplebirchFrameworks.addText('conditional_choice', t => {
+  if (t.ctx.hasWeapon) {
+    t.wikify('<<link "使用武器攻击">><<set $action = "weapon_attack">><</link>>');
+  } else {
+    t.wikify('<<link "徒手攻击">><<set $action = "barehand_attack">><</link>>');
+    }
+  if (t.ctx.isStealth) {
+    t.wikify('<<link "潜行通过">><<goto "stealth_pass">><</link>>');
+  }
+});
+// 带参数的链接
+maplebirchFrameworks.addText('shop', t => {
+  t.text('商店商品:', 'shop-header');
+  t.wikify('<<link "药水 (50金币)">><<set $buyItem = "potion">><<goto "purchase">><</link>>');
+  t.wikify('<<link "长剑 (120金币)">><<set $buyItem = "sword">><<goto "purchase">><</link>>');
+});
+// 带悬停提示的链接
+maplebirchFrameworks.addText('hint_links', t => {
+  t.wikify('<<link "神秘宝箱">><<replace "#hint">>内含稀有装备<</replace>><</link>>');
+  t.wikify('<<link "古老卷轴">><<replace "#hint">>记载失传魔法<</replace>><</link>>');
+  t.raw('<div id="hint">悬停查看详情</div>');
 });
 ```
   #### 输出文本
-  - 使用 <<maplebirchTextOutput>> 宏输出注册的文本片段
+  - 使用 `<<maplebirchTextOutput>>` 宏输出注册的文本片段
 ```
 // 输出单个片段
 <<maplebirchTextOutput "welcome">>
@@ -1231,6 +1257,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
