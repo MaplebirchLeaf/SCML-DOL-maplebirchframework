@@ -936,11 +936,11 @@ migrator.utils.fill(userData, { settings: { theme: 'dark' } });
 - `transform(data, path, transformer)`: 转换属性值
 - `fill(target, defaults, options)`: 填充缺失属性
  ### 随机数生成
-  + `const num1 = maplebirchFrameworks.getRandom();` // 1-100的随机整数  
-  + `const num2 = maplebirchFrameworks.getRandom(10);` // 0-9的随机整数  
-  + `const num3 = maplebirchFrameworks.getRandom({min:5, max:10});` // 5-10的随机整数  
-  + `const num4 = maplebirchFrameworks.getRandom({min:1, max:5, float:true});` // 1-5的随机浮点数  
-  + `const item = maplebirchFrameworks.getRandom(['a','b','c']);` // 随机选择数组元素  
+  + `const num1 = maplebirchFrameworks.getRand();` // 1-100的随机整数  
+  + `const num2 = maplebirchFrameworks.getRand(10);` // 0-9的随机整数  
+  + `const num3 = maplebirchFrameworks.getRand({min:5, max:10});` // 5-10的随机整数  
+  + `const num4 = maplebirchFrameworks.getRand({min:1, max:5, float:true});` // 1-5的随机浮点数  
+  + `const item = maplebirchFrameworks.getRand(['a','b','c']);` // 随机选择数组元素  
  ### 文本片段
  + 核心方法
 ```
@@ -1597,3 +1597,4 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
