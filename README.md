@@ -1468,6 +1468,20 @@ maplebirchFrameworks.addNPC({
   "Magic Mentor": { EN: "Magic Mentor", CN: "魔法导师" }
 });
 
+注：当下方有不需要的功能时用{}替代
+maplebirchFrameworks.addNPC({
+  nam: "Alice",
+  title: "Magic Mentor",
+  gender: "f",
+  type: "human",
+  description: "一位神秘的精灵魔法师",
+  eyeColour: "紫色",
+  hairColor: "银色"
+}, {
+
+}, {
+
+});
 ```
  #### 添加自定义状态
  - 添加或更新NPC的自定义状态系统(maplebirchFrameworks.addStats(statsObject))
@@ -1597,4 +1611,5 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
