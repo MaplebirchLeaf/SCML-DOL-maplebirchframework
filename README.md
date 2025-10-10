@@ -1438,7 +1438,7 @@ maplebirchFrameworks.addLocation('forest', {
 @param {Object} npcData - NPC数据对象
 @param {string} npcData.nam - NPC唯一名称（必需）
 @param {string} [npcData.title] - NPC的称号
-@param {string} [npcData.gender="f"] - 性别 (m/f/h)[注: h性别暂时无法使用]
+@param {string} [npcData.gender="f"] - 性别 (m/f/h)
 @param {string} [npcData.type="human"] - 种族类型
 @param {Object} [config] - NPC配置选项
 @param {string[]} [config.loveAlias] - NPC的好感别称数组 [CN, EN]
@@ -1611,6 +1611,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
