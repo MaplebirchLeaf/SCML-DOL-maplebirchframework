@@ -1,4 +1,6 @@
 (() => {
+  const modUtils = window.modUtils;
+  if (modUtils.getNowRunningModName() !== 'maplebirch' || !window.maplebirch) return;
   const maplebirch = window.maplebirch;
   const variable = maplebirch.var;
   const migrationSystem = variable.migrationSystem;
@@ -29,5 +31,4 @@
     if (data.npcList) utils.remove(data, 'npcList');
     data.version = '1.0.1';
   });
-
 })();

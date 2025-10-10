@@ -1,5 +1,7 @@
 (() => {
-  const maplebirch = window.maplebirch || {};
+  const modUtils = window.modUtils;
+  if (modUtils.getNowRunningModName() !== 'maplebirch' || !window.maplebirch) return;
+  const maplebirch = window.maplebirch;
   
   const zoneMap = {
     'iModInit': 'Init',
@@ -11,7 +13,8 @@
     'iModStatus': 'Status',
     'iModFame': 'Fame',
     'iModStatist': 'Statistics',
-    'iModExtraStatist': 'ExtraStatistics',
+    'iModReady': 'DataInit',
+    'iModExtraStatist': 'Statistics',
     'iModInformation': 'Information',
     'ExtraLinkZone': 'AfterLinkZone',
     'ModCaptionAfterDescription': 'CaptionAfterDescription',
@@ -24,7 +27,7 @@
     'addAudio': 'audio.importAllAudio',             // 导入音频
     'getPlayer': 'audio.getPlayer',                 // 获取播放器
     'migration': 'tool.migration.create',           // 创建迁移
-    'getRandom': 'tool.random.get',                 // 获取随机值
+    'getRand': 'tool.rand.get',                     // 获取随机值
     'addText': 'tool.text.reg',                     // 注册文本片段
     'addto': 'tool.framework.addTo',                // 添加到区域
     'onInit': 'tool.framework.onInit',              // 初始化回调
@@ -61,4 +64,34 @@
   
   window.simpleFrameworks = createFrameworkProxy();
   window.maplebirchFrameworks = createFrameworkProxy();
+
+  function _languageSwitch(...lanObj) {
+    const lancheck = modUtils.getLanguageManager().getLanguage() || navigator.language || navigator.userLanguage;
+    let currentLanguage = 'EN';
+    if (lancheck.includes('zh')) currentLanguage = 'CN';
+    let targetObj;
+    if (typeof lanObj[0] === 'object' && lanObj[0] !== null && !Array.isArray(lanObj[0])) {
+      targetObj = lanObj[0];
+    } else {
+      targetObj = {
+        EN: lanObj[0],
+        CN: lanObj[1]
+      };
+      if (Array.isArray(lanObj[0])) {
+        targetObj.EN = lanObj[0][0];
+        targetObj.CN = lanObj[0][1];
+      }
+    }
+    if (targetObj[currentLanguage] == undefined) {
+      const availableLanguages = Object.keys(targetObj);
+      currentLanguage = availableLanguages.length > 0 ? availableLanguages[0] : 'EN';
+    }
+    return targetObj[currentLanguage];
+  }
+
+  Object.defineProperties(window, {
+    lanSwitch: {
+      value: _languageSwitch
+    },
+  });
 })();

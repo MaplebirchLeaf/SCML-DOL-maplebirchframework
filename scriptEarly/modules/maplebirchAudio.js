@@ -291,7 +291,7 @@
     }
     
     initStorage() {
-      if (!V.maplebirch.audio?.storage) return
+      if (!V.maplebirch?.audio?.storage) return
       if (Object.keys(V.maplebirch.audio.storage).length === 0) return;
       for (const [key, base64] of Object.entries(V.maplebirch.audio.storage)) {
         try {
@@ -332,22 +332,32 @@
       const modLoader = maplebirch.modLoader;
       if (!modLoader) return false;
       const modZip = modLoader.getModZip(modName);
-      if (!modZip || !modZip.zip) return false;
-      
-      const audioFiles = [];
+      if (!modZip || !modZip.modInfo || !modZip.modInfo.bootJson || !modZip.modInfo.bootJson.additionFile) return false;
+      const allAudioFiles = [];
       modZip.zip.forEach((path, file) => {
         if (path.startsWith(`${audioFolder}/`) && !file.dir) {
+          const ext = path.split('.').pop().toLowerCase();
+          if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext)) allAudioFiles.push(path);
+        }
+      });
+      const additionFileSet = new Set(modZip.modInfo.bootJson.additionFile);
+      allAudioFiles.forEach(path => { if (!additionFileSet.has(path)) modLoader.logger.error(`[AudioManager] Audio file "${path}" found in mod but not listed in additionFile`); });
+      const audioFiles = [];
+      modZip.modInfo.bootJson.additionFile.forEach(path => {
+        if (path.startsWith(`${audioFolder}/`)) {
           const ext = path.split('.').pop().toLowerCase();
           if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext)) {
             let key = path.substring(audioFolder.length + 1);
             const lastDotIndex = key.lastIndexOf('.');
             if (lastDotIndex > 0) key = key.substring(0, lastDotIndex);
-            audioFiles.push({ path, file, key });
+            audioFiles.push({ path, key });
           }
         }
       });
       
-      for (const { file, key } of audioFiles) {
+      for (const { path, key } of audioFiles) {
+        const file = modZip.zip.file(path);
+        if (!file) continue;
         try {
           const arrayBuffer = await file.async('arraybuffer');
           await this.loadAudio(key, arrayBuffer);

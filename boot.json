@@ -4,7 +4,8 @@
     "en": "Maplebirch",
     "cn": "秋枫白桦"
   },
-  "version": "2.4.2",
+  "alias": ["Simple Frameworks"], 
+  "version": "2.4.6",
   "styleFileList": [
     "styles/maplebirchDefault.css",
     "styles/maplebirchPanel​.css"
@@ -18,7 +19,8 @@
   ],
   "scriptFileList_earlyload": [
     "scriptEarly/modules/maplebirchAudio.js",
-    "scriptEarly/modules/maplebirchTools.js",   
+    "scriptEarly/modules/maplebirchTools.js",
+    "scriptEarly/modules/maplebirchShop.js",
     "scriptEarly/modules/maplebirchVariables.js",
     "scriptEarly/modules/maplebirchHandling.js",
     "scriptEarly/modules/maplebirchCharacter.js",
@@ -28,7 +30,9 @@
   "scriptFileList_inject_early": [
     "scriptEarly/maplebirch-core.js",
     "scriptEarly/maplebirch-modload.js",
-    "scriptEarly/modules/maplebirchTimeState.js"
+    "scriptEarly/modules/maplebirchTimeState.js",
+    "scriptEarly/Utils/maplebirchUtils.js",
+    "scriptEarly/Utils/maplebirchFrameworks.js"
   ],
   "tweeFileList": [
     "game/base-system/maplebirchIntroduction.twee",

@@ -1,5 +1,6 @@
 // 此处来源于Dom罗宾模组
 (async() => {
+  if (!window.maplebirch) return;
   const modUtils = window.modUtils;
   const logger = modUtils.getLogger();
   const modSC2DataManager = window.modSC2DataManager;
@@ -61,7 +62,7 @@
       this.info = new Map();
       this.logger = gModUtils.getLogger();
       this.gModUtils.getAddonPluginManager().registerAddonPlugin('maplebirch', 'maplebirchAddon', this);
-      this.supportedConfigs = ['language', 'audio', 'framework', 'npc'];
+      this.supportedConfigs = ['language', 'audio', 'framework', 'npc', 'shop'];
       this.queue = {};
       this.processed = {};
       this.supportedConfigs.forEach(type => {
@@ -80,7 +81,6 @@
 
     async #vanillaDataReplace() {
       this.core.log('开始执行正则替换', 'DEBUG');
-      await this.core.tool.framework.afterPatchModToGame();
       await modifyOptionsDateFormat();
       await modifyJournalTime();
     }
@@ -112,11 +112,17 @@
     }
 
     async afterPatchModToGame() {
+      await this.core.tool.framework.afterPatchModToGame();
+    }
+
+    async beforePatchModToGame() {
       await this.#vanillaDataReplace();
+      await this.#processShop();
       await this.#processLanguage();
       await this.#processAudio();
       await this.#processFramework();
       await this.#processNpc();
+      await this.core.shop.beforePatchModToGame();
     }
 
     async #processLanguage() {
@@ -154,9 +160,11 @@
           if (config === true) {
             this.core.log(`为${modName}导入音频（默认路径）`, 'DEBUG');
             await this.core.audio.importAllAudio(modName);
-          } else if (typeof config === 'string') {
-            this.core.log(`为${modName}导入音频（路径: ${config}）`, 'DEBUG');
-            await this.core.audio.importAllAudio(modName, config);
+          } else if (Array.isArray(config)) {
+            for (const path of config) {
+              this.core.log(`为${modName}导入音频（路径: ${path}）`, 'DEBUG');
+              await this.core.audio.importAllAudio(modName, path);
+            }
           }
         }
         this.processed.audio = true;
@@ -253,6 +261,26 @@
         this.processed.npc = true;
       } catch (e) {
         this.core.log(`NPC 配置处理失败: ${e.message}`, 'ERROR');
+      }
+    }
+
+    async #processShop() {
+      if (this.processed.shop || this.queue.shop.length === 0) return;
+      try {
+        for (const task of this.queue.shop) {
+          const { modName, modZip, config } = task;
+          if (Array.isArray(config)) {
+            for (const filePath of config) {
+              this.core.log(`为${modName}加载商店配置: ${filePath}`, 'DEBUG');
+              await this.core.shop.loadShopFromJson(modName, filePath);
+            }
+          } else {
+            this.logger.error(`无效的商店配置: ${JSON.stringify(config)}`);
+          }
+        }
+        this.processed.shop = true;
+      } catch (e) {
+        this.core.log(`商店配置处理失败: ${e.message}`, 'ERROR');
       }
     }
   }

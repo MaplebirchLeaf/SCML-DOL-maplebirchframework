@@ -99,7 +99,7 @@
 
     preInit() { 
       this.tool = maplebirch.tool;
-      this.log = this.tool.createLogger('var');
+      this.log = this.tool.createLog('var');
       maplebirch.once(':passageinit', () => variablesModule.check());
       maplebirch.once(':finally', () => variablesModule.check());
       if (this.migrationSystem) return;

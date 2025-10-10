@@ -1,6 +1,6 @@
 (async() => {
-  const frameworkVersion = '2.4.2';
-  const lastUpdate = '2025.09.26';
+  const frameworkVersion = '2.4.6';
+  const lastUpdate = '2025.10.10';
   const lastModifiedBy = '楓樺葉';
   const DEBUGMODE = false;
 
@@ -88,7 +88,8 @@
     }
 
     #detectLanguage() {
-      const lang = navigator.language || navigator.userLanguage || 'en';
+      const ModI18N = window.modUtils.getLanguageManager().getLanguage();
+      const lang = ModI18N || navigator.language || navigator.userLanguage || 'en';
       if (lang.includes('zh')) return 'CN';
       return 'EN';
     }
@@ -979,7 +980,7 @@
     constructor() {
       this.meta = {
         state: ModuleState.PENDING,
-        coreModules: ['state', 'audio', 'tool', 'var', 'npc', 'char'],
+        coreModules: ['state', 'audio', 'tool', 'var', 'npc', 'char', 'shop'],
         initializedAt: new Date().toLocaleString(),
       };
       this.modList = [];
@@ -1168,7 +1169,7 @@
       });
     });
     
-    maplebirch.ExModCount = 7;
+    maplebirch.ExModCount = 8;
     maplebirch.log('初始化流程设置结束', 'INFO');
   })
   maplebirch.trigger(':coreReady');

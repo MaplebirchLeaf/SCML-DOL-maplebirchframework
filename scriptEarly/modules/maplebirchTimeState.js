@@ -65,10 +65,9 @@
       this.description = options.description || ''; // 事件描述
       this.accumulate = options.accumulate || null; // 累积触发配置
       this.exact = options.exact || false;          // 是否在精确时间点触发
-      
       if (this.accumulate) {
         const validUnits = ['sec','min','hour','day','week','month','year'];
-        if (!validUnits.includes(this.accumulate.unit)) maplebirch.log(`TimeEvent(${id}): 无效累积单位: ${this.accumulate.unit}`, 'WARN');
+        if (!validUnits.includes(this.accumulate.unit)) if (window.maplebirch && maplebirch.log) maplebirch.log(`TimeEvent(${id}): 无效累积单位: ${this.accumulate.unit}`, 'WARN');
         this.accumulator = 0;
         this.target = Math.max(1, Math.floor(this.accumulate.target || 1));
       }
@@ -89,7 +88,7 @@
 
     #handleAccumulateEvent(timeData) {
       const unit = this.accumulate.unit;
-      const delta = timeData.changes[unit] || 0;
+      const delta = (timeData.changes && (timeData.changes[unit] || 0)) || 0;
       if (delta <= 0) return false;
       this.accumulator += delta;
       if (this.accumulator < this.target) return false;
@@ -113,11 +112,12 @@
       catch (e) { maplebirch.log(`[TimeEvent:${this.id}] cond error:`, 'ERROR', e); }
       if (!ok) return false;
       try { this.action(timeData); }
-      catch (e) { maplebirch.log(`[TimeEvent:${this.id}] action error:`, 'ERROR', e) }
+      catch (e) { maplebirch.log(`[TimeEvent:${this.id}] action error:`, 'ERROR', e); }
       return !!this.once;
     }
 
     #isExactPointCrossed(prevDate, currentDate) {
+      if (!prevDate || !currentDate) return false;
       switch(this.type) {
         case 'onHour': return prevDate.hour !== currentDate.hour;
         case 'onDay':  return prevDate.day !== currentDate.day || prevDate.month !== currentDate.month || prevDate.year !== currentDate.year;
@@ -152,7 +152,7 @@
       EN: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
       CN: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
     }
-    
+
     constructor() {
       this.logger = maplebirch.logger;
       this.events = maplebirch.events;
@@ -171,16 +171,16 @@
         'onAfter',   // 时间流逝后事件
         'onTimeTravel', // 时空穿越事件
       ];
-      
+
       this.timeEvents = {};
       this.eventTypes.forEach(type => this.timeEvents[type] = new Map());
-      
+
       this.passage = null;
       this.savedata = {};
       this.prevDate = null;
       this.currentDate = null;
       this.originalTimePass = null;
-      
+
       this.cumulativeTime = {
         sec:    0,
         min:    0,
@@ -218,35 +218,32 @@
     }
 
     #updateCumulativeTime(passedSeconds) {
+      if (passedSeconds <= 0) return;
       this.cumulativeTime.sec += passedSeconds;
-      
+
       const minGained = Math.floor(this.cumulativeTime.sec / 60);
       this.cumulativeTime.sec %= 60;
       this.cumulativeTime.min += minGained;
-      
+
       const hourGained = Math.floor(this.cumulativeTime.min / 60);
       this.cumulativeTime.min %= 60;
       this.cumulativeTime.hour += hourGained;
-      
+
       const dayGained = Math.floor(this.cumulativeTime.hour / 24);
       this.cumulativeTime.hour %= 24;
       this.cumulativeTime.day += dayGained;
-      
+
       const weekGained = Math.floor(this.cumulativeTime.day / 7);
       this.cumulativeTime.day %= 7;
       this.cumulativeTime.week += weekGained;
-      
-      if (this.cumulativeTime.day > 0) {
-        const tempDate = new DateTime(V.startDate + V.timeStamp);
-        tempDate.addDays(this.cumulativeTime.day);
-        
-        const monthDiff = tempDate.month - this.prevDate.month;
-        if (monthDiff > 0) {
-          this.cumulativeTime.month += monthDiff;
-          this.cumulativeTime.day = 0;
-        }
+
+      if (dayGained > 0 && this.prevDate) {
+        const tempDate = new DateTime(this.prevDate);
+        tempDate.addDays(dayGained);
+        let monthDiff = (tempDate.year - this.prevDate.year) * 12 + (tempDate.month - this.prevDate.month);
+        if (monthDiff > 0) this.cumulativeTime.month += monthDiff;
       }
-      
+
       if (this.cumulativeTime.month >= 12) {
         this.cumulativeTime.year += Math.floor(this.cumulativeTime.month / 12);
         this.cumulativeTime.month %= 12;
@@ -254,8 +251,31 @@
     }
 
     #triggerTimeEventsWithCumulative(timeData) {
+      const triggeredThisCycle = new Set();
+      const safeTrigger = (type, data) => {
+        if (!this.timeEvents[type]) return;
+        const events = Array.from(this.timeEvents[type].values()).sort((a, b) => b.priority - a.priority);
+        const toRemove = [];
+        for (const event of events) {
+          if (triggeredThisCycle.has(event.id)) continue;
+          try {
+            if (event.tryRun(data)) {
+              toRemove.push(event.id);
+              triggeredThisCycle.add(event.id);
+            } else {
+              triggeredThisCycle.add(event.id);
+            }
+          } catch (error) {
+            this.#log(`事件执行错误(safeTrigger): ${type}.${event.id} - ${error.message}`, 'ERROR');
+          }
+        }
+        toRemove.forEach(eventId => {
+          if (this.timeEvents[type].delete(eventId)) this.#log(`移除一次性事件: ${type}.${eventId}`, 'DEBUG');
+        });
+      };
+
       const changes = {};
-      Object.keys(this.cumulativeTime).forEach(key => changes[key] = Math.max(0, this.cumulativeTime[key] - (this.lastReportedCumulative[key] || 0)));
+      Object.keys(this.cumulativeTime).forEach(key => changes[key] = Math.max(0, (this.cumulativeTime[key] - (this.lastReportedCumulative[key] || 0))));
       Object.keys(this.lastReportedCumulative).forEach(k => this.lastReportedCumulative[k] = this.cumulativeTime[k] || 0);
       const enhancedTimeData = {
         ...timeData,
@@ -264,11 +284,11 @@
       };
 
       enhancedTimeData.exactPoints = {
-        hour: timeData.prevDate.hour !== timeData.currentDate.hour,
-        day: timeData.prevDate.day !== timeData.currentDate.day || timeData.prevDate.month !== timeData.currentDate.month || timeData.prevDate.year !== timeData.currentDate.year,
-        week: timeData.prevDate.weekDay !== timeData.currentDate.weekDay,
-        month: timeData.prevDate.month !== timeData.currentDate.month || timeData.prevDate.year !== timeData.currentDate.year,
-        year: timeData.prevDate.year !== timeData.currentDate.year
+        hour: timeData.prevDate && timeData.currentDate ? timeData.prevDate.hour !== timeData.currentDate.hour : false,
+        day: timeData.prevDate && timeData.currentDate ? (timeData.prevDate.day !== timeData.currentDate.day || timeData.prevDate.month !== timeData.currentDate.month || timeData.prevDate.year !== timeData.currentDate.year) : false,
+        week: timeData.prevDate && timeData.currentDate ? Math.floor(timeData.prevDate.timeStamp / 604800) !== Math.floor(timeData.currentDate.timeStamp / 604800) : false,
+        month: timeData.prevDate && timeData.currentDate ? (timeData.prevDate.month !== timeData.currentDate.month || timeData.prevDate.year !== timeData.currentDate.year) : false,
+        year: timeData.prevDate && timeData.currentDate ? timeData.prevDate.year !== timeData.currentDate.year : false
       };
 
       const unitEvents = [
@@ -280,11 +300,11 @@
         { event: 'onMin', unit: 'min' },
         { event: 'onSec', unit: 'sec' }
       ];
-      
+
       unitEvents.forEach(({ event, unit }) => {
-        if (changes[unit] > 0) this.#triggerEvents(event, enhancedTimeData);
+        if ((changes[unit] || 0) > 0) safeTrigger(event, enhancedTimeData);
       });
-      
+
       const compositeEvents = [
         { triggerUnits: ['year', 'month', 'week', 'day', 'hour', 'min'], event: 'onSec', unit: 'sec' },
         { triggerUnits: ['year', 'month', 'week', 'day', 'hour'], event: 'onMin', unit: 'min' },
@@ -293,50 +313,50 @@
         { triggerUnits: ['year', 'month'], event: 'onWeek', unit: 'week' },
         { triggerUnits: ['year'], event: 'onMonth', unit: 'month' }
       ];
-      
+
       compositeEvents.forEach(({ triggerUnits, event, unit }) => {
-        if (triggerUnits.some(u => changes[u] > 0)) {
-          this.#triggerEvents(event, {
+        if (triggerUnits.some(u => (changes[u] || 0) > 0)) {
+          safeTrigger(event, {
             ...enhancedTimeData,
             changes: {
               ...changes,
-              [unit]: changes[unit] > 0 ? changes[unit] : 1
+              [unit]: (changes[unit] > 0 ? changes[unit] : 1)
             }
           });
         }
       });
-      
-      if (enhancedTimeData.exactPoints.hour) this.#triggerEvents('onHour', enhancedTimeData);
-      if (enhancedTimeData.exactPoints.day) this.#triggerEvents('onDay', enhancedTimeData);
-      if (enhancedTimeData.exactPoints.week) this.#triggerEvents('onWeek', enhancedTimeData);
-      if (enhancedTimeData.exactPoints.month) this.#triggerEvents('onMonth', enhancedTimeData);
-      if (enhancedTimeData.exactPoints.year) this.#triggerEvents('onYear', enhancedTimeData);
+
+      if (enhancedTimeData.exactPoints.hour) safeTrigger('onHour', enhancedTimeData);
+      if (enhancedTimeData.exactPoints.day) safeTrigger('onDay', enhancedTimeData);
+      if (enhancedTimeData.exactPoints.week) safeTrigger('onWeek', enhancedTimeData);
+      if (enhancedTimeData.exactPoints.month) safeTrigger('onMonth', enhancedTimeData);
+      if (enhancedTimeData.exactPoints.year) safeTrigger('onYear', enhancedTimeData);
     }
 
     #calculateTimeDifference(prev, current, passedSec) {
-      const diffSeconds = current.compareWith(prev, true);
-      const detailedDiff = current.compareWith(prev);
+      const diffSeconds = prev.compareWith(current, true);
+      const detailedDiff = prev.compareWith(current);
       return {
         passed: passedSec,
         sec: diffSeconds,
         min: Math.floor(diffSeconds / 60),
         hour: Math.floor(diffSeconds / 3600),
-        day: Math.floor(diffSeconds / TimeConstants.secondsPerDay),
-        week: Math.floor(diffSeconds / (TimeConstants.secondsPerDay * 7)),
-        month: Math.abs(detailedDiff.months),
-        year: Math.abs(detailedDiff.years),
+        day: Math.floor(diffSeconds / 86400),
+        week: Math.floor(diffSeconds / 604800),
+        month: Math.abs(detailedDiff.months || 0),
+        year: Math.abs(detailedDiff.years || 0),
         weekday: [prev.weekDay, current.weekDay],
         prevDate: prev,
         currentDate: current,
         detailedDiff
       };
     }
-      
+
     receiveVariables(variables) {
       this.savedata = variables;
       this.#log(`接收存档数据: ${variables.saveId || 'default'}`, 'DEBUG');
     }
-      
+
     #shouldCollectPassage(passage) {
       return passage && !passage.tags.includes('widget');
     }
@@ -376,12 +396,12 @@
         this.#log(`事件类型不存在: ${type}`, 'WARN');
         return false;
       }
-      
+
       if (this.timeEvents[type].delete(eventId)) {
         this.#log(`取消注册时间事件: ${type}.${eventId}`, 'DEBUG');
         return true;
       }
-      
+
       this.#log(`未找到事件: ${type}.${eventId}`, 'DEBUG');
       return false;
     }
@@ -389,7 +409,7 @@
     handleTimePass(passedSeconds) {
       try {
         this.#log(`处理时间流逝: ${passedSeconds}秒`, 'DEBUG');
-        this.prevDate = new DateTime(V.startDate + V.timeStamp);
+        this.prevDate = new DateTime(Time.date);
         this.#triggerEvents('onBefore', {
           passed: passedSeconds,
           timeStamp: V.timeStamp,
@@ -398,8 +418,8 @@
         const fragment = this.originalTimePass(passedSeconds);
         this.currentDate = Time.date;
         const timeData = this.#calculateTimeDifference(
-          this.prevDate, 
-          this.currentDate, 
+          this.prevDate,
+          this.currentDate,
           passedSeconds
         );
         this.#updateCumulativeTime(passedSeconds);
@@ -494,10 +514,10 @@
       }
       addonReplacePatcher.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);
     }
-      
+
     applyAllOptimizations(content) {
       const appliedOptimizations = [];
-      
+
       const regex1 = /if \(arguments\[0\] < 0 \|\| arguments\[0\] > 315569437199\)\s+throw new Error\("Invalid timestamp: Timestamp cannot be lower than 0 or higher than 315569437199\."\);/;
       if (regex1.test(content)) {
         content = content.replace(regex1, 'if (arguments[0] < -62135596800 || arguments[0] > 315569437199)\n        throw new Error("Invalid timestamp: Timestamp out of range.");');
@@ -539,7 +559,7 @@
         content = content.replace(regex7, 'get moonPhaseFraction() {\n    const referenceNewMoon = new DateTime(-4713, 1, 1, 12, 0, 0);\n    let phaseFraction = ((this.timeStamp - referenceNewMoon.timeStamp) / \n                        (TimeConstants.synodicMonth * TimeConstants.secondsPerDay)) % 1;\n    return phaseFraction < 0 ? phaseFraction + 1 : phaseFraction;\n  }');
         appliedOptimizations.push("优化7");
       }
-      
+
       this.appliedOptimizations = appliedOptimizations;
       return content;
     }
@@ -568,7 +588,7 @@
       if (TimeStateManager.daysOfWeek[useLang]) Time.daysOfWeek = [...TimeStateManager.daysOfWeek[useLang]];
       this.#log(`时间系统语言已更新: ${useLang}`, 'DEBUG');
     }
-    
+
     async preInit() {
       await this.modifyDateTimeScript();
       maplebirch.on(':passageinit', (ev) => {
@@ -585,7 +605,7 @@
         maplebirch.on(':languageChange', () => this.updateTimeLanguage());
       });
     }
-    
+
     Init() {
       if (typeof Time.pass === 'function') {
         this.originalTimePass = Time.pass;

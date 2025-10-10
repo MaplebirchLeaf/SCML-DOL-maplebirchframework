@@ -8,7 +8,7 @@
   
   class processHandling {
     constructor() {
-      this.lang = null
+      this.lang = maplebirch.lang;
       this.tool = null;
       this.log = null;
       this.updateTimer = null;
@@ -171,9 +171,8 @@
     }
 
     preInit() {
-      this.lang = maplebirch.lang;
       this.tool = maplebirch.tool;
-      this.log = this.tool.createLogger('widget');
+      this.log = this.tool.createLog('widget');
       this.tool.framework.addTo('HintMobile', 'maplebirchModHintMobile');
       this.tool.framework.addTo('MenuBig', 'maplebirchModHintDesktop');
       this.tool.other.configureLocation('lake_ruin', {
@@ -185,9 +184,12 @@
       }, { layer: 'base', element: 'bloodmoon_snow' });
 
       maplebirch.once(':definewidget', () => {
+        this.tool.widget.defineMacro('maplebirchTextOutput', this.tool.text.makeMacroHandler());
         this.tool.widget.defineMacroS('maplebirchFrameworkVersions', () => this._showModVersions());
         this.tool.widget.defineMacroS('maplebirchFrameworkInfo', () => this._showFrameworkInfo());
       });
+
+      maplebirch.on(':passagestart', () => V.debug = V.options?.maplebirch?.debug ? 1 : V.debug);
 
       maplebirch.on(':loadSaveData', () => maplebirch.Language = V?.maplebirch?.language);
 

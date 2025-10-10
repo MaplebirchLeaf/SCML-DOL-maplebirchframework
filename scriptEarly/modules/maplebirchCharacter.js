@@ -148,7 +148,7 @@
 
     preInit() {
       this.tool = maplebirch.tool;
-      this.log = this.tool.createLogger('char');
+      this.log = this.tool.createLog('char');
     }
 
     Init() {
