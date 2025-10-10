@@ -648,40 +648,256 @@ play() 方法选项:
 }
 ```
  ### 框架的实用工具
- #### 灵活的条件匹配
-+ 这个类提供了多种匹配模式，包括精确匹配、范围匹配、集合匹配、子串匹配、正则匹配和比较匹配
+ + 可在 **非 `scriptFileList_inject_early` 时机** 使用如下逻辑。
+ #### 一般实用工具
+ + **`clone`** 函数
 ```
-- case(condition, result)        : 添加精确匹配条件
-- caseRange(min, max, result)     : 添加数字范围匹配
-- caseIn(values, result)          : 添加集合匹配
-- caseIncludes(substrings, result): 添加子串匹配
-- caseRegex(regex, result)        : 添加正则表达式匹配
-- caseCompare(comparator, value, result): 添加比较匹配
-- else(result)                    : 设置默认结果
-- match(input)                    : 执行匹配并返回结果
+ - Date对象：创建新实例
+ - RegExp对象：复制正则表达式
+ - Map/Set对象：递归克隆元素
+ - ArrayBuffer和TypedArray：复制底层缓冲区
+ - 函数：直接返回原函数
+ - 数组：递归克隆元素
+ - 普通对象：复制所有可枚举属性（包括符号属性）
+@param {any} source - 要克隆的对象（任意类型）
+@param {Object} [options={}] - 克隆选项
+@param {boolean} [options.deep=true] - 是否深克隆（默认true）
+@param {boolean} [options.preservePrototype=true] - 是否保留原型链（默认true）
+@param {WeakMap} [map=new WeakMap()] - 内部WeakMap(处理循环引用，用户通常无需传递)
+@returns {any} 克隆后的对象
+
+@example
+// 深克隆对象
+const obj = { a: 1, b: { c: 2 } };
+const cloned = clone(obj);
+obj.b.c = 3; // 不影响克隆对象
+console.log(cloned.b.c); // 2
+
+@example
+// 浅克隆数组
+const arr = [1, [2, 3]];
+const shallowCopy = clone(arr, { deep: false });
+arr[1][0] = 99; // 影响克隆数组
+console.log(shallowCopy[1][0]); // 99
+```
+ + **`equal`** 函数
+```
+ - 基本类型：直接使用 === 比较
+ - 日期对象：比较时间戳
+ - 正则表达式：比较source和flags
+ - 数组：递归比较每个元素
+ - 普通对象：递归比较所有自身可枚举属性
+ - 其他对象类型：使用默认比较规则
+@param {any} a - 第一个比较值
+@param {any} b - 第二个比较值
+@returns {boolean} 是否相等
+
+@example
+// 比较日期对象
+equal(new Date(2023, 0, 1), new Date(2023, 0, 1)); // true
+
+@example
+// 比较嵌套对象
+equal({ a: [1, { b: 2 }] }, { a: [1, { b: 2 }] }); // true
+
+@example
+// 比较正则表达式
+equal(/abc/i, /abc/i); // true
+```
+ + **`merge`** 函数
+```
+- 基本类型：直接覆盖
+- 对象：递归合并
+- 数组：根据arrayBehaviour选项处理：
+   - "replace"：替换整个数组（默认）
+   - "concat"：连接两个数组
+   - "merge"：递归合并对应索引的元素
+@param {Object} target - 目标对象（将被修改）
+@param {...Object} sources - 要合并的源对象
+@param {Object} [options={}] - 合并选项
+@param {string} [options.arrayBehaviour="replace"] - 数组合并策略("replace", "concat", "merge")
+@param {Function} [options.filterFn] - 属性过滤函数(key, value, depth) => boolean
+@returns {Object} 合并后的对象（即修改后的target）
+
+@example
+// 合并数组
+const target = { arr: [1, 2] };
+merge(target, { arr: [3, 4] }, { arrayBehaviour: "concat" });
+// 结果: { arr: [1, 2, 3, 4] }
+
+@example
+// 递归合并对象
+const target = { a: { b: 1, c: 2 } };
+merge(target, { a: { c: 3, d: 4 } });
+// 结果: { a: { b: 1, c: 3, d: 4 } }
+
+@example
+// 使用属性过滤
+merge({}, { public: "info", secret: "data" }, {
+  filterFn: (key) => key !== "secret"
+});
+// 结果: { public: "info" }
+```
+ + **`contains`** 函数
+```
+ - 'any': 包含任意一个元素即返回true（默认）
+ - 'all': 必须包含所有元素才返回true
+ - 'none': 不包含任何元素才返回true
+@param {Array} arr - 目标数组
+@param {any|Array} value - 要查找的值或值数组
+@param {Object} [options={}] - 配置选项
+@param {string} [options.mode='any'] - 匹配模式('any', 'all', 'none')
+@param {boolean} [options.caseSensitive=true] - 字符串是否区分大小写
+@param {Function} [options.comparator] - 自定义比较函数(item, value) => boolean
+@param {boolean} [options.deepEqual=false] - 是否使用深度相等比较
+@returns {boolean} 检查结果
+
+@example
+// 检查单个元素
+contains([1, 2, 3], 2); // true
+
+@example
+// 检查多个元素(all模式)
+contains([1, 2, 3], [1, 2], { mode: 'all' }); // true
+
+@example
+// 检查多个元素(none模式)
+contains([1, 2, 3], [4, 5], { mode: 'none' }); // true
+
+@example
+// 不区分大小写检查
+contains(['a', 'B'], 'b', { caseSensitive: false }); // true
+
+@example
+// 深度对象检查
+contains([{ a: 1 }], { a: 1 }, { deepEqual: true }); // true
+```
+ + **`random`** 函数
+```
+ - random()：返回0-1之间的随机浮点数
+ - random(max)：返回0-max之间的随机整数
+ - random(min, max)：返回min-max之间的随机整数
+ - random(min, max, true)：返回min-max之间的随机浮点数
+ - random({ min, max, float })：使用配置对象
+@param {number|Object} [min] - 最小值或配置对象
+@param {number} [max] - 最大值
+@param {boolean} [float=false] - 是否生成浮点数（默认false）
+@returns {number} 随机数
+
+@example
+// 生成0-1之间的随机浮点数
+random(); // 0.756
+
+@example
+// 生成10-20之间的整数
+random(10, 20); // 15
+
+@example
+// 生成5-10之间的浮点数
+random(5, 10, true); // 7.231
+
+@example
+// 使用配置对象
+random({ min: 5, max: 10, float: true }); // 7.231
+```
+ + **`either`** 函数
+```
+ - either([item1, item2, ...], options)
+ - either(item1, item2, ..., options)
+@param {Array|any} itemsOrA - 选项数组或第一个选项
+@param {...any} rest - 其他选项或配置对象
+@param {Object} [options] - 配置选项
+@param {number[]} [options.weights] - 选项权重数组（长度必须与选项一致）
+@param {boolean} [options.allowNull=false] - 是否允许返回null（默认false）
+@returns {any} 随机选择的选项（可能为null）
+
+@example
+// 简单随机选择
+either(['a', 'b', 'c']); // 'b'
+
+@example
+// 加权随机选择
+either(['a', 'b'], { weights: [0.8, 0.2] }); // 80%概率选'a'
+
+@example
+// 允许返回空值
+either(['a', 'b'], { allowNull: true }); // 33%概率返回null
+
+@example
+// 直接传递选项
+either('cat', 'dog', { weights: [0.3, 0.7] });
+```
+ #### 灵活的条件匹配
++ 这个类提供了多种匹配模式，包括精确匹配、范围匹配、集合匹配、子串匹配、正则匹配和比较匹配以及自定义条件函数匹配
+```
+**caseIncludes(substrings, result)**
+  - 添加子字符串包含匹配条件
+  - @param {string|string[]} substrings - 要匹配的子字符串或子字符串数组
+  - @param {any} result - 匹配成功时返回的结果（可以是值或函数）
+  - 当输入值是字符串且包含任意一个substrings中的子字符串时匹配
+
+**caseRegex(regex, result)**
+  - 添加正则表达式匹配条件
+  - @param {RegExp} regex - 用于匹配的正则表达式对象
+  - @param {any} result - 匹配成功时返回的结果（可以是值或函数）
+  - 当输入值是字符串且匹配给定的正则表达式时匹配
+
+**casePredicate(fn, result)**
+  - 添加自定义条件函数
+  - @param {Function} fn - 自定义条件函数，形式为 (input, meta) => boolean
+  - @param {any} result - 匹配成功时返回的结果（可以是值或函数）
+  - 当条件函数返回true时匹配，该函数接收输入值和元数据对象
+
+**caseIn(values, result)**
+  - 添加集合包含匹配条件
+  - @param {Array} values - 要匹配的值数组
+  - @param {any} result - 匹配成功时返回的结果
+  - 当输入值严格等于values数组中的任意一个值时匹配
+
+**caseRange(min, max, result)**
+  - 添加数值范围匹配条件
+  - @param {number} min - 范围最小值（包含）
+  - @param {number} max - 范围最大值（包含）
+  - @param {any} result - 匹配成功时返回的结果
+  - 当输入值是数字且在[min, max]范围内时匹配
+
+**caseCompare(comparator, value, result)**
+  - 添加数值比较条件
+  - @param {string} comparator - 比较运算符（'<', '<=', '>', '>='）
+  - @param {number} value - 要比较的数值
+  - @param {any} result - 匹配成功时返回的结果
+  - 当输入值是数字且满足比较条件时匹配
 ```
 + 演示示例
 ```
-// 年龄分类器
-const ageClassifier = new SelectCase()
-  .caseRange(0, 12, '儿童')       // 范围匹配
-  .caseRange(13, 19, '青少年')     // 范围匹配
-  .caseRange(20, 64, '成人')       // 范围匹配
-  .caseCompare('>=', 65, '老年人')  // 比较匹配
-  .else('无效年龄');               // 默认结果
+@example <caption>基本用法（单一类型匹配）</caption>
+// 创建数字选择器（所有条件都是数字类型）
+const numberSelector = new selectCase()
+  .case(1, 'One')
+  .case(2, 'Two')
+  .caseRange(3, 5, 'Three to Five')
+  .caseCompare('>', 10, 'Greater than Ten')
+  .else('Other number');
 
-ageClassifier.match(5);   // 返回'儿童'
+numberSelector.match(1); // 'One'
+numberSelector.match(4); // 'Three to Five'
+numberSelector.match(15); // 'Greater than Ten'
+numberSelector.match(7); // 'Other number'
 
-// 错误代码解析器
-const errorParser = new SelectCase()
-  .case(404, '未找到')               // 精确匹配
-  .case(500, '服务器错误')            // 精确匹配
-  .caseIn([401, 403], '认证错误')     // 集合匹配 (不会匹配402，不是范围)
-  .caseIncludes('timeout', '超时错误') // 子串匹配
-  .caseRegex(/^5\d{2}$/, '5xx服务器错误') // 正则匹配
-  .else('未知错误');                  // 默认结果
+@example <caption>基本用法（字符串匹配）</caption>
+// 创建字符串选择器（所有条件都是字符串类型）
+const colorSelector = new selectCase()
+  .case('red', '#FF0000')
+  .case('green', '#00FF00')
+  .case('blue', '#0000FF')
+  .caseIncludes(['light', 'pale'], 'Light variant') // 包含子字符串匹配
+  .caseRegex(/dark|black/i, 'Dark variant') // 正则表达式匹配
+  .else('#FFFFFF');
 
-errorParser.match(503);   // '5xx服务器错误'
+colorSelector.match('green'); // '#00FF00'
+colorSelector.match('light blue'); // 'Light variant'
+colorSelector.match('dark red'); // 'Dark variant'
+colorSelector.match('yellow'); // '#FFFFFF'
 ```
  ### 变量迁徙
   #### 变量迁徙使用示例
@@ -1375,5 +1591,3 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
-
-
