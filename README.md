@@ -1317,6 +1317,7 @@ maplebirchFrameworks.addLocation('forest', {
 }, { layer: 'emissive', element: 'fireflies' });
 ```
  ### 商店注册
+ + 关于你的商店页面名称为 **"商店唯一标识名称" + Shop**，通过 **`<<link [[你的商店|"商店唯一标识名称" Shop]]>><</link>>`** 来进入，所以入口需要你自己填写
  #### 特别参数说明
  + 关于**三个额外外套槽**需要**ReOverfits模组**加载后才会在商店中生效逻辑，否则将不显示
 ```
@@ -1592,4 +1593,5 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
