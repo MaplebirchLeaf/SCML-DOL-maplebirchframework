@@ -42,6 +42,9 @@
         - [特质addonPlugin注册](#特质addonPlugin注册)
     - [地点注册](#地点注册)
     - [商店注册](#商店注册)
+        - [特别参数说明](#特别参数说明)
+        - [商店addonPlugin的注册](#商店addonPlugin的注册)
+        - [使用示例](#使用示例)
     - [NPC注册](#NPC注册)
         - [NPC的基本数据](#NPC的基本数据)
         - [添加自定义状态](#添加自定义状态)
@@ -1095,7 +1098,109 @@ maplebirchFrameworks.addLocation('forest', {
 }, { layer: 'emissive', element: 'fireflies' });
 ```
  ### 商店注册
+ #### 特别参数说明
+ + 关于**三个额外外套槽**需要**ReOverfits模组**加载后才会在商店中生效逻辑，否则将不显示
+```
+"clothesType":  // 商店种类
+[
+  "all",         // 查看全部
+  "overhead",    // 查看头套（需要ReOverfits模组支持）
+  "overupper",   // 查看外套上衣（需要ReOverfits模组支持）
+  "overlower",   // 查看外套下衣（需要ReOverfits模组支持）
+  "overoutfit",  // 查看外衣套装
+  "outfit",      // 查看套装
+  "upper",       // 查看上装
+  "lower",       // 查看下装
+  "underoutfit", // 查看内衣套装
+  "underupper",  // 查看内衣上衣
+  "underlower",  // 查看内衣下衣
+  "head",        // 查看头饰
+  "face",        // 查看面饰
+  "neck",        // 查看颈饰
+  "handheld",    // 查看手持物品
+  "hands",       // 查看手饰
+  "legs",        // 查看袜子
+  "feet",        // 查看鞋类
+  "genital"      // 查看生殖器饰品
+]
 
+"type":  文本类型(即服装店中插入的文本或sugarcube语法)
+[
+  "intro",              // 商店欢迎文本（进入商店时显示）
+  "beforeType",         // 类别选择前文本（显示在服装类别选择前）
+  "afterType",          // 类别选择后文本（显示在服装类别选择后）
+  "beforeChangingRoom", // 更衣室前文本（显示在更衣室链接前）
+  "afterChangingRoom",  // 更衣室后文本（显示在更衣室链接后）
+  "beforeLeave"         // 离开前文本（显示在离开链接前）
+]
+```
+ #### 商店addonPlugin的注册
+ + 在你的 `boot.json` 中申明载入此文件
+```
+"additionFile": [
+  "shop/XXX.json"
+],
+```
+ + 在 `boot.json` 中的 `"addonPlugin"` 填写注册逻辑
+```
+"params": {
+  "shop": [
+    "shop/XXX.json",
+    "XXX/XXX.json
+  ]
+}
+```
+ #### 使用示例
+ + 写在你的模组 **`根目录/shop/XXX.josn`** 或者 **`根目录/XXX/XXX.josn`** 都可以
+```
+{
+  "shopName": "商店唯一标识名称", // 必填：商店的唯一标识名称（英文或拼音）
+  "clothesType": ["类别1", "类别2"], // 必填：支持的服装类别数组
+  "type": ["文本类型1", "文本类型2"], // 可选：使用的文本类型
+  "content": {
+    // 文本内容配置（根据type中指定的类型配置）
+    "文本类型1": [
+      // 数组形式，支持多种输出方式混合
+      "简单文本内容（自动使用text方法）", 详情看框架另一功能，文本注册。
+      {
+        "method": "text", // 输出方法：text/line/wikify/raw/box
+        "text": "带样式的文本",
+        "style": "自定义CSS类名" // 可选
+      },
+      {
+        "method": "line",
+        "text": "带换行的文本"
+      },
+      {
+        "method": "wikify",
+        "text": "包含[[维基语法]]的文本"
+      },
+      {
+        "method": "raw",
+        "text": "<div>原始HTML内容</div>"
+      },
+      {
+        "method": "box",
+        "text": "容器中的文本",
+        "style": "容器CSS类名"
+      }
+    ],
+    "文本类型2": [
+      // 另一种文本类型的配置
+      "更多文本内容..."
+    ]
+  },
+  "options": {
+    // 商店选项配置
+    "outside": 0, // 可选：是否在室外（0=室内，1=室外，影响天气显示）
+    "stress": false, // 可选：是否启用压力检查（默认false）
+    "stressMacro": "宏名称",     // 可选：压力过高时执行的宏widegt（需要stress=true）
+    "changingRoom": true,       // 可选：是否显示更衣室（默认true）
+    "changingRoomCondition": "条件表达式",     // 可选：更衣室显示条件（TwineScript表达式）
+    "exitPassage": "离开后通道名称"            // 可选：离开后前往的Passage通道名称
+  }
+}
+```
  ### NPC注册
  #### NPC的基本数据
  - 添加NPC角色 (maplebirchFrameworks.addNPC)
@@ -1268,36 +1373,3 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
