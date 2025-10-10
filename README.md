@@ -41,6 +41,7 @@
     - [特质注册](#特质注册)
         - [特质addonPlugin注册](#特质addonPlugin注册)
     - [地点注册](#地点注册)
+    - [商店注册](#商店注册)
     - [NPC注册](#NPC注册)
         - [NPC的基本数据](#NPC的基本数据)
         - [添加自定义状态](#添加自定义状态)
@@ -1093,6 +1094,8 @@ maplebirchFrameworks.addLocation('forest', {
   animation: { frameDelay: 300 }
 }, { layer: 'emissive', element: 'fireflies' });
 ```
+ ### 商店注册
+
  ### NPC注册
  #### NPC的基本数据
  - 添加NPC角色 (maplebirchFrameworks.addNPC)
@@ -1265,6 +1268,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
