@@ -138,7 +138,7 @@
       "modVersion": "^2.4.0",
       "params": {
         "language": [],
-        "audio": "",
+        "audio": [""],
         "framework": [
           {
             "addto": "",
@@ -156,6 +156,10 @@
           {
             "traits": []
           }
+        ],
+        "shop": [
+          "shop/XXX.json",
+          "XXX/XXX.json
         ],
         "npc": [
           {
@@ -1593,5 +1597,6 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
