@@ -1455,6 +1455,16 @@ maplebirchFrameworks.addLocation('forest', {
 }
 ```
 + 如果想翻译对应文本如 **带样式的文本** 请自己在对应的语言json文件写数据并导入，详情请看[多语言管理](#多语言管理)
+```
+在cn.json文件中
+{
+"任意唯一不重复键名/Any unique and non repeating key name": "带样式的文本"
+}
+在en.json文件中
+{
+"任意唯一不重复键名/Any unique and non repeating key name": "Stylized text"
+}
+```
  ### NPC注册
  #### NPC的基本数据
  - 添加NPC角色 (maplebirchFrameworks.addNPC)
@@ -1641,6 +1651,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
