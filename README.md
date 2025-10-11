@@ -1404,7 +1404,7 @@ maplebirchFrameworks.addLocation('forest', {
 }
 ```
  #### 商店使用示例
- + 写在你的模组 **`根目录/shop/XXX.josn`** 或者 **`根目录/XXX/XXX.josn`** 都可以
+ + 写在你的模组 **`根目录/shop/XXX.josn`** 或者 **`根目录/XXX/XXX.josn`** 都可以，这里涉及框架另一个功能: [文本片段](#文本片段)
 ```
 {
   "shopName": "商店唯一标识名称", // 必填：商店的唯一标识名称（英文或拼音）
@@ -1454,6 +1454,7 @@ maplebirchFrameworks.addLocation('forest', {
   }
 }
 ```
++ 如果想翻译对应文本如 **带样式的文本** 请自己在对应的语言json文件写数据并导入，详情请看[多语言管理](#多语言管理)
  ### NPC注册
  #### NPC的基本数据
  - 添加NPC角色 (maplebirchFrameworks.addNPC)
@@ -1640,6 +1641,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
