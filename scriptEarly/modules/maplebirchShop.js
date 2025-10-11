@@ -8,25 +8,25 @@
 
   class Shop {
     static categoryMap = {
-      all:        { icon: "all",      text: "查看全部",         widget: "AllShop" },
-      overhead:   { icon: "overhead",   text: "查看头套",         widget: "OverheadShop" },
-      overupper:  { icon: "overupper",  text: "查看外套（上衣）",  widget: "OverTopShop" },
-      overlower:  { icon: "overlower",  text: "查看外套（下衣）",  widget: "OverBottomShop" },
-      overoutfit: { icon: "overoutfit", text: "查看外衣套装",    widget: "OverOutfitShop" },
-      outfit:     { icon: "outfit",   text: "查看套装",         widget: "OutfitShop" },
-      upper:      { icon: "upper",    text: "查看上装",         widget: "TopShop" },
-      lower:      { icon: "lower",    text: "查看下装",         widget: "BottomShop" },
-      underoutfit:{ icon: "underoutfit", text: "查看内衣（套装）", widget: "UnderOutfitShop" },
-      underupper: { icon: "underupper", text: "查看内衣（上衣）", widget: "UnderTopShop" },
-      underlower: { icon: "underlower", text: "查看内衣（下衣）", widget: "UnderBottomShop" },
-      head:       { icon: "head",     text: "查看头饰",         widget: "HeadShop" },
-      face:       { icon: "face",     text: "查看面饰",         widget: "FaceShop" },
-      neck:       { icon: "neck",     text: "查看颈饰",         widget: "NeckShop" },
-      handheld:   { icon: "handheld", text: "查看手持物品",      widget: "HandheldShop" },
-      hands:      { icon: "hand",     text: "查看手饰",         widget: "HandsShop" },
-      legs:       { icon: "legs",     text: "查看袜子",         widget: "LegsShop" },
-      feet:       { icon: "feet",     text: "查看鞋类",         widget: "FeetShop" },
-      genital:    { icon: "strapon",  text: "查看生殖器饰品",    widget: "GenitalShop" }
+      all:        { icon: "all",      text: "View All",         widget: "AllShop" },
+      overhead:   { icon: "overhead",   text: "View Headgear",         widget: "OverheadShop" },
+      overupper:  { icon: "overupper",  text: "View Over Tops",  widget: "OverTopShop" },
+      overlower:  { icon: "overlower",  text: "View Over Bottoms",  widget: "OverBottomShop" },
+      overoutfit: { icon: "overoutfit", text: "View Over Outfits",    widget: "OverOutfitShop" },
+      outfit:     { icon: "outfit",   text: "View Outfits",         widget: "OutfitShop" },
+      upper:      { icon: "upper",    text: "View Tops",         widget: "TopShop" },
+      lower:      { icon: "lower",    text: "View Bottoms",         widget: "BottomShop" },
+      underoutfit:{ icon: "underoutfit", text: "View Under Outfits", widget: "UnderOutfitShop" },
+      underupper: { icon: "underupper", text: "View Under Tops", widget: "UnderTopShop" },
+      underlower: { icon: "underlower", text: "View Under Bottoms", widget: "UnderBottomShop" },
+      head:       { icon: "head",     text: "View Head Accessories",    widget: "HeadShop" },
+      face:       { icon: "face",     text: "View Face Accessories", widget: "FaceShop" },
+      neck:       { icon: "neck",     text: "View Neck Accessories",   widget: "NeckShop" },
+      handheld:   { icon: "handheld", text: "View Handheld Items",  widget: "HandheldShop" },
+      hands:      { icon: "hand",     text: "View Hand Accessories",    widget: "HandsShop" },
+      legs:       { icon: "legs",     text: "View Legwear",     widget: "LegsShop" },
+      feet:       { icon: "feet",     text: "View Shoes",    widget: "FeetShop" },
+      genital:    { icon: "strapon",  text: "View Genital Wear", widget: "GenitalShop" }
     };
 
     constructor() {
@@ -142,9 +142,8 @@
       if (options.stress) html += `\t<<if $stress gte $stressmax>>\n\t\t<<${options.stressMacro}>>\n\t<<else>>\n`;
 
       const modUtils = window.modUtils;
-      const Warmth_text = modUtils.getLanguageManager().getLanguage().includes('zh') ? '保暖度：' : 'Warmth: ';
       const hasReOverfits = modUtils.getMod('ReOverfits');
-      html += `\t\t<span>${Warmth_text}</span>\n`;
+      html += `\t\t<span><<= maplebirch.Language === 'CN' ? '保暖度：' : 'Warmth: '>></span>\n`;
       html += `\t\t<<warmthscale>>\n`;
       html += `\t\t<div id="warmth-description">\n`;
       html += `\t\t\t<<warmth_description>>\n`;
@@ -160,7 +159,7 @@
           const category = Shop.categoryMap[type];
           if (category) {
             html += `\t\t<<clothingcategoryicon "${category.icon}">>\n`;
-            html += `\t\t<<link "${category.text}">><<replace "#clothingShop-div">><<${category.widget}>><</replace>><</link>>\n`;
+            html += `\t\t<<langlink "${category.text}">><<replace "#clothingShop-div">><<${category.widget}>><</replace>><</langlink>>\n`;
             if (index < clothesType.length - 1) html += `\t\t<br>\n`;
             if (groupBreaks.includes(type) && index < clothesType.length - 1) html += `\t\t<br>\n`;
           }
@@ -174,10 +173,10 @@
       if (options.changingRoom) {
         if (this.shopText[shopName].includes('beforeChangingRoom')) html += `\t\t<<maplebirchTextOutput "${shopName+'_beforeChangingRoom'}">><br><br>\n`;
         html += `\t\t<<if ${options.changingRoomCondition}>>\n`;
-        html += `\t\t\t<<icon "hanger.png">><<link [[更衣室|Changing Room]]>>\n`;
+        html += `\t\t\t<<icon "hanger.png">><<langlink '更衣室' 'Changing Room'>>\n`;
         html += `\t\t\t\t<<ShowUnderEquip "normal">>\n`;
         html += `\t\t\t\t<<set $wardrobeExit to "${shopName + ' Shop'}">>\n`;
-        html += `\t\t\t<</link>>\n`;
+        html += `\t\t\t<</langlink>>\n`;
         html += `\t\t\t<br>\n`;
         html += `\t\t<</if>>\n`;
         if (this.shopText[shopName].includes('afterChangingRoom')) html += `\t\t<<maplebirchTextOutput "${shopName+'_afterChangingRoom'}">><br><br>\n`;
@@ -187,7 +186,7 @@
       if (this.shopText[shopName].includes('beforeLeave')) html += `\t\t<<maplebirchTextOutput "${shopName+'_beforeLeave'}">><br><br>\n`;
 
       html += `\t\t<<if $tryOn.value isnot 0>>\n`;
-      html += `\t\t\t<<icon "hanger.png">><<link "归还衣服">>\n`;
+      html += `\t\t\t<<icon "hanger.png">><<langlink "归还衣服">>\n`;
       html += `\t\t\t\t<<clothingReset>>\n`;
       html += `\t\t\t\t<<updatesidebarimg>>\n`;
       html += `\t\t\t\t<<updatesidebardescription>>\n`;
@@ -196,14 +195,14 @@
       html += `\t\t\t\t<<updatewarmthdescription>>\n`;
       html += `\t\t\t\t<<updateclothingshop>>\n`;
       html += `\t\t\t\t<<run updateMoment()>>\n`;
-      html += `\t\t\t<</link>>\n`;
+      html += `\t\t\t<</langlink>>\n`;
       html += `\t\t\t<br>\n`;
       
       html += `\t\t\t<<if $tryOn.value gt 0 and $tryOn.value lte $money>>\n`;
       html += `\t\t\t\t<<sendItemsToDropdown>>\n`;
-      html += `\t\t\t\t<<highicon>><<link "购买衣物">><<buyTryOnClothes "wear">><<updateclothingshop>><</link>>\n`;
+      html += `\t\t\t\t<<highicon>><<langlink "购买衣物">><<buyTryOnClothes "wear">><<updateclothingshop>><</langlink>>\n`;
       html += `\t\t\t\t<br>\n`;
-      html += `\t\t\t\t<<wardrobeicon>><<link "购买衣物并送至衣柜">>\n`;
+      html += `\t\t\t\t<<wardrobeicon>><<langlink "购买衣物并送至衣柜">>\n`;
       html += `\t\t\t\t\t<<buyTryOnClothes "wardrobe">>\n`;
       html += `\t\t\t\t\t<<updatesidebarmoney>>\n`;
       html += `\t\t\t\t\t<<updatesidebarimg>>\n`;
@@ -213,19 +212,19 @@
       html += `\t\t\t\t\t<<updatewarmthdescription>>\n`;
       html += `\t\t\t\t\t<<updateclothingshop>>\n`;
       html += `\t\t\t\t\t<<run updateMoment()>>\n`;
-      html += `\t\t\t\t<</link>>\n`;
+      html += `\t\t\t\t<</langlink>>\n`;
       html += `\t\t\t\t<br>\n`;
       html += `\t\t\t<</if>>\n`;
       
       html += `\t\t<<else>>\n`;
       html += `\t\t\t<<getouticon>>\n`;
-      html += `\t\t\t<<link [[离开|${options.exitPassage}]]>>\n`;
+      html += `\t\t\t<<langlink '离开' '${options.exitPassage}'>>\n`;
       html += `\t\t\t\t<<shopClothingFilterReset>>\n`;
       html += `\t\t\t\t<<ShowUnderEquip "normal">>\n`;
       html += `\t\t\t\t<<ShowUnderEquip "over">>\n`;
       html += `\t\t\t\t<<shopHoodCheck>>\n`;
       html += `\t\t\t\t<<shopCommandoCheck>>\n`;
-      html += `\t\t\t<</link>>\n`;
+      html += `\t\t\t<</langlink>>\n`;
       html += `\t\t\t<br><br>\n`;
       html += `\t\t<</if>>\n`;
 

@@ -123,8 +123,7 @@
     <</script>>
   <</if>>
   <div class="audio-controls">
-    <<set _prev_text to maplebirch.t('previous song')>>
-    <<link _prev_text>>
+    <<langlink 'previous song'>>
       <<if V.maplebirch.audio.currentIndex > 0>>
         <<set V.maplebirch.audio.currentIndex to V.maplebirch.audio.currentIndex - 1>>
       <<else>>
@@ -134,31 +133,27 @@
       <<run maplebirch.audio.getPlayer(_args[0]).stopAll()>>
       <<run maplebirch.audio.getPlayer(_args[0]).play(V.maplebirch.audio.currentTrack, {loop: V.maplebirch.audio.loopMode === "single", volume: V.maplebirch.audio.volume})>>
       <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
-    <</link>>
+    <</langlink>>
     <<if _playing.includes(V.maplebirch.audio.currentTrack)>>
-      <<set $_pause_text to maplebirch.t('pause')>>
-      <<link $_pause_text>>
+      <<langlink 'pause'>>
         <<run maplebirch.audio.getPlayer(_args[0]).togglePause(V.maplebirch.audio.currentTrack)>>
         <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
-      <</link>>
+      <</langlink>>
     <<elseif _isPaused>>
-      <<set $_resume_text to maplebirch.t('resume')>>
-      <<link $_resume_text>>
+      <<langlink 'resume'>>
         <<run maplebirch.audio.getPlayer(_args[0]).togglePause(V.maplebirch.audio.currentTrack)>>
         <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
-      <</link>>
+      <</langlink>>
     <<elseif V.maplebirch.audio.currentTrack>>
-      <<set $_playback_text to maplebirch.t('playback')>>
-      <<link $_playback_text>>
+      <<langlink 'playback'>>
         <<run maplebirch.audio.getPlayer(_args[0]).play(
           V.maplebirch.audio.currentTrack,
           { loop: V.maplebirch.audio.loopMode === "single", volume: V.maplebirch.audio.volume, stopOthers: false }
         )>>
         <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
-      <</link>>
+      <</langlink>>
     <</if>>
-    <<set $_nextsong_text to maplebirch.t('next song')>>
-    <<link $_nextsong_text>>
+    <<langlink 'next song'>>
       <<if V.maplebirch.audio.currentIndex < V.maplebirch.audio.playlist.length - 1>>
         <<set V.maplebirch.audio.currentIndex to V.maplebirch.audio.currentIndex + 1>>
       <<else>>
@@ -168,23 +163,21 @@
       <<run maplebirch.audio.getPlayer(_args[0]).stopAll()>>
       <<run maplebirch.audio.getPlayer(_args[0]).play(V.maplebirch.audio.currentTrack, {loop: V.maplebirch.audio.loopMode === "single", volume: V.maplebirch.audio.volume})>>
       <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
-    <</link>>
-    <<set $_stop_text to maplebirch.t('stop')>>
-    <<link $_stop_text>>
+    <</langlink>>
+    <<langlink 'stop'>>
       <<run maplebirch.audio.getPlayer(_args[0]).stopAll()>>
       <<set V.maplebirch.audio.currentTrack to null>>
       <<set V.maplebirch.audio.currentIndex to -1>>
       <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
-    <</link>>
-    <<set $_loopmode_text to maplebirch.t('loop mode')>>
-    <<link $_loopmode_text>>
+    <</langlink>>
+    <<langlink 'loop mode'>>
       <<if V.maplebirch.audio.loopMode === "none">>
         <<set V.maplebirch.audio.loopMode to "single">>
       <<else>>
         <<set V.maplebirch.audio.loopMode to "none">>
       <</if>>
       <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
-    <</link>>
+    <</langlink>>
   </div>
   <label><<= maplebirch.t('volume')>>:</label>
   <<numberslider '$maplebirch.audio.volume' $maplebirch.audio.volume 0 1 0.01 {

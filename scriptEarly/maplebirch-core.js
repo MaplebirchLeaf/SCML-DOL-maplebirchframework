@@ -1,6 +1,6 @@
 (async() => {
-  const frameworkVersion = '2.4.6';
-  const lastUpdate = '2025.10.10';
+  const frameworkVersion = '2.4.7';
+  const lastUpdate = '2025.10.11';
   const lastModifiedBy = '楓樺葉';
   const DEBUGMODE = false;
 
@@ -88,8 +88,7 @@
     }
 
     #detectLanguage() {
-      const ModI18N = window.modUtils.getLanguageManager().getLanguage();
-      const lang = ModI18N || navigator.language || navigator.userLanguage || 'en';
+      const lang = navigator.language || navigator.userLanguage || 'en';
       if (lang.includes('zh')) return 'CN';
       return 'EN';
     }

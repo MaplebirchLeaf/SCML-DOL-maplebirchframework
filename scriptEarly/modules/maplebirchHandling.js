@@ -5,13 +5,109 @@
   }
 
   const maplebirch = window.maplebirch;
-  
+
   class processHandling {
     constructor() {
       this.lang = maplebirch.lang;
       this.tool = null;
       this.log = null;
       this.updateTimer = null;
+    }
+
+    _languageButton() {
+      try {
+        if (!this.args || this.args.length === 0) return this.error('<<langbutton>> 需要至少一个参数（翻译键或翻译函数调用）');
+        const arg = this.args[0];
+        let buttonText = '';
+        let translationKey = '';
+        if (typeof arg === 'string') {
+          translationKey = arg;
+          const hasSpaceArg = this.args.length > 1 && typeof this.args[1] === 'boolean';
+          const space = hasSpaceArg ? this.args[1] : false;
+          if (typeof maplebirch?.autoTranslate === 'function') {
+            buttonText = maplebirch.autoTranslate(translationKey);
+          } else if (typeof maplebirch?.t === 'function') {
+            buttonText = maplebirch.t(translationKey, space);
+          } else {
+            buttonText = translationKey;
+          }
+        } else if (typeof arg === 'function') {
+          try {
+            buttonText = arg();
+            const match = arg.toString().match(/t\(['"]([^'"]+)['"]/);
+            translationKey = match ? match[1] : 'dynamic';
+          } catch (e) {
+            return this.error(`<<langbutton>> 函数调用失败: ${e.message}`);
+          }
+        } else {
+          return this.error('<<langbutton>> 参数必须是字符串或翻译函数');
+        }
+        const payloadContent = this.payload[0]?.contents ?? '';
+        const $output = $(this.output);
+        let buttonCall = `<<button "${buttonText.replace(/"/g, '\\"')}">>`;
+        buttonCall += payloadContent;
+        buttonCall += '<</button>>';
+        const $tempContainer = $('<div style="display:none;"></div>').appendTo($output);
+        new Wikifier($tempContainer[0], buttonCall);
+        const $button = $tempContainer.find('button');
+        $button.attr('data-translation-key', translationKey);
+        $output.append($button);
+        $tempContainer.remove();
+      } catch (e) {
+        console.error('<<langbutton>> 宏处理错误', e);
+        return this.error(`<<langbutton>> 执行错误: ${e.message}`);
+      }
+    }
+
+    _languageLink() {
+      try {
+        if (!this.args || this.args.length === 0) return this.error('<<langlink>> 需要至少一个参数（翻译键或翻译函数调用）');
+        const arg = this.args[0];
+        let linkText = '';
+        let translationKey = '';
+        let passageName = null;
+        if (typeof arg === 'string') {
+          translationKey = arg;
+          const hasSpaceArg = this.args.length > 1 && typeof this.args[1] === 'boolean';
+          const space = hasSpaceArg ? this.args[1] : false;
+          passageName = this.args.length > (hasSpaceArg ? 2 : 1) ? this.args[hasSpaceArg ? 2 : 1] : null;
+          
+          if (typeof maplebirch?.autoTranslate === 'function') {
+            linkText = maplebirch.autoTranslate(translationKey);
+          } else if (typeof maplebirch?.t === 'function') {
+            linkText = maplebirch.t(translationKey, space);
+          } else {
+            linkText = translationKey;
+          }
+        } else if (typeof arg === 'function') {
+          try {
+            linkText = arg();
+            const match = arg.toString().match(/t\(['"]([^'"]+)['"]/);
+            translationKey = match ? match[1] : 'dynamic';
+            passageName = this.args.length > 1 ? this.args[1] : null;
+          } catch (e) {
+            return this.error(`<<langlink>> 函数调用失败: ${e.message}`);
+          }
+        } else {
+          return this.error('<<langlink>> 参数必须是字符串或翻译函数');
+        }
+        const payloadContent = this.payload[0]?.contents ?? '';
+        const $output = $(this.output);
+        let linkCall = `<<link "${linkText.replace(/"/g, '\\"')}"`;
+        if (passageName) linkCall += ` "${passageName}"`;
+        linkCall += '>>';
+        linkCall += payloadContent;
+        linkCall += '<</link>>';
+        const $tempContainer = $('<div style="display:none;"></div>').appendTo($output);
+        new Wikifier($tempContainer[0], linkCall);
+        const $link = $tempContainer.find('a.link-internal');
+        $link.attr('data-translation-key', translationKey);
+        $output.append($link);
+        $tempContainer.remove();
+      } catch (e) {
+        console.error('<<langlink>> 宏处理错误', e);
+        return this.error(`<<langlink>> 执行错误: ${e.message}`);
+      }
     }
 
     _fixDynamicTask(fn, name) {
@@ -184,8 +280,10 @@
       }, { layer: 'base', element: 'bloodmoon_snow' });
 
       maplebirch.once(':definewidget', () => {
+        this.tool.widget.defineMacro('langbutton', this._languageButton, null, false);
+        this.tool.widget.defineMacro('langlink', this._languageLink, null, false);
         this.tool.widget.defineMacro('maplebirchTextOutput', this.tool.text.makeMacroHandler());
-        this.tool.widget.defineMacroS('maplebirchFrameworkVersions', () => this._showModVersions());
+        this.tool.widget.defineMacroS('maplebirchFrameworkVersions', this._showModVersions);
         this.tool.widget.defineMacroS('maplebirchFrameworkInfo', () => this._showFrameworkInfo());
       });
 

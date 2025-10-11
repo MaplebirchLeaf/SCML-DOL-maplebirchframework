@@ -94,7 +94,7 @@
      * @param {Object} npcData - NPC数据对象
      * @param {string} npcData.nam - NPC唯一名称（必需）
      * @param {string} [npcData.title] - NPC的称号
-     * @param {string} [npcData.gender="f"] - 性别 (m/f/none)
+     * @param {string} [npcData.gender="f"] - 性别 (m/f/h)
      * @param {string} [npcData.type="human"] - 种族类型
      * @param {Object} [config] - NPC配置选项
      * @param {string[]} [config.loveAlias] - NPC的好感别称数组 [CN, EN]
@@ -114,6 +114,7 @@
         manager.log(`NPC ${npcName} 已存在于mod数据中`, 'ERROR');
         return false;
       }
+       if (config && typeof config === 'object' && Object.keys(config).length === 0) config.love = { maxValue: 50 };
       const newNPC = manager.tool.clone(NPCcreator.baseNamedNPC);
       for (const statName in manager.customStats) {
         if (manager.customStats.hasOwnProperty(statName)) {
@@ -166,7 +167,7 @@
       if (!npc.vagina) npc.vagina = pronoun === "f" || pronoun === "h" ? 'clothed' : 'none';
       if (!npc.breastsize) npc.breastsize = pronoun === "f" || pronoun === "h" ? random.get({ min: 1, max: 3 }) : 0;
       if (!npc.outfits || !Array.isArray(npc.outfits)) npc.outfits = [];
-      const defaultOutfit = pronoun === "m" ? 'maleDefault' : pronoun === "f" ? 'femaleDefault' : 'neutralDefault';
+      const defaultOutfit = pronoun === "m" ? 'maleDefault' : pronoun === "f" ? 'femaleDefault' : 'femaleDefault'; // 还没有无性服饰 'neutralDefault' 暂时用 femaleDefault
       if (!npc.outfits.includes(defaultOutfit)) npc.outfits.push(defaultOutfit);
       return npc;
     }
@@ -238,7 +239,6 @@
       if (!needsCleaning) return false;
       const validNamesSet = new Set(setup.NPCNameList);
       V.NPCName = (V.NPCName || []).filter(npc => validNamesSet.has(npc.nam));
-      V.NPCNameList = [...setup.NPCNameList];
       manager.log(`清理了 ${Names.length - V.NPCName.length} 个无效NPC`, 'DEBUG');
       return true;
     }
@@ -262,6 +262,7 @@
         }
       }
       V.NPCName = [...manager.NamedNPC];
+      V.NPCNameList = [...manager.NPCNameList];
       if (modUtils.getMod('ModI18N')) {
         if (setup.NPCNameList_cn_name) {
           const npcNames = Object.keys(setup.NPCNameList_cn_name);
@@ -494,6 +495,7 @@
       for (const npcName in this.npcConfigData) {
         if (Object.prototype.hasOwnProperty.call(this.npcConfigData, npcName)) {
           const modConfig = this.npcConfigData[npcName];
+          if (Object.keys(modConfig).length === 0) continue;
           delete modConfig.loveAlias;
           delete modConfig.loveInterest;
           if (Config[npcName]) {

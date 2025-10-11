@@ -7,14 +7,12 @@
 <<widget 'maplebirchModHint'>>
   <span class='searchButtons'>
     <<textbox '_maplebirchModHintTextbox' ''>>
-    <<set $_Search to maplebirch.autoTranslate('搜索')>>
-    <<set $_Clear to maplebirch.autoTranslate('清除')>>
-    <<button $_Search>>
+    <<langbutton '搜索'>>
       <<run maplebirch.tool.modhint.searchButtonClicked()>>
-    <</button>>
-    <<button $_Clear>>
+    <</langbutton>>
+    <<langbutton '清除'>>
       <<run maplebirch.tool.modhint.clearButtonClicked()>>
-    <</button>>
+    <</langbutton>>
   </span>
   <div id='maplebirchModHintContent'>
     <<maplebirchModHintContent>>
@@ -25,38 +23,34 @@
   <<setupTabs>>
   <div id="overlayTabs" class="tab">
     <<closeButtonMobile>>
-    <<set $_ModIntro to maplebirch.autoTranslate('模组介绍')>>
-    <<set $_ModSettings to maplebirch.autoTranslate('模组设置')>>
-    <<set $_ModPanel to maplebirch.autoTranslate('角色面板')>>
-    <<button $_ModIntro>>
+    <<langbutton '模组介绍'>>
       <<toggleTab>>
       <<replace #customOverlayContent>><<maplebirchModHint>><</replace>>
-    <</button>>
-    <<button $_ModSettings>>
+    <</langbutton>>
+    <<langbutton '模组设置'>>
       <<toggleTab>>
       <<replace #customOverlayContent>><<maplebirchOptionsInfo>><</replace>>
-    <</button>>
-    <<button $_ModPanel>>
+    <</langbutton>>
+    <<langbutton '角色面板'>>
       <<toggleTab>>
       <<replace #customOverlayContent>><<maplebirchPanel>><</replace>>
       <<run maplebirch.trigger('characterRender')>>
-    <</button>>
+    <</langbutton>>
   </div>
   <<closeButton>>
 <</widget>>
 
 <<widget 'maplebirchModHintMobile'>>
-  <<if $options.maplebirch.modHint is 'mobile' && $options.sidebarStats isnot 'disabled'>>
+  <<if $options.maplebirch?.modHint is 'mobile' && $options.sidebarStats isnot 'disabled'>>
     <input type="button" class="saveMenuButton maplebirchModHintMobile" value="" onclick="maplebirch.tool.modhint.hintClicked()">
   <</if>>
 <</widget>>
 
 <<widget "maplebirchModHintDesktop">>
-	<<if $options.maplebirch.modHint is 'desktop'>>
-    <<set $_modHint to maplebirch.autoTranslate('秋枫白桦').toUpperCase()>>
-    <<button $_modHint>>
+	<<if $options.maplebirch?.modHint is 'desktop'>>
+    <<langbutton '秋枫白桦'>>
     	<<maplebirchReplace "maplebirchModHint" "title">>
-    <</button>>
+    <</langbutton>>
 	<</if>>
 <</widget>>
 

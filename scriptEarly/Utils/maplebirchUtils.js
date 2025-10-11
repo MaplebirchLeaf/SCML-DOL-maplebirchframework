@@ -567,9 +567,10 @@
   async function loadImageWithModLoader(src) {
     try {
       // 检查是否启用了ModLoader系统
-      if (typeof window.modSC2DataManager !== 'undefined' && typeof window.modSC2DataManager.getHtmlTagSrcHook?.()?.requestImageBySrc !== 'undefined') {
+      const modSC2DataManager = window.modSC2DataManager;
+      if (typeof modSC2DataManager?.getHtmlTagSrcHook?.()?.requestImageBySrc !== 'undefined') {
         // 通过ModLoader请求图片
-        const imageData = await window.modSC2DataManager.getHtmlTagSrcHook().requestImageBySrc(src);
+        const imageData = await modSC2DataManager.getHtmlTagSrcHook().requestImageBySrc(src);
         if (imageData) return imageData;
       }
       return src;

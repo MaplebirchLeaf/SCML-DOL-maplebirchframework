@@ -361,11 +361,11 @@
       return true
     }
 
-     /**
+    /**
      * 定义宏
      * @param {string} macroName - 宏名称
      * @param {Function} macroFunction - 宏处理函数
-     * @param {object} [tags] - 标签配置
+     * @param {Array} [tags] - 标签配置
      * @param {boolean} [skipArgs] - 是否跳过参数解析
      */
     defineMacro(macroName, macroFunction, tags, skipArgs) {
@@ -380,14 +380,7 @@
         skipArgs,
         handler() {
           try {
-            const oldArgs = State.temporary.args;
-            State.temporary.args = this.args.slice();
             macroFunction.apply(this, this.args);
-            if (typeof oldArgs === "undefined") {
-              delete State.temporary.args;
-            } else {
-              State.temporary.args = oldArgs;
-            }
           } catch (error) {
             logger(`宏执行错误: ${macroName}\n${error}`, 'ERROR');
           }
@@ -540,16 +533,21 @@
       const tools = {
         ctx: context,
         text: (content, style) => {
-          if (!content) return tools;
+          if (content == null) return tools;
           const el = document.createElement('span');
           if (style) el.classList.add(style);
-          el.textContent = (content == null ? '' : String(content)) + ' ';
+          const contentStr = String(content);
+          const translated = maplebirch.autoTranslate(contentStr);
+          el.textContent = (translated == null ? '' : translated) + ' ';
           fragment.appendChild(el);
           return tools;
         },
         line: (content, style) => {
           fragment.appendChild(document.createElement('br'));
-          if (content) tools.text(content, style);
+          if (content == null) return tools;
+          const contentStr = String(content);
+          const translated = maplebirch.autoTranslate(contentStr);
+          tools.text(translated, style);
           return tools;
         },
         wikify: content => {
@@ -559,25 +557,32 @@
             return tools;
           }
           const tempContainer = document.createElement('div');
-          new this.Wikifier(tempContainer, String(content));
+          const contentStr = content != null ? String(content) : '';
+          new this.Wikifier(tempContainer, contentStr);
           while (tempContainer.firstChild) fragment.appendChild(tempContainer.firstChild);
           return tools;
         },
         raw: content => {
+          if (content == null) return tools;
           if (content instanceof Node) {
             fragment.appendChild(content);
           } else {
-            fragment.appendChild(document.createTextNode(String(content)));
+            const contentStr = String(content);
+            const translated = maplebirch.autoTranslate(contentStr);
+            fragment.appendChild(document.createTextNode(translated));
           }
           return tools;
         },
         box: (content, style) => {
           const box = document.createElement('div');
           if (style) box.classList.add(style);
+          if (content == null) { fragment.appendChild(box); return tools; }
           if (content instanceof Node) {
             box.appendChild(content);
           } else {
-            box.appendChild(document.createTextNode(String(content)));
+            const contentStr = String(content);
+            const translated = maplebirch.autoTranslate(contentStr);
+            box.appendChild(document.createTextNode(translated));
           }
           fragment.appendChild(box);
           return tools;
@@ -765,9 +770,9 @@
                   <div class="searchButtons">
                     <div class="input-row">
                       <<textbox '_maplebirchJSCheatConsole' ''>>
-                      <<button "执行">>
+                      <<langbutton 'execute'>>
                         <<run maplebirch.tool.console.execute('javascript')>>
-                      <</button>>
+                      <</langbutton>>
                     </div>
                     <span id="js-cheat-console-status" class="cheat-console-status"></span>
                   </div>
@@ -777,9 +782,9 @@
                   <div class="searchButtons">
                     <div class="input-row">
                       <<textbox '_maplebirchTwineCheatConsole' ''>>
-                      <<button "执行">>
+                      <<langbutton 'execute'>>
                         <<run maplebirch.tool.console.execute('twine')>>
-                      <</button>>
+                      <</langbutton>>
                     </div>
                     <span id="twine-cheat-console-status" class="cheat-console-status"></span>
                   </div>
@@ -817,9 +822,9 @@
           { src: '\t\t</div>\n\t</div>', applybefore: '\t\t\t<<maplebirchWeaponBox>>\n\t\t' }
         ],
         overlayReplace: [
-          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleSaves">>', applybefore : '\t<<set $_name to maplebirch.t("Mods Settings")>>\n\t\t<<button $_name>>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>\n\t\t<</button>>\n\t' },
-          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleOptions">>', applybefore : '\t<<set $_name to maplebirch.t("Mods")>>\n\t\t<<button $_name>>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #cheatsShown>><<maplebirchCheats>><</replace>>\n\t\t\t<<run $("#customOverlayContent").scrollTop(0);>>\n\t\t<</button>>\n\t' },
-          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleFeats">>', applybefore : '\t<<set $_name to maplebirch.t("Mods Statistics")>>\n\t\t<<button $_name>>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchStatistics>><</replace>>\n\t\t<</button>>\n\t' }
+          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleSaves">>', applybefore : '\t<<langbutton "Mods Settings">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>\n\t\t<</langbutton>>\n\t' },
+          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleOptions">>', applybefore : '\t<<langbutton "Mods">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #cheatsShown>><<maplebirchCheats>><</replace>>\n\t\t\t<<run $("#customOverlayContent").scrollTop(0);>>\n\t\t<</langbutton>>\n\t' },
+          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleFeats">>', applybefore : '\t<<langbutton "Mods Statistics">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchStatistics>><</replace>>\n\t\t<</langbutton>>\n\t' }
         ],
         'Options Overlay': [
           { src: '<</widget>>\n\n<<widget "setFont">>', applybefore : '\t<<maplebirchInformation>>\n' }
@@ -841,14 +846,14 @@
         'Widgets Settings': [
           { srcmatch: /<<set\s+_npcList\s*\[\s*clone\s*\(\s*\$NPCNameList\s*\[\s*\$_i\s*\]\s*\)\s*(?:\.replace\s*\(\s*"[^"]+"\s*,\s*"[^"]+"\s*\)\s*)*\]\s+to\s+clone\s*\(\s*\$_i\s*\)\s*>>/, to: '<<set _npcList[maplebirch.autoTranslate(clone($NPCNameList[$_i]))] to clone($_i)>>' },
           { srcmatch: /<<run delete _npcList\["(?:象牙怨灵|Ivory Wraith)"\]>>/, to: '<<run delete _npcList[maplebirch.autoTranslate("Ivory Wraith")]>>' },
-          { srcmatch: /\t<<NPC_CN_NAME \$NPCName\[_npcId\].nam>>|\t\$NPCName\[_npcId\].nam/, to: '\t<<= maplebirch.autoTranslate($NPCName[_npcId].nam)>>' },
-          { srcmatch: /\$NPCName\[_npcId\]\.title|<<print\s+\$NPCName\s*\[\s*\_npcId\s*\]\s*\.title\s*(\s*\.replace\s*\(\s*"[^"]+"\s*,\s*"[^"]+"\s*\)\s*)+>>/, to: '\t<<= maplebirch.autoTranslate($NPCName[_npcId].title)>>' },
-          { srcmatch: /<<if _npcList\[\$NPCName\[_npcId\]\.nam(?:\.replace\([^)]+\))*\] is undefined>>/g, to: '<<if _npcList[maplebirch.lang.t($NPCName[_npcId].nam)] is undefined>>' },
+          { srcmatch: /(?:<<NPC_CN_NAME \$NPCName\[_npcId\]\.nam>>——<span style="text-transform: capitalize;"><<print[\s\S]*?>><\/span>|\$NPCName\[_npcId\]\.nam the <span style="text-transform: capitalize;">\$NPCName\[_npcId\]\.title<\/span>)/, to: '<<= maplebirch.autoTranslate($NPCName[_npcId].nam) + (maplebirch.Language is "CN" ? "——" : " the ")>><span style="text-transform: capitalize;"><<= maplebirch.autoTranslate($NPCName[_npcId].title)>></span>' },
+          { srcmatchgroup: /<<if _npcList\[\$NPCName\[_npcId\]\.nam(?:\.replace\([^)]+\))*\] is undefined>>/g, to: '<<if _npcList[maplebirch.lang.t($NPCName[_npcId].nam)] is undefined>>' },
           { src: '\t\t\t</span>\n\t\t</div>\n\t\t<div class="settingsToggleItem">\n\t\t\t<span class="gold">', applybefore: '\t\t\t<<if $debug is 1>>| <label><<radiobutton "$NPCName[_npcId].pronoun" "n" autocheck>><<= maplebirch.lang.t("hermaphrodite")+"/"+maplebirch.lang.t("asexual")>></label><</if>>\n' },
         ],
         Widgets: [
           { src: 'T.getStatConfig = function(stat) {', applybefore: 'maplebirch.npc.applyStatDefaults(statDefaults);\n\t\t\t' },
           { srcmatchgroup: /\t_npcData.nam|\t<<NPC_CN_NAME _npcData.nam>>/g, to: '\t<<= maplebirch.autoTranslate(_npcData.nam)>>' },
+          { srcmatchgroup: /(?:<<print\s*_npcData\.title(?:\.replace\([^)]+\))+>>|The _npcData\.title)/g, to: '<<= (maplebirch.Language is "CN" ? "" : "The ") + maplebirch.autoTranslate(_npcData.title)>>' },
         ],
         Traits: [
           { src: '<div id="traitListsSearch">', applybefore: '<<run maplebirch.tool.other.initTraits(_traitLists)>>\n\t' }
@@ -1062,20 +1067,16 @@
      */
     #applyReplacement(source, pattern, set) {
       if (!pattern) return source;
-      
-      if (set.to) {
-        return source.replace(pattern, set.to);
+      const original = source;
+      let result = source;
+      if (set.to) result = source.replace(pattern, set.to);
+      if (set.applyafter) result = source.replace(pattern, (match) => match + set.applyafter);
+      if (set.applybefore) result = source.replace(pattern, (match) => set.applybefore + match);
+      if (result === original) {
+        const patternType = pattern instanceof RegExp ? '正则' : '字符串';
+        this.log(`替换失败: 未找到匹配 (${patternType}: ${pattern})`, 'WARN');
       }
-      
-      if (set.applyafter) {
-        return source.replace(pattern, (match) => match + set.applyafter);
-      }
-      
-      if (set.applybefore) {
-        return source.replace(pattern, (match) => set.applybefore + match);
-      }
-      
-      return source;
+      return result;
     }
 
     /**
@@ -1084,19 +1085,16 @@
      * @param {string} source - 原始文本
      * @returns {string} 处理后的文本
      */
-    matchAndApply(set, source) {
+    #matchAndApply(set, source) {
       const patterns = [
         { type: 'src', pattern: set.src },
         { type: 'srcmatch', pattern: set.srcmatch },
         { type: 'srcmatchgroup', pattern: set.srcmatchgroup },
-        { type: 'srcgroup', pattern: set.srcgroup }
       ];
 
       for (const { type, pattern } of patterns) {
         if (!pattern) continue;
-        
         let matched = false;
-        
         switch (type) {
           case 'src':
             if (source.includes(pattern)) {
@@ -1114,24 +1112,14 @@
             if (pattern instanceof RegExp) {
               const matches = source.match(pattern) || [];
               if (matches.length > 0) {
-                matches.forEach(match => {
-                  source = this.#applyReplacement(source, match, set);
-                });
+                matches.forEach(match => source = this.#applyReplacement(source, match, set));
                 matched = true;
               }
             }
             break;
-          case 'srcgroup':
-            if (source.includes(pattern)) {
-              source = this.#applyReplacement(source, pattern, set);
-              matched = true;
-            }
-            break;
         }
-        
         if (matched) break;
       }
-      
       return source;
     }
 
@@ -1163,13 +1151,8 @@
      */
     #applyContentPatches(passage, title, patchSets) {
       if (!patchSets || !patchSets[title]) return passage;
-      
       let source = String(passage.content);
-      
-      for (const set of patchSets[title]) {
-        source = this.matchAndApply(set, source);
-      }
-      
+      for (const set of patchSets[title]) source = this.#matchAndApply(set, source);
       passage.content = source;
       return passage;
     }
@@ -1183,18 +1166,13 @@
     async patchPassage(passage, title) { 
       if (!this.patchedPassage[title]) {
         if (passage.tags.includes('widget')) {
-          if (Object.keys(this.widgetPassage).length > 0) {
-            passage = this.#applyContentPatches(passage, title, this.widgetPassage);
-          }
+          if (Object.keys(this.widgetPassage).length > 0) passage = this.#applyContentPatches(passage, title, this.widgetPassage);
         } else {
-          if (Object.keys(this.locationPassage).length > 0) {
-            passage = this.#applyContentPatches(passage, title, this.locationPassage);
-          }
+          if (Object.keys(this.locationPassage).length > 0) passage = this.#applyContentPatches(passage, title, this.locationPassage);
         }
         this.patchedPassage[title] = true;
       }
       passage = this.#wrapSpecialPassages(passage, title);
-      
       return passage;
     }
 
