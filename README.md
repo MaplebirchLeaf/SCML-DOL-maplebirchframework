@@ -26,6 +26,7 @@
     - [框架的实用工具](#框架的实用工具)
         - [一般实用工具](#一般实用工具)
         - [灵活的条件匹配](#灵活的条件匹配)
+        - [Sugarcube宏](#Sugarcube宏)
     - [变量迁徙](#变量迁徙)
         - [变量迁徙使用示例](#变量迁徙使用示例)
         - [主要方法](#主要方法)
@@ -933,6 +934,17 @@ colorSelector.match('light blue'); // 'Light variant'
 colorSelector.match('dark red'); // 'Dark variant'
 colorSelector.match('yellow'); // '#FFFFFF'
 ```
+ #### Sugarcube宏
+ + **`<<langlink>>`** 的说明: **`<<langlink>>`** 与原版的 **`<<link>>`** 很像，**但只支持 `<<langlink '卧室' 'Bedroom'>><</langlink>>` 而非 `<<link [[卧室|Bedroom]]>>` 的逻辑** [多语言管理](#多语言管理)
+```
+在你的翻译文件有对应数据时，使用 <<langlink '卧室' 'Bedroom'>><</langlink>> 会在游戏中英文时显示 (1)Bedroom ，中文时显示(1)卧室。
+使用 <<langlink 'Temple' 'Temple'>><</langlink>> 会在游戏中英文时显示 (1)Temple ,中文时显示(1)神殿。
+```
+ + **`<<langbutton>>`** 的说明: **`<<langbutton>>`** 与原版的 **`<<button>>`** 相差无异，但添加了语言支持 [多语言管理](#多语言管理)
+```
+在你的翻译文件有对应数据时，使用 <<langbutton '卧室'>><</langbutton>> 会在游戏中英文时显示 (1)Bedroom ，中文时显示(1)卧室。
+使用 <<langbutton 'Temple'>><</langbutton>> 会在游戏中英文时显示 (1)Temple ，中文时显示(1)神殿。
+```
  ### 变量迁徙
   #### 变量迁徙使用示例
 ```
@@ -1651,6 +1663,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
