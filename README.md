@@ -198,6 +198,35 @@
     在sugarcube环境中使用 <<= maplebirch.t(键名)>> / <<= maplebirch.autoTranslate(任意语言数据)>>显示
     <<= XX>> 等效于 <<print XX>>
   ```
+  - 在 `cn.json` 文件中的示例
+  ```
+{
+  "View All" : "查看全部",
+  "View Headgear" : "查看外衣(头套)",
+  "View Over Tops" : "查看外衣(上装)",
+  "View Over Bottoms" : "查看外衣(下装)",
+  "View Over Outfits" : "查看外衣(套装)",
+  "View Outfits" : "查看套装",
+  "View Tops" : "查看上装",
+  "View Bottoms" : "查看下装",
+  "View Under Outfits" : "查看内衣(套装)",
+  "View Under Tops" : "查看内衣(上装)",
+  "View Under Bottoms" : "查看内衣(下装)",
+  "View Head Accessories" : "查看头饰",
+  "View Face Accessories" : "查看面饰",
+  "View Neck Accessories" : "查看颈饰",
+  "View Handheld Items" : "查看手持物品",
+  "View Hand Accessories" : "查看手饰",
+  "View Legwear" : "查看袜子",
+  "View Shoes" : "查看鞋类",
+  "View Genital Wear" : "查看性器佩饰",
+  "Changing room" : "更衣室",
+  "Return clothes" : "归还衣服",
+  "Buy clothes" : "购买衣物",
+  "Buy clothes and send to wardrobe" : "购买衣物并送至衣柜",
+  "Leave" : "离开",
+}
+  ```
   #### 语言addonPlugin注册
 ```
 "params": {
@@ -1611,6 +1640,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
