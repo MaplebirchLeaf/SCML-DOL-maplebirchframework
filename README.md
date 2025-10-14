@@ -1327,7 +1327,7 @@ maplebirchFrameworks.addTraits(
 }
 ```
  ### 地点注册
-  + 使用 `maplebirchFrameworks.addLocation(locationId, config, options = {})` 定制游戏地点
+  + 使用 `maplebirchFrameworks.addLocation(locationId, config, options = {})` 定制游戏地点，模板可查看原版 **setup.LocationImages** 功能后续可能做改动
 ```
 参数说明：
 @param {string} locationId - 地点ID
@@ -1663,6 +1663,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
