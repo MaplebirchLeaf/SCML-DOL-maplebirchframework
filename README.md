@@ -1128,33 +1128,33 @@ maplebirchFrameworks.addText('hint_links', t => {
 ```
 示例：
 // 添加简单宏
-maplebirchFrameworks.addTo('Header', 'customHeader');
+maplebirchFrameworks.addto('Header', 'customHeader');
 
 // 添加动态生成的内容
-maplebirchFrameworks.addTo('StatusBar', () => {
+maplebirchFrameworks.addto('StatusBar', () => {
   return `<<print "生命值: ${V.player.health}">>`;
 });
 
 // 添加带条件的宏（排除特定段落）
-maplebirchFrameworks.addTo('Options', {
+maplebirchFrameworks.addto('Options', {
   widget: 'debugOptions',
   exclude: ['MainMenu'] // 在主菜单不显示
 });
 
 // 添加带条件的宏（匹配特定段落）
-maplebirchFrameworks.addTo('Journal', {
+maplebirchFrameworks.addto('Journal', {
   widget: 'questLog',
   match: /Chapter\d+/ // 在所有章节段落显示
 });
 
 // 添加带条件的宏（指定段落）
-maplebirchFrameworks.addTo('Information', {
+maplebirchFrameworks.addto('Information', {
   widget: 'tutorialHints',
   passage: ['Tutorial', 'Introduction'] // 仅在教程段落显示
 });
 
 // 组合条件（在战斗场景显示但排除过场动画）
-maplebirchFrameworks.addTo('StatusBar', {
+maplebirchFrameworks.addto('StatusBar', {
   widget: 'combatStatus',
   passage: ['Battle', 'BossFight'],
   exclude: 'Cutscene'
@@ -1672,6 +1672,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
