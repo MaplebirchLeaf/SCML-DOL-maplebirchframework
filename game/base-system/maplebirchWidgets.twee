@@ -187,3 +187,8 @@
     }
   }>>
 <</widget>>
+
+<<widget 'AUShopLink'>>
+  <<icon "AUShop.png">><<link [[AU服装店 (0:01)|AU Shop]]>><</link>>
+	<br>
+<</widget>>

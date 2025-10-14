@@ -5,7 +5,8 @@
     "cn": "秋枫白桦"
   },
   "alias": ["Simple Frameworks"], 
-  "version": "2.4.7",
+  "version": "2.4.8",
+  "imgFileList": [],
   "styleFileList": [
     "styles/maplebirchDefault.css",
     "styles/maplebirchPanel​.css"
@@ -14,7 +15,7 @@
     "game/03-JavaScript/maplebirchDefineMacros.js"
   ],
   "scriptFileList_preload":[
-    "dataUpdate/maplebirchData-v1.js",
+    "data/maplebirchData-v1.js",
     "game/03-JavaScript/maplebirchSFcompatible.js"
   ],
   "scriptFileList_earlyload": [
@@ -30,27 +31,26 @@
   "scriptFileList_inject_early": [
     "scriptEarly/maplebirch-core.js",
     "scriptEarly/maplebirch-modload.js",
-    "scriptEarly/modules/maplebirchTimeState.js",
+    "data/frameworkData.js",
     "scriptEarly/Utils/maplebirchUtils.js",
-    "scriptEarly/Utils/maplebirchFrameworks.js"
+    "scriptEarly/Utils/maplebirchFrameworks.js",
+    "scriptEarly/modules/maplebirchTimeState.js"
   ],
   "tweeFileList": [
     "game/base-system/maplebirchIntroduction.twee",
     "game/base-system/maplebirchWidgets.twee"
   ],
-  "imgFileList": [
-    
-  ],
   "additionDir": [
-
+    "img/npcSidebar"
   ],
   "additionBinaryFile": [
 
   ],
   "additionFile": [
     "README.md",
-    "translations/en.json",
-    "translations/cn.json"
+    "translations/en.yaml",
+    "translations/cn.yaml",
+    "data/npcClothesData.yaml"
   ],
   "addonPlugin": [
     {
@@ -100,8 +100,11 @@
       "modVersion": "^2.0.0",
       "params": {
        "types": [
-
-       ]
+          {
+            "type": "npcSidebar",
+            "imgDir": "img/npcSidebar"
+          }
+        ]
       }
     }
   ],

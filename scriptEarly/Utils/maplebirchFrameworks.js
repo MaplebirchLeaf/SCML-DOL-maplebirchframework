@@ -665,6 +665,7 @@
 
         BeforeLinkZone          : [], // 链接前区域
         AfterLinkZone           : [], // 链接后区域
+        CustomLinkZone          : [], // 自定义任意位置的链接前
 
         CaptionDescription      : [], // 标题描述
         StatusBar               : [], // 状态栏
@@ -689,179 +690,13 @@
         NPCinit                 : [], // 原版NPC初遇初始化(详情看原版initnpc宏)
       };
       this.initFunction = [];
-      this.specialWidget = {
-        Replace: `
-          <<widget "maplebirchReplace">>
-            <<set _key to _args[0]>>
-            <<if !_key>><<exit>><</if>>
-
-            <<if _currentOverlay is _key>>
-              <<run closeOverlay()>>
-              <<exit>>
-            <</if>>
-
-            <<script>>
-              T.buttons.toggle();
-              updateOptions();
-              T.currentOverlay = T.key;
-              $("#customOverlay").removeClass("hidden").parent().removeClass("hidden");
-              $("#customOverlay").attr("data-overlay", T.currentOverlay);
-            <</script>>
-            <<if _args[1] is 'customize'>><<= '<<'+_key+'>>'>><<exit>><</if>>
-            <<if _args[1] is 'title'>><<set _titleKey to "title" + _key.charAt(0).toUpperCase() + _key.slice(1)>><</if>>
-            <<if maplebirch.tool.widget.Macro.has(_titleKey)>><<replace #customOverlayTitle>><<= '<<'+_titleKey+'>>'>><</replace>><</if>>
-            <<replace #customOverlayContent>><<= '<<'+_key+'>>'>><</replace>>
-          <</widget>>`
-      };
-      this.default = {
-        Init   : '<<run maplebirch.tool.framework.storyInit()>>',
-        DataInit:'<<run maplebirch.trigger(":dataInit");>>',
-        Header : '',
-        Footer : '<<maplebirchFrameworkVersions>>',
-        Information : '<<maplebirchFrameworkInfo>>',
-        Options: `
-          <<setupOptions>>
-          <div class="settingsGrid">
-            <div class="settingsHeader options">
-              <span class="gold"><<= maplebirch.t("Maplebirch Frameworks")>></span>
-            </div>
-            <div class="settingsToggleItem">
-              <span class="gold"><<= maplebirch.t("Current Mods Language Setting")>>:</span>
-              <<set _selectedLang to maplebirch.lang.language>>
-              <<set _langOptions = {
-                [maplebirch.t('English')]: "EN",
-                [maplebirch.t('Chinese')]: "CN",
-              }>>
-              <<listbox "_selectedLang" autoselect>>
-                <<optionsfrom _langOptions>>
-              <</listbox>>
-            </div>
-            <div class="settingsToggleItem">
-              <label><<checkbox "$options.maplebirch.debug" false true autocheck>><<= maplebirch.t('DEBUGMode')>></label>
-            </div>
-            <div class="settingsToggleItemWide">
-              <span class="gold"><<= maplebirch.t('Maplebirch',true) + maplebirch.autoTranslate('侧边栏位置选择')>>：</span>
-              <span class="tooltip-anchor linkBlue" tooltip="在下次打开界面时更新">(?)</span>
-              <br>
-              <<set _modHintLocation = {
-                [maplebirch.t('mobile client')]: "mobile",
-                [maplebirch.t('desktop client')]: "desktop",
-                [maplebirch.t('disable')]: "disable"
-              }>>
-              <<listbox "$options.maplebirch.modHint" autoselect>>
-                <<optionsfrom _modHintLocation>>
-              <</listbox>>
-            </div>
-          </div><hr>`,
-        Cheats : `
-          <div class="settingsGrid">
-            <div class="settingsHeader options">
-              <span class="gold"><<= maplebirch.t("Mods Cheats")>></span>
-            </div>
-            <<if $options.maplebirch.debug>><<run maplebirch.trigger("update")>>
-              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.V" false true autocheck>> V <<= maplebirch.t('permission')>></label></div>
-              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.T" false true autocheck>> T <<= maplebirch.t('permission')>></label></div>
-              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.maplebirch" false true autocheck>> Maplebirch <<= maplebirch.t('permission')>></label></div>
-              <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.window" false true autocheck>> window <<= maplebirch.t('permission')>>(完全权限)</label></div>
-              <div id="ConsoleCheat" class="settingsToggleItemWide">
-                <<set _CodeCheater to maplebirch.t('Code Cheater')>>
-                <details class="JSCheatConsole">
-                  <summary class="JSCheatConsole">JavaScript <<= maplebirch.t('Code Cheater')>></summary>
-                  <div class="searchButtons">
-                    <div class="input-row">
-                      <<textbox '_maplebirchJSCheatConsole' ''>>
-                      <<langbutton 'execute'>>
-                        <<run maplebirch.tool.console.execute('javascript')>>
-                      <</langbutton>>
-                    </div>
-                    <span id="js-cheat-console-status" class="cheat-console-status"></span>
-                  </div>
-                </details>
-                <details class="TwineCheatConsole">
-                  <summary class="TwineCheatConsole">Twine <<= maplebirch.t('Code Cheater')>></summary>
-                  <div class="searchButtons">
-                    <div class="input-row">
-                      <<textbox '_maplebirchTwineCheatConsole' ''>>
-                      <<langbutton 'execute'>>
-                        <<run maplebirch.tool.console.execute('twine')>>
-                      <</langbutton>>
-                    </div>
-                    <span id="twine-cheat-console-status" class="cheat-console-status"></span>
-                  </div>
-                </details>
-              </div>
-            <</if>>
-          </div><hr>`,
-        NPCinit : `<<run maplebirch.npc._vanillaNPCInit(_nam)>>`
-      };
-
+      this.specialWidget = {};
+      this.default = {};
       this.widgethtml = '';
-
-      this.patchedPassage = {};
-      this.locationPassage = {
-        StoryCaption: [
-          { src: '<<schoolday>>\n\t\t<br>', to: '<<schoolday>>\n\t\t<div id="maplebirchCaptionTextBox">\n\t\t<<maplebirchCaptionDescription>>\n\t\t<br>' },
-          { src: '<<allurecaption>>', applybefore: '<<maplebirchStatusBar>>\n\t\t\t' },
-          { src: '<</button>>\n\t\t\t<div class="sidebarButtonSplit">', to: '<</button>>\n\t\t\t<<maplebirchMenuBig>>\n\t\t\t<div class="sidebarButtonSplit">' },
-          { src: '</div>\n\t\t\t<div class="sidebarButtonSplit">', to: '</div>\n\t\t\t<div class="sidebarButtonSplit"><<maplebirchMenuSmall>></div>\n\t\t\t<div class="sidebarButtonSplit">' },
-          { src: '<<goo>>', to: '<<maplebirchCaptionAfterDescription>>\n\t\t<<goo>>\n\t\t</div>' },
-          { src: '<<if $options.sidebarStats isnot "disabled">>', applybefore: '<<maplebirchHintMobile>>\n\t\t\t' },
-          { src: '<<mobileStats>>', applyafter: '\n\t\t\t\t<<maplebirchStatsMobile>>' },
-        ]
-      };
-      this.widgetPassage = {
-        Characteristics: [
-          { src: '<<bodywriting>>', applyafter: '\n\n\t<<maplebirchCharaDescription>>' },
-          { src: '<</silently>>\n\n\t\t\t<<characteristic-box _purityConfig>>', applybefore: '\t<<maplebirchDegreesBonusDisplay>>\n\t\t\t' },
-          { src: '</div>\n\n\t\t<!--Common states for skills with grades-->', applybefore: '\t<<maplebirchDegreesBox>>\n\t\t' },
-          { src: '<</silently>>\n\t\t\t<<characteristic-box _skulduggeryConfig>>', applybefore: '\t<<maplebirchSkillsBonusDisplay>>\n\t\t\t' },
-          { src: '<<characteristic-box _housekeepingConfig>>', applyafter: '\n\n\t\t\t<<maplebirchSkillsBox>>' },
-          { src: '<</silently>>\n\n\t\t\t<<characteristic-box _scienceConfig>>', applybefore: '\t<<maplebirchSubjectBoxBonusDisplay>>\n\t\t\t' },
-          { src: '</div>\n\t\t<div class="characteristic-box-extras">', applybefore: '\t<<maplebirchSchoolSubjectsBox>>\n\t\t' },
-          { src: '<<characteristic-text _schoolPerformanceConfig>>', applyafter: '\n\n\t\t\t<<maplebirchSchoolMarksText>>' },
-          { src: '\t\t</div>\n\t</div>', applybefore: '\t\t\t<<maplebirchWeaponBox>>\n\t\t' }
-        ],
-        overlayReplace: [
-          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleSaves">>', applybefore : '\t<<langbutton "Mods Settings">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>\n\t\t<</langbutton>>\n\t' },
-          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleOptions">>', applybefore : '\t<<langbutton "Mods">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #cheatsShown>><<maplebirchCheats>><</replace>>\n\t\t\t<<run $("#customOverlayContent").scrollTop(0);>>\n\t\t<</langbutton>>\n\t' },
-          { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleFeats">>', applybefore : '\t<<langbutton "Mods Statistics">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchStatistics>><</replace>>\n\t\t<</langbutton>>\n\t' }
-        ],
-        'Options Overlay': [
-          { src: '<</widget>>\n\n<<widget "setFont">>', applybefore : '\t<<maplebirchInformation>>\n' }
-        ],
-        npcNamed: [
-          { src: '<</widget>>\n\n<<widget "npcNamedUpdate">>', applybefore : '\t<<run maplebirch.npc.injectModNPCs()>>\n' }
-        ],
-        Social: [
-          { src: 'T.importantNPCs = T.importantNpcOrder', applybefore : 'maplebirch.npc.vanillaNPCConfig(T.npcConfig);\n\t\t\t\t' },
-          { src: '<<relation-box-wolves>>', applyafter : '\n\n\t\t<<maplebirchReputation>>' },
-          { src: '<<relation-box-simple _overallFameBoxConfig>>', applyafter : '\n\n\t\t\t<<maplebirchFame>>' },
-          { src: '\t</div>\n\t<br>', applybefore: '\t<<maplebirchStatusSocial>>\n\t' }
-        ],
-        'Widgets Named Npcs': [
-          { srcmatch: /\t\t\t<<NPC_CN_NAME _npc>>|\t\t\t_npc/, to: '\t\t<<if Object.keys(maplebirch.npc.data).includes(_npc) && maplebirch.tool.widget.Macro.has(_npc+"relationshiptext")>>\n\t\t\t<<= maplebirch.autoTranslate(_npc)>><<= "<<"+_npc+"relationshiptext>>">>\n\t\t<<else>>\n\t\t\t<<= maplebirch.autoTranslate(_npc)>>' },
-          { src: '<</if>>\n\t<</switch>>\n<</widget>>', to: '<</if>>\n\t\t<</if>>\n\t<</switch>>\n<</widget>>' },
-          { src: '<</if>>\n<</widget>>\n\n<<widget "initNNPCClothes">>', applybefore: '\t<<maplebirchNPCinit _nam>>\n\t' }
-        ],
-        'Widgets Settings': [
-          { srcmatch: /<<set\s+_npcList\s*\[\s*clone\s*\(\s*\$NPCNameList\s*\[\s*\$_i\s*\]\s*\)\s*(?:\.replace\s*\(\s*"[^"]+"\s*,\s*"[^"]+"\s*\)\s*)*\]\s+to\s+clone\s*\(\s*\$_i\s*\)\s*>>/, to: '<<set _npcList[maplebirch.autoTranslate(clone($NPCNameList[$_i]))] to clone($_i)>>' },
-          { srcmatch: /<<run delete _npcList\["(?:象牙怨灵|Ivory Wraith)"\]>>/, to: '<<run delete _npcList[maplebirch.autoTranslate("Ivory Wraith")]>>' },
-          { srcmatch: /(?:<<NPC_CN_NAME \$NPCName\[_npcId\]\.nam>>——<span style="text-transform: capitalize;"><<print[\s\S]*?>><\/span>|\$NPCName\[_npcId\]\.nam the <span style="text-transform: capitalize;">\$NPCName\[_npcId\]\.title<\/span>)/, to: '<<= maplebirch.autoTranslate($NPCName[_npcId].nam) + (maplebirch.Language is "CN" ? "——" : " the ")>><span style="text-transform: capitalize;"><<= maplebirch.autoTranslate($NPCName[_npcId].title)>></span>' },
-          { srcmatchgroup: /<<if _npcList\[\$NPCName\[_npcId\]\.nam(?:\.replace\([^)]+\))*\] is undefined>>/g, to: '<<if _npcList[maplebirch.lang.t($NPCName[_npcId].nam)] is undefined>>' },
-          { src: '\t\t\t</span>\n\t\t</div>\n\t\t<div class="settingsToggleItem">\n\t\t\t<span class="gold">', applybefore: '\t\t\t<<if $debug is 1>>| <label><<radiobutton "$NPCName[_npcId].pronoun" "n" autocheck>><<= maplebirch.lang.t("hermaphrodite")+"/"+maplebirch.lang.t("asexual")>></label><</if>>\n' },
-        ],
-        Widgets: [
-          { src: 'T.getStatConfig = function(stat) {', applybefore: 'maplebirch.npc.applyStatDefaults(statDefaults);\n\t\t\t' },
-          { srcmatchgroup: /\t_npcData.nam|\t<<NPC_CN_NAME _npcData.nam>>/g, to: '\t<<= maplebirch.autoTranslate(_npcData.nam)>>' },
-          { srcmatchgroup: /(?:<<print\s*_npcData\.title(?:\.replace\([^)]+\))+>>|The _npcData\.title)/g, to: '<<= (maplebirch.Language is "CN" ? "" : "The ") + maplebirch.autoTranslate(_npcData.title)>>' },
-        ],
-        Traits: [
-          { src: '<div id="traitListsSearch">', applybefore: '<<run maplebirch.tool.other.initTraits(_traitLists)>>\n\t' }
-        ],
-        'Widgets Journal': [
-          { src: '<br>\n<</widget>>', applybefore: '<br><hr>\n\t<<maplebirchJournal>>\n' }
-        ]
-      }
+      this.patchedPassage = new Set();
+      this.locationPassage = {};
+      this.widgetPassage = {};
+      maplebirch.trigger(':framework-init', this);
     }
 
     /**
@@ -879,38 +714,9 @@
     }
 
     /**
-     * 1. 字符串类型：直接作为宏名称使用，渲染时会自动包装为 <<宏名称>>
-     * 2. 函数类型：函数会被转换为字符串并包装在 <<run>> 宏中执行
-     * 3. 对象类型：支持条件渲染配置，包含以下属性：
-     *    - widget: 必需，宏名称字符串
-     *    - exclude: 可选，字符串或数组，指定要排除的段落标题
-     *    - match: 可选，正则表达式，匹配段落标题
-     *    - passage: 可选，字符串或数组，指定要包含的段落标题
-     * 
-     * 示例：
-     * // 添加简单宏部件
-     * framework.addTo('Header', 'maplebirchHeader');
-     * 
-     * // 添加函数部件
-     * framework.addTo('Footer', bag) bag为函数名
-     * framework.addTo('Footer', () => {
-     *   return `<<print "当前时间: " + new Date().toLocaleString()>>`;
-     * });
-     * 
-     * // 添加带条件的宏部件
-     * framework.addTo('Options', {
-     *   widget: 'customOptions',
-     *   exclude: ['Settings', 'Preferences']
-     * });
-     * 
-     * // 添加带匹配规则的对象部件
-     * framework.addTo('Information', {
-     *   widget: 'dynamicInfo',
-     *   match: /Chapter\d+/,
-     * });
-     * 
-     * @param {string} zone - 目标区域名称（如 'Header', 'Footer' 等）
-     * @param {...(string|Function|Object)} widgets - 要添加的部件
+     * 添加部件到指定区域
+     * @param {string} zone - 目标区域名称
+     * @param {...(string|Function|Object|Array)} widgets - 要添加的部件
      */
     addTo(zone, ...widgets) {
       if (!this.data[zone]) {
@@ -918,17 +724,32 @@
         return;
       }
       widgets.forEach(widget => {
-        if (typeof widget === 'string') {
-          this.data[zone].push(widget);
-        } else if (typeof widget === 'function') {
-          const funcName = widget.name || `func_${this.#hashCode(widget.toString())}`;
-          this.initFunction.push({
-            name: funcName,
-            func: widget
-          });
-          this.data[zone].push(`run ${funcName}()`);
-        } else if (typeof widget === 'object' && widget.widget) {
-          this.data[zone].push(widget);
+        if (zone === 'CustomLinkZone') {
+          let position = 0;
+          let pureWidget = null;
+          if (Array.isArray(widget) && widget.length === 2) {
+            position = widget[0];
+            pureWidget = widget[1];
+          } else if (typeof widget === 'object') {
+            position = widget.widget[0];
+            pureWidget = {
+              widget: widget.widget[1],
+              passage: widget.passage,
+              exclude: widget.exclude,
+              match: widget.match,
+            }
+          }
+          this.data[zone].push({ position, widget: pureWidget });
+        } else {
+          if (typeof widget === 'string') {
+            this.data[zone].push(widget);
+          } else if (typeof widget === 'function') {
+            const funcName = widget.name || `func_${this.#hashCode(widget.toString())}`;
+            this.initFunction.push({ name: funcName, func: widget });
+            this.data[zone].push(`run ${funcName}()`);
+          } else if (typeof widget === 'object' && widget.widget) {
+            this.data[zone].push(widget);
+          }
         }
       });
     }
@@ -942,7 +763,6 @@
       return Math.abs(hash).toString(16).substring(0, 8);
     }
 
-    // 执行所有初始化函数
     storyInit() {
       if (this.initFunction.length === 0) return;
       this.log(`执行 ${this.initFunction.length} 个初始化函数`, 'DEBUG');
@@ -985,7 +805,7 @@
       let html = '\r\n';
 
       for (const zone in data) {
-        if (new Set(['BeforeLinkZone', 'AfterLinkZone']).has(zone)) continue;
+        if (new Set(['BeforeLinkZone', 'AfterLinkZone', 'CustomLinkZone']).has(zone)) continue;
         let _html = print.start(zone);
         _html += `<<= maplebirch.tool.framework.play("${zone}")>>`;
         _html += print.end(zone, data[zone].length);
@@ -1011,59 +831,78 @@
     }
 
     /**
-     * 区域部件渲染
-     * @param {string} zone - 目标区域
-     * @param {string} [passageTitle] - 当前段落标题
-     * @returns {string} 渲染后的部件代码
+     * 渲染指定区域内容
+     * @param {string} zone - 区域名称
+     * @param {string} passageTitle - 当前段落标题
+     * @returns {string} 渲染结果
      */
     play(zone, passageTitle) {
       const data = this.data[zone];
       if (!data?.length) return '';
-      
       const title = passageTitle ?? V.passage;
-      
-      return data.reduce((result, widget) => {
-        if (typeof widget === 'string') {
-          return result + `<<${widget}>>`;
-        }
-        
-        if (typeof widget === 'object') {
-          if (widget.type === 'function') {
-            const funcString = widget.func.toString();
-            return result + `<<run (${funcString})()>>`;
-          }
-          
-          const { exclude, match, passage, widget: widgetName } = widget;
-          
-          if (exclude) {
-            const shouldExclude = maplebirch.tool.contains(exclude, title);
-            if (!shouldExclude) return result + `<<${widgetName}>>`;
-            return result;
-          }
-
-          if (match instanceof RegExp && match.test(title)) {
-            return result + `<<${widgetName}>>`;
-          }
-          
-          if (passage) {
-            const shouldInclude = (typeof passage === 'string' && passage === title) || (Array.isArray(passage) && passage.includes(title)) || (passage.length === 0);
-            if (shouldInclude) return result + `<<${widgetName}>>`;
-            return result;
-          }
-          
-          if (widgetName) return result + `<<${widgetName}>>`;
-        }
-        
-        return result;
-      }, '');
+      if (zone === 'CustomLinkZone') {
+        const sortedData = data.slice().sort((a, b) => a.position - b.position);
+        const positionGroups = {};
+        sortedData.forEach(item => {
+          const pos = item.position;
+          positionGroups[pos] = positionGroups[pos] || [];
+          positionGroups[pos].push(item.widget);
+        });
+        return Object.entries(positionGroups).map(([posStr, widgets]) => ({
+          position: parseInt(posStr),
+          macro: widgets.map(w => this.#renderWidget(w, title)).join('')
+        }));
+      }
+      return data.reduce((result, widget) => result + this.#renderWidget(widget, title), '');
     }
 
     /**
-     * 统一替换函数
+     * 私有方法：渲染单个部件
+     * @param {string|Object} widget - 部件定义
+     * @param {string} title - 当前段落标题
+     * @returns {string} 渲染结果
+     */
+    #renderWidget(widget, title) {
+      if (typeof widget === 'string') {
+        return `<<${widget}>>`;
+      }
+
+      if (typeof widget === 'object') {
+        if (widget.type === 'function') {
+          const funcString = widget.func.toString();
+          return `<<run (${funcString})()>>`;
+        }
+
+        const { exclude, match, passage, widget: widgetName } = widget;
+
+        if (exclude) {
+          const shouldExclude = maplebirch.tool.contains(exclude, title);
+          if (!shouldExclude) return `<<${widgetName}>>`;
+          return '';
+        }
+
+        if (match instanceof RegExp && match.test(title)) {
+          return `<<${widgetName}>>`;
+        }
+
+        if (passage) {
+          const shouldInclude = (typeof passage === 'string' && passage === title) || (Array.isArray(passage) && passage.includes(title)) || (passage.length === 0);
+          if (shouldInclude) return `<<${widgetName}>>`;
+          return '';
+        }
+
+        if (widgetName) return `<<${widgetName}>>`;
+      }
+
+      return '';
+    }
+
+    /**
+     * 私有方法：应用文本替换
      * @param {string} source - 原始文本
      * @param {string|RegExp} pattern - 匹配模式
      * @param {Object} set - 替换配置
-     * @returns {string} 替换后的文本
+     * @returns {string} 替换后文本
      */
     #applyReplacement(source, pattern, set) {
       if (!pattern) return source;
@@ -1080,8 +919,8 @@
     }
 
     /**
-     * 统一匹配与应用函数
-     * @param {Object} set - 匹配配置
+     * 私有方法：匹配并应用替换规则
+     * @param {Object} set - 替换配置
      * @param {string} source - 原始文本
      * @returns {string} 处理后的文本
      */
@@ -1124,7 +963,7 @@
     }
 
     /**
-     * 特殊段落包装处理
+     * 私有方法：特殊段落包装
      * @param {Object} passage - 段落对象
      * @param {string} title - 段落标题
      * @returns {Object} 包装后的段落
@@ -1143,7 +982,7 @@
     }
 
     /**
-     * 应用内容修改补丁
+     * 私有方法：应用内容补丁
      * @param {Object} passage - 段落对象
      * @param {string} title - 段落标题
      * @param {Object} patchSets - 补丁配置
@@ -1164,13 +1003,13 @@
      * @returns {Object} 处理后的段落
      */
     async patchPassage(passage, title) { 
-      if (!this.patchedPassage[title]) {
+      if (!this.patchedPassage.has(title)) {
         if (passage.tags.includes('widget')) {
           if (Object.keys(this.widgetPassage).length > 0) passage = this.#applyContentPatches(passage, title, this.widgetPassage);
         } else {
           if (Object.keys(this.locationPassage).length > 0) passage = this.#applyContentPatches(passage, title, this.locationPassage);
         }
-        this.patchedPassage[title] = true;
+        this.patchedPassage.add(title);
       }
       passage = this.#wrapSpecialPassages(passage, title);
       return passage;
@@ -1241,6 +1080,7 @@
       linkSelector: '.macro-link',
       beforeMacro: () => maplebirch.tool.framework.play('BeforeLinkZone'),
       afterMacro: () => maplebirch.tool.framework.play('AfterLinkZone'),
+      customMacro: () => maplebirch.tool.framework.play('CustomLinkZone'),
       zoneStyle: {
         display: 'none',
         verticalAlign: 'top',
@@ -1259,54 +1099,76 @@
       config.onBeforeApply?.();
       const linkZone = new LinkZoneManager(config.containerId, config.linkSelector, log);
       const result = linkZone.applyZones(config);
-      if (result) addMacroZones(config);
+      if (result) addContentToZones(config);
       config.onAfterApply?.(result, config);
       return result;
     }
 
-    function addMacroZones(config) {
-      const setMacroContent = (element, macro) => {
-        if (!element) return;
-        let macroContent;
-        if (typeof macro === 'function') {
-          macroContent = macro();
-        } else if (typeof macro === 'string') {
-          macroContent = macro;
-        } else {
-          return;
-        }
-        if (!macroContent) {
-          element.innerHTML = '';
-          element.style.display = 'none';
-          return;
-        }
-        const tempContainer = document.createElement('div');
-        if (typeof $.wiki === 'function') {
-          $(tempContainer).wiki(macroContent);
-        } else if (typeof Wikifier !== 'undefined') {
-          new Wikifier(tempContainer, macroContent);
-        } else if (typeof wikifier === 'function') {
-          tempContainer.innerHTML = macroContent;
-          wikifier(tempContainer);
-        } else {
-          tempContainer.innerHTML = macroContent;
-        }
-        element.innerHTML = '';
-        element.append(...tempContainer.childNodes);
-        element.querySelectorAll('script').forEach(script => {
-          const newScript = document.createElement('script');
-          newScript.textContent = script.textContent;
-          script.replaceWith(newScript);
+    function addContentToZones(config) {
+      defaultZone('beforeLinkZone', config.beforeMacro, config);
+      defaultZone('afterLinkZone', config.afterMacro, config);
+      const MacroArray = Array.isArray(config.customMacro()) ? config.customMacro() : [];
+      if (MacroArray?.length > 0) {
+        MacroArray.forEach((zoneConfig) => {
+          const position = zoneConfig.position;
+          customZone(position, zoneConfig.macro, config);
         });
-        if (element.childNodes.length > 0) {
-          element.style.display = 'block';
-        } else {
-          element.style.display = 'none';
+      }
+    }
+
+    function defaultZone(zoneId, macro, config) {
+      const element = document.getElementById(zoneId);
+      if (!element) return;
+      processMacroContent(element, macro, config);
+    }
+
+    function customZone(position, macro, config) {
+      const element = document.querySelector(`[data-link-zone-position="${position}"]`);
+      if (!element) return;
+      processMacroContent(element, macro, config);
+    }
+
+    function processMacroContent(element, macro, config) {
+      let macroContent;
+      if (typeof macro === 'function') {
+        try {
+          macroContent = macro();
+        } catch (error) {
+          log(`[link] 执行宏函数出错: ${error.message}`, 'ERROR');
+          return;
         }
-        if (config.debug) log('[link] 添加宏到区域', 'DEBUG', macroContent);
-      };
-      setMacroContent(document.getElementById('beforeLinkZone'), config.beforeMacro);
-      setMacroContent(document.getElementById('afterLinkZone'), config.afterMacro);
+      } else {
+        macroContent = macro;
+      }
+      if (!macroContent) {
+        element.innerHTML = '';
+        element.style.display = 'none';
+        return;
+      }
+      const tempContainer = document.createElement('div');
+      if (typeof $.wiki === 'function') {
+        $(tempContainer).wiki(macroContent);
+      } else if (typeof Wikifier !== 'undefined') {
+        new Wikifier(tempContainer, macroContent);
+      } else if (typeof wikifier === 'function') {
+        tempContainer.innerHTML = macroContent;
+        wikifier(tempContainer);
+      } else {
+        tempContainer.innerHTML = macroContent;
+      }
+      element.innerHTML = '';
+      element.append(...tempContainer.childNodes);
+      element.querySelectorAll('script').forEach(script => {
+        const newScript = document.createElement('script');
+        newScript.textContent = script.textContent;
+        script.replaceWith(newScript);
+      });
+      if (element.childNodes.length > 0) {
+        element.style.display = 'block';
+      } else {
+        element.style.display = 'none';
+      }
+      if (config.debug) log('[link] 添加内容到区域', 'DEBUG', macroContent);
     }
 
     class LinkZoneManager {
@@ -1316,14 +1178,14 @@
         this.linkSelector = linkSelector;
         this.#resetState();
       }
-      
+
       #resetState() {
         this.firstLink = null;
         this.lastLink = null;
         this.allLinks = [];
         this.lineBreakBeforeFirstLink = null;
       }
-      
+
       detectLinks() {
         this.#resetState();
         const container = document.getElementById(this.containerId);
@@ -1340,7 +1202,7 @@
           lineBreakBeforeFirstLink: this.lineBreakBeforeFirstLink
         };
       }
-      
+
       #detectLineBreakBeforeFirstLink() {
         let node = this.firstLink.previousSibling;
         while (node) {
@@ -1351,7 +1213,7 @@
           node = node.previousSibling;
         }
       }
-      
+
       #isLineBreakNode(node) {
         if (!node) return false;
         switch (node.nodeType) {
@@ -1366,7 +1228,7 @@
             return false;
         }
       }
-      
+
       #isElementVisible(element) {
         if (!element || !element.getBoundingClientRect) return false;
         const { display, visibility, opacity } = getComputedStyle(element);
@@ -1374,14 +1236,57 @@
         const rect = element.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0;
       }
-      
+
       #createZoneElement(id, config) {
         const zone = document.createElement('div');
-        zone.id = id;
+        if (id) zone.id = id;
         Object.assign(zone.style, config.zoneStyle);
         return zone;
       }
-      
+
+      #applyCustomLinkZone(position, config) {
+        if (position < 0 || position >= this.allLinks.length) {
+          this.log(`[link] 无效位置: ${position}（总链接数: ${this.allLinks.length}）`, 'WARN');
+          return null;
+        }
+        const targetLink = this.allLinks[position];
+        if (!targetLink) {
+          this.log(`[link] 未找到位置 ${position} 的链接`, 'WARN');
+          return null;
+        }
+        const zone = this.#createZoneElement(null, config);
+        zone.setAttribute('data-link-zone-position', position);
+        let lineBreakNode = null;
+        let node = targetLink.previousSibling;
+        while (node) {
+          if (this.#isLineBreakNode(node)) {
+            lineBreakNode = node;
+            break;
+          }
+          node = node.previousSibling;
+        }
+        if (lineBreakNode) {
+          if (lineBreakNode.nodeType === Node.TEXT_NODE) {
+            const content = lineBreakNode.textContent;
+            const breakIndex = content.lastIndexOf('\n');
+            if (breakIndex === -1) {
+              lineBreakNode.after(zone);
+            } else {
+              const beforeText = content.substring(0, breakIndex + 1);
+              const afterText = content.substring(breakIndex + 1);
+              lineBreakNode.textContent = beforeText;
+              lineBreakNode.after(zone, document.createTextNode(afterText));
+            }
+          } else {
+            lineBreakNode.after(zone);
+          }
+        } else {
+          targetLink.before(zone);
+        }
+        this.log(`[link] 在位置 ${position} 的链接前插入区域（ID: ${zone.id}）`, 'DEBUG', targetLink);
+        return zone;
+      }
+
       applyZones(config) {
         const results = this.detectLinks();
         if (!results) {
@@ -1390,11 +1295,17 @@
         }
         this.#applyBeforeLinkZone(config);
         this.#applyAfterLinkZone(config);
+        const MacroArray = Array.isArray(config.customMacro()) ? config.customMacro() : [];
+        if (MacroArray?.length > 0) {
+          MacroArray.forEach(zoneConfig => {
+            this.#applyCustomLinkZone(zoneConfig.position, config);
+          });
+        }
         return true;
       }
-      
+
       #applyBeforeLinkZone(config) {
-        if (!this.firstLink || !this.lineBreakBeforeFirstLink) return; 
+        if (!this.firstLink || !this.lineBreakBeforeFirstLink) return;
         const zone = this.#createZoneElement('beforeLinkZone', config);
         if (this.lineBreakBeforeFirstLink.nodeType === Node.TEXT_NODE) {
           const content = this.lineBreakBeforeFirstLink.textContent;
@@ -1412,9 +1323,9 @@
         }
         if (config.debug) this.log('应用链接前区域', 'DEBUG', zone);
       }
-      
+
       #applyAfterLinkZone(config) {
-        if (!this.lastLink) return;   
+        if (!this.lastLink) return;
         const zone = this.#createZoneElement('afterLinkZone', config);
         this.lastLink.after(zone);
         if (config.debug) this.log('应用链接后区域', 'DEBUG', zone);
@@ -1424,11 +1335,12 @@
     return {
       apply,
       manager: LinkZoneManager,
-      addMacrosToZones: addMacroZones,
+      addContentToZones,
       get defaultConfig() { return { ...defaultConfig }; },
       removeZones: () => {
         document.getElementById('beforeLinkZone')?.remove();
         document.getElementById('afterLinkZone')?.remove();
+        document.querySelectorAll('[data-link-zone-position]').forEach(zone => zone.remove());
       }
     }
   })()

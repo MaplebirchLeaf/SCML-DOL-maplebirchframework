@@ -259,9 +259,8 @@
         return { success: false, error: '请输入有效的Twine代码' };
       }
       try {
-        const linkMatch = code.match(/<<link\s+(["'])([^"']+)\1\s+(["'])([^"']+)\3\s*>>\s*<<\/link>>/);
+        const linkMatch = code.match(/<<link\s+(["'])([^"']*)\1\s+(["'])([^"']*)\3\s*>>\s*<<\/link>>/);
         if (linkMatch) {
-          const linkText = linkMatch[2];
           const passage = linkMatch[4];
           const $temp = $('<div>').appendTo(document.body).hide();
           $.wiki(code, $temp);

@@ -65,7 +65,7 @@
   border: 1px solid var(--600);
   border-radius: 4px;
   color: var(--000);
-  font-family: monospace;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
   line-height: 1.4;
   min-width: 0;
 }
@@ -94,19 +94,21 @@
 #js-cheat-console-status,
 #twine-cheat-console-status {
   display: none;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
 }
 
 #js-cheat-console-status.visible,
 #twine-cheat-console-status.visible {
   display: block;
   padding: 0.5rem;
-  font-family: monospace;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
   font-size: 0.9rem;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 4px;
   min-height: 1.5rem;
   width: 100%;
   box-sizing: border-box;
+  white-space: pre-wrap;
 }
 
 #js-cheat-console-status.success,

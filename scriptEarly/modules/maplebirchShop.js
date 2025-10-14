@@ -6,7 +6,7 @@
 
   const maplebirch = window.maplebirch;
 
-  class Shop {
+  class ShopManager {
     static categoryMap = {
       all:        { icon: "all",      text: "View All",         widget: "AllShop" },
       overhead:   { icon: "overhead",   text: "View Headgear",         widget: "OverheadShop" },
@@ -58,7 +58,7 @@
         );
         return true;
       } catch (error) {
-        maplebirch.log(`加载商店JSON失败 (${path}): ${error.message}`);
+        maplebirch.log(`加载商店JSON失败 (${path}): ${error.message}`, 'ERROR');
         return false;
       }
     }
@@ -84,34 +84,35 @@
       filteredTypes.forEach(t => {
         const key = `${shopName}_${t}`;
         const contentItem = content[t];
-        if (!contentItem) { this.log(`'${shopName}' 缺少类型 '${t}'`, 'WARN'); return;}
+        if (!contentItem) {
+          this.log(`'${shopName}' 缺少类型 '${t}'`, 'WARN');
+          return;
+        }
         this.tool.text.reg(key, output => {
-          if (Array.isArray(contentItem)) {
-            contentItem.forEach(item => {
-              if (typeof item === 'string') {
-                output.text(item);
-              } else if (item && typeof item === 'object') {
-                const method = item.method || 'text';
-                const text = item.text || '';
-                const style = item.style;
-                if (output[method]) {
-                  if (style) {
-                    output[method](text, style);
-                  } else {
-                    output[method](text);
-                  }
-                } else {
-                  output.text(text, style);
-                }
-              }
-            });
-          }
+          if (!Array.isArray(contentItem)) return;
+          contentItem.forEach(item => this.#processContentItem(item, output));
         });
       });
     }
 
+    #processContentItem(item, output) {
+      if (typeof item === 'string') {
+        output.text(item);
+        return;
+      }
+      if (!item || typeof item !== 'object') return;
+      const method = item.method || 'text';
+      const text = item.text || '';
+      const style = item.style;
+      if (output[method]) {
+        style ? output[method](text, style) : output[method](text);
+      } else {
+        output.text(text, style);
+      }
+    }
+
     #shopPassageCreate(shopName) {
-      let html = `<<set $bus to "${shopName}shop">>\n`;
+      let html = `<<set $bus to "${shopName}Shop">>\n`;
       html += `<div id="clothingShop-div" class="main-shop-div">\n`;
       html += `\t<<${shopName}Shop-main>>\n`;
       html += `</div>`;
@@ -156,7 +157,7 @@
         const groupBreaks = ['lower', 'underlower', 'neck', 'feet'];
         clothesType.forEach((type, index) => {
           if (!hasReOverfits && ['overhead', 'overupper', 'overlower'].includes(type)) return;
-          const category = Shop.categoryMap[type];
+          const category = ShopManager.categoryMap[type];
           if (category) {
             html += `\t\t<<clothingcategoryicon "${category.icon}">>\n`;
             html += `\t\t<<langlink "${category.text}">><<replace "#clothingShop-div">><<${category.widget}>><</replace>><</langlink>>\n`;
@@ -297,5 +298,5 @@
     }
   }
 
-  await maplebirch.register('shop', new Shop(), ['tool']);
+  await maplebirch.register('shop', new ShopManager(), ['tool']);
 })();

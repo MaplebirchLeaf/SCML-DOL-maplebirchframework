@@ -1,5 +1,5 @@
 (async() => {
-  const frameworkVersion = '2.4.7';
+  const frameworkVersion = '2.4.8';
   const lastUpdate = '2025.10.11';
   const lastModifiedBy = '楓樺葉';
   const DEBUGMODE = false;
@@ -11,6 +11,15 @@
   };
 
   if (window.maplebirch) return;
+
+  let yaml = window.jsyaml;
+  if (!yaml) {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js';
+    script.onload = () => yaml = window.jsyaml;
+    script.onerror = () => yaml = { load: JSON.parse };
+    document.head.appendChild(script);
+  }
 
   class Logger {
     static LogConfig = {
@@ -89,8 +98,7 @@
 
     #detectLanguage() {
       const lang = navigator.language || navigator.userLanguage || 'en';
-      if (lang.includes('zh')) return 'CN';
-      return 'EN';
+      return lang.includes('zh') ? 'CN' : 'EN';
     }
 
     async initDatabase() {
@@ -128,26 +136,85 @@
     }
 
     async importAllLanguages(modName, languages = LanguageManager.DEFAULT_LANGS) {
-      if (!this.core.modLoader) {
-        this.core.logger.log('Mod 加载器未设置，无法导入翻译', 'ERROR');
-        return false;
-      }
-      const tasks = languages.map(lang => async () => {
-        const filePath = `translations/${lang.toLowerCase()}.json`;
-        return this.#loadAndProcessTranslations(modName, lang, filePath);
-      });
+      if (!this.core.modLoader) { this.core.logger.log('Mod 加载器未设置，无法导入翻译', 'ERROR'); return false; }
       const concurrency = this.#importConcurrency;
+      const tasks = [];
+      for (const lang of languages) {
+        tasks.push(async () => {
+          const formats = ['json', 'yml', 'yaml'];
+          let foundAny = false;
+          let loadedAny = false;
+          const allTranslations = {};
+          for (const format of formats) {
+            const filePath = `translations/${lang.toLowerCase()}.${format}`;
+            const modZip = this.core.modLoader.getModZip(modName);
+            if (!modZip || !modZip.zip.file(filePath)) continue;
+            foundAny = true;
+            this.core.logger.log(`找到 ${lang} 语言翻译文件: ${filePath}`, 'DEBUG');
+            try {
+              const file = modZip.zip.file(filePath);
+              const content = await file.async('text');
+              let data;
+              if (filePath.endsWith('.json')) {
+                data = JSON.parse(content);
+              } else if (filePath.endsWith('.yml') || filePath.endsWith('.yaml')) {
+                data = yaml.load(content);
+              }
+              Object.assign(allTranslations, data);
+              loadedAny = true;
+              this.core.logger.log(`成功加载翻译内容: ${filePath}`, 'DEBUG');
+            } catch (err) {
+              this.core.logger.log(`加载失败: ${filePath} - ${err?.message || err}`, 'ERROR');
+            }
+          }
+          if (!foundAny) { this.core.logger.log(`找不到 ${lang} 语言的翻译文件`, 'WARN'); return false; }
+          if (!loadedAny) { this.core.logger.log(`找到 ${lang} 语言的翻译文件但全部加载失败`, 'WARN'); return false; }
+          const result = await this.#processTranslations(modName, lang, allTranslations);
+          if (result) this.core.logger.log(`成功处理 ${lang} 语言翻译 (${Object.keys(allTranslations).length} 项)`, 'DEBUG');
+          return result;
+        });
+      }
       const results = [];
       for (let i = 0; i < tasks.length; i += concurrency) {
         const batch = tasks.slice(i, i + concurrency).map(fn => fn());
-        const res = await Promise.all(batch);
-        results.push(...res);
+        const batchResults = await Promise.all(batch);
+        results.push(...batchResults);
       }
       return results.every(Boolean);
     }
 
     async loadTranslations(modName, languageCode, filePath) {
-      return this.#loadAndProcessTranslations(modName, languageCode, filePath);
+      if (!this.core.modLoader) { this.core.logger.log('Mod 加载器未设置', 'ERROR'); return false; }
+      const modZip = this.core.modLoader.getModZip(modName);
+      if (!modZip) { this.core.logger.log(`找不到 Mod: ${modName}`, 'ERROR'); return false; }
+      const file = modZip.zip.file(filePath);
+      if (!file) return false;
+      try {
+        const content = await file.async('text');
+        let data;
+        if (filePath.endsWith('.json')) {
+          try {
+            data = JSON.parse(content);
+          } catch (jsonErr) {
+            this.core.logger.log(`JSON 解析失败: ${filePath} - ${jsonErr.message}`, 'ERROR');
+            return false;
+          }
+        } else if (filePath.endsWith('.yml') || filePath.endsWith('.yaml')) {
+          try {
+            data = yaml.load(content);
+          } catch (yamlErr) {
+            this.core.logger.log(`YAML 解析失败: ${filePath} - ${yamlErr.message}`, 'ERROR');
+            return false;
+          }
+        } else {
+          this.core.logger.log(`不支持的文件格式: ${filePath}`, 'ERROR');
+          return false;
+        }
+        return await this.#processTranslations(modName, languageCode, data);
+      } catch (err) {
+        this.core.logger.log(`加载失败: ${modName}/${filePath} - ${err?.message || err}`, 'ERROR');
+        return false;
+      }
     }
 
     t(key, space = false) {
@@ -240,14 +307,45 @@
     #batchSize;
     #preloadYieldEvery;
 
-    async #calculateFileHash(file) {
+    async #processTranslations(modName, lang, translations) {
       try {
-        const content = await file.async('uint8array');
-        const buf = await crypto.subtle.digest('SHA-256', content);
-        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        const combinedContent = JSON.stringify(translations);
+        const encoder = new TextEncoder();
+        const data = encoder.encode(combinedContent);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        const lastHash = await this.#getLastFileHash(modName, lang);
+        if (fileHash === lastHash) {
+          this.core.logger.log(`翻译内容未变更: ${modName}/${lang} (跳过导入)`, 'DEBUG');
+          return true;
+        }
+        const keys = Object.keys(translations);
+        if (keys.length === 0) {
+          await this.#storeFileHash(modName, lang, fileHash);
+          return true;
+        }
+        const entries = [];
+        for (const key of keys) {
+          if (!this.translations.has(key)) this.translations.set(key, {});
+          const rec = this.translations.get(key);
+          rec[lang] = translations[key];
+          entries.push({ key, translations: { [lang]: translations[key] }, mod: modName });
+        }
+        for (let i = 0; i < entries.length; i += this.#batchSize) {
+          const chunk = entries.slice(i, i + this.#batchSize);
+          await this.#storeBatchInDB(chunk);
+        }
+        const existingKeys = await this.#getExistingKeysForMod(modName, lang);
+        const newKeys = new Set(keys);
+        const obsoleteKeys = new Set([...existingKeys].filter(k => !newKeys.has(k)));
+        if (obsoleteKeys.size > 0) await this.#cleanupObsoleteKeys(obsoleteKeys, modName, lang);
+        await this.#storeFileHash(modName, lang, fileHash);
+        this.core.logger.log(`加载翻译: ${lang} (${keys.length} 项)`, 'DEBUG');
+        return true;
       } catch (err) {
-        this.core.logger.log(`哈希计算失败，使用回退标识: ${err?.message || err}`, 'WARN');
-        return `${file.name}-${file.size}-${file.lastModDate}`;
+        this.core.logger.log(`处理翻译失败: ${modName}/${lang} - ${err?.message || err}`, 'ERROR');
+        return false;
       }
     }
 
@@ -272,67 +370,6 @@
         this.fileHashes.set(`${modName}_${lang}`, hash);
       } catch (err) {
         this.core.logger.log(`存储文件哈希失败: ${err?.message || err}`, 'ERROR');
-      }
-    }
-
-    async #loadAndProcessTranslations(modName, languageCode, filePath) {
-      if (!this.core.modLoader) {
-        this.core.logger.log('Mod 加载器未设置', 'ERROR');
-        return false;
-      }
-
-      const modZip = this.core.modLoader.getModZip(modName);
-      if (!modZip) {
-        this.core.logger.log(`找不到 Mod: ${modName}`, 'ERROR');
-        return false;
-      }
-
-      const file = modZip.zip.file(filePath);
-      if (!file) {
-        this.core.logger.log(`找不到翻译文件: ${modName}/${filePath}`, 'WARN');
-        return false;
-      }
-
-      try {
-        const fileHash = await this.#calculateFileHash(file);
-        const lastHash = await this.#getLastFileHash(modName, languageCode);
-
-        if (fileHash === lastHash) {
-          this.core.logger.log(`翻译文件未变更: ${filePath} (跳过导入)`, 'DEBUG');
-          return true;
-        }
-
-        const json = await file.async('text');
-        const data = JSON.parse(json);
-        const keys = Object.keys(data);
-        if (keys.length === 0) {
-          await this.#storeFileHash(modName, languageCode, fileHash);
-          return true;
-        }
-
-        const entries = [];
-        for (const key of keys) {
-          if (!this.translations.has(key)) this.translations.set(key, {});
-          const rec = this.translations.get(key);
-          rec[languageCode] = data[key];
-          entries.push({ key, translations: { [languageCode]: data[key] }, mod: modName });
-        }
-
-        for (let i = 0; i < entries.length; i += this.#batchSize) {
-          const chunk = entries.slice(i, i + this.#batchSize);
-          await this.#storeBatchInDB(chunk);
-        }
-
-        const existingKeys = await this.#getExistingKeysForMod(modName, languageCode);
-        const newKeys = new Set(keys);
-        const obsoleteKeys = new Set([...existingKeys].filter(k => !newKeys.has(k)));
-        if (obsoleteKeys.size > 0) await this.#cleanupObsoleteKeys(obsoleteKeys, modName, languageCode);
-        await this.#storeFileHash(modName, languageCode, fileHash);
-        this.core.logger.log(`加载翻译: ${languageCode} (${keys.length} 项)`, 'DEBUG');
-        return true;
-      } catch (err) {
-        this.core.logger.log(`加载失败: ${modName}/${filePath} - ${err?.message || err}`, 'ERROR');
-        return false;
       }
     }
 
@@ -1082,6 +1119,10 @@
     
     get dependencyGraph() {
       return this.modules.getDependencyGraph();
+    }
+
+    get yaml() {
+      return yaml;
     }
   }
 

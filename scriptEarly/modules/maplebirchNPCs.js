@@ -53,30 +53,6 @@
     // 头发颜色
     static hairColor = ['red', 'black', 'brown', 'lightbrown', 'blond', 'platinumblond', 'strawberryblond', 'ginger']
 
-    // 性别代词映射表
-    static pronounsMap = {
-      m: {
-        CN: { he: "他", his: "他的", hers: "他的", him: "他", himself: "他自己", man: "男人", boy: "男孩", men: "男人们" },
-        EN: { he: "he", his: "his", hers: "his", him: "him", himself: "himself", man: "man", boy: "boy", men: "men" }
-      },
-      f: {
-        CN: { he: "她", his: "她的", hers: "她的", him: "她", himself: "她自己", man: "女人", boy: "女孩", men: "女人们" },
-        EN: { he: "she", his: "her", hers: "hers", him: "her", himself: "herself", man: "woman", boy: "girl", men: "women" }
-      },
-      i: {
-        CN: { he: "它", his: "它的", hers: "它的", him: "它", himself: "它自己", man: "那个东西", boy: "小家伙", men: "它们" },
-        EN: { he: "it", his: "its", hers: "its", him: "it", himself: "itself", man: "thing", boy: "little one", men: "them" }
-      },
-      n: {
-        CN: { he: "她", his: "她的", hers: "她的", him: "她", himself: "她自己", man: "人", boy: "孩子", men: "人们" },
-        EN: { he: "they", his: "their", hers: "theirs", him: "them", himself: "themself", man: "person", boy: "kid", men: "people" }
-      },
-      t: {
-        CN: { he: "他们", his: "他们的", hers: "他们的", him: "他们", himself: "他们自己", man: "人", boy: "孩子们", men: "大家" },
-        EN: { he: "they", his: "their", hers: "theirs", him: "them", himself: "themselves", man: "people", boy: "kids", men: "everyone" }
-      }
-    };
-
     // 童贞类型
     static virginityTypes = {
       anal:         true, // 肛门
@@ -239,6 +215,7 @@
       if (!needsCleaning) return false;
       const validNamesSet = new Set(setup.NPCNameList);
       V.NPCName = (V.NPCName || []).filter(npc => validNamesSet.has(npc.nam));
+      manager.NamedNPC = manager.NamedNPC.filter(npc => validNamesSet.has(npc.nam));
       manager.log(`清理了 ${Names.length - V.NPCName.length} 个无效NPC`, 'DEBUG');
       return true;
     }
@@ -396,6 +373,7 @@
         if (!V.maplebirch.npc[name].Seen) V.maplebirch.npc[name].Seen = [];
         if (!V.maplebirch.npc[name].FirstSeen) V.maplebirch.npc[name].FirstSeen = '';
         if (!V.maplebirch.npc[name].bodydata) V.maplebirch.npc[name].bodydata = {};
+        if (!V.maplebirch.npc[name].outfits) V.maplebirch.npc[name].outfits = [];
         if (!V.maplebirch.npc[name].clothes) V.maplebirch.npc[name].clothes = {};
         NPCUtils.bodyDataProperties(npcName);
         NPCUtils.npcSeenProperty(name);
@@ -414,19 +392,6 @@
       "skills": {},
       "pronouns": {},
       "traits": []
-    }
-
-    // 替换原版 <<generatePronouns>>
-    static #defineGeneratePronouns(widget) {
-      widget.defineMacro('generatePronouns', function() {
-        const npc = this.args[0];
-        const key = npc.pronoun || "f";
-        const lang = modUtils.getMod('ModI18N') ? 'CN' : 'EN';
-        const data = NPCcreator.pronounsMap[key] || NPCcreator.pronounsMap.f;
-        const pronouns = data[lang] || data.EN;
-        if (!npc.pronouns) npc.pronouns = {};
-        Object.assign(npc.pronouns, pronouns);
-      });
     }
 
     constructor() {
@@ -450,6 +415,7 @@
       this.NPCNameList = [];
       this.npcConfigData = {};
       this.customStats = {};
+      maplebirch.trigger(':npc-init', this);
     }
 
     add(npcData, config, translationsData) {
@@ -565,7 +531,6 @@
         if (this.tool.contains(['Start', 'Downgrade Waiting Room'], [maplebirch.state.passage.title], { mode: 'any' })) return;
         this.injectModNPCs();
       });
-      maplebirch.once(':finally', () => NPCManager.#defineGeneratePronouns(this.tool.widget))
     }
 
     Init() {
