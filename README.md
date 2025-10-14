@@ -1341,7 +1341,16 @@ maplebirchFrameworks.addTraits(
 // 添加新地点
 maplebirchFrameworks.addLocation('magic_academy', {
   folder: 'magic_academy',
-  base: { main: { image: 'main.png' } }
+  base: {
+    default: {
+      condition: () => !Weather.isSnow,
+      image: "base.png",
+    },
+    snow: {
+      condition: () => Weather.isSnow,
+      image: "snow.png",
+    },
+  },
 });
 
 // 更新特定元素
@@ -1663,6 +1672,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
