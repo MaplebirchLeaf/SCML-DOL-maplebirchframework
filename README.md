@@ -100,6 +100,7 @@
 | ​​区域注册​ | 动态注册界面部件区域​ |
 | ​​特质注册​ | 动态添加游戏特质 |
 | 地点注册​​ | 动态添加游戏地点​ |
+| 商店注册 | 编写在游戏内添加商店 |
 | NPC注册 | 为游戏内添加NPC​ |
 </details>
 
@@ -177,10 +178,12 @@
 
 ## 功能介绍与示例:
  ### 多语言管理
-  - 通常的翻译文件存放路径:  
+  - 通常的翻译文件存放路径(支持 `.yml` 和 `。yaml` 格式文件):  
   ```
     根目录/  
-    └── translations/  
+    └── translations/
+        ├── cn.yaml 
+        ├── en.yaml   
         ├── cn.json  
         └── en.json  
   ```
@@ -1094,6 +1097,7 @@ maplebirchFrameworks.addText('hint_links', t => {
 | `Journal`               | 日志尾部区域             |
 | `BeforeLinkZone`        | 选项链接前区域           |
 | `AfterLinkZone`         | 选项链接后区域           |
+| `CustomLinkZone`        | 自定义任意位置的链接前    |
 | `CaptionDescription`    | 标题描述区域             |
 | `StatusBar`             | 状态栏区域               |
 | `MenuBig`               | 大菜单区域               |
@@ -1117,48 +1121,50 @@ maplebirchFrameworks.addText('hint_links', t => {
 </details>
 
   #### 添加内容到指定区域
-  - 支持三种内容类型
-1. 字符串：直接作为宏名称使用
-2. 函数：动态生成内容，返回字符串或宏代码
-3. 对象：带条件的宏配置（支持`exclude`/`match`/`passage`等条件）
-  - 条件渲染参数说明
-1. `exclude`: 字符串或数组，指定不显示该内容的段落
-2. `match`: 正则表达式，匹配段落标题
-3. `passage`: 字符串或数组，指定显示该内容的段落
 ```
-示例：
-// 添加简单宏
-maplebirchFrameworks.addto('Header', 'customHeader');
+添加部件到指定区域
+@param {string} zone - 目标区域名称（如 'Header', 'Footer', 'CustomLinkZone' 等）
+@param {...(string|Function|Object|Array)} widgets - 要添加的部件，支持多种格式
 
-// 添加动态生成的内容
-maplebirchFrameworks.addto('StatusBar', () => {
-  return `<<print "生命值: ${V.player.health}">>`;
+@example 添加字符串部件（直接调用宏）
+maplebirchFrameworks.addTo('Header', 'myHeaderMacro');
+// 渲染结果: <<myHeaderMacro>>
+
+@example 添加函数部件（自动包装为可执行宏）
+maplebirchFrameworks.addTo('Footer', () => {
+  return `当前时间: ${new Date().toLocaleTimeString()}`;
+});
+// 渲染结果: <<run func_xxxx()>> (自动生成函数名)
+
+@example 添加条件部件对象（带匹配规则）
+maplebirchFrameworks.addTo('Options', {
+  widget: 'advancedOptions', // 宏名称
+  passage: ['Town', 'Forest'], // 只在指定段落显示
+  exclude: 'School' // 不在School段落显示
 });
 
-// 添加带条件的宏（排除特定段落）
-maplebirchFrameworks.addto('Options', {
-  widget: 'debugOptions',
-  exclude: ['MainMenu'] // 在主菜单不显示
+@example 添加正则匹配部件
+maplebirchFrameworks.addTo('StatusBar', {
+  widget: 'healthBar',
+  match: /Battle.*/ // 匹配所有以Battle开头的段落
 });
 
-// 添加带条件的宏（匹配特定段落）
-maplebirchFrameworks.addto('Journal', {
-  widget: 'questLog',
-  match: /Chapter\d+/ // 在所有章节段落显示
+@example 添加到CustomLinkZone区域（数组格式）
+// 在链接位置1前插入部件
+maplebirchFrameworks.addTo('CustomLinkZone', [1, 'preLinkMenu']);
+
+@example 添加到CustomLinkZone区域（对象格式带条件）
+maplebirchFrameworks.addTo('CustomLinkZone', {
+  widget: [2, 'contextMenu'], // 在链接位置2前插入
+  passage: 'Forest' // 只在Forest段落显示
 });
 
-// 添加带条件的宏（指定段落）
-maplebirchFrameworks.addto('Information', {
-  widget: 'tutorialHints',
-  passage: ['Tutorial', 'Introduction'] // 仅在教程段落显示
-});
-
-// 组合条件（在战斗场景显示但排除过场动画）
-maplebirchFrameworks.addto('StatusBar', {
-  widget: 'combatStatus',
-  passage: ['Battle', 'BossFight'],
-  exclude: 'Cutscene'
-});
+@example 批量添加多个部件
+maplebirchFrameworks.addTo('Information', 
+  'basicInfo',
+  () => { /* 动态内容 *\/ },
+  { widget: 'weatherDisplay', passage: 'Outdoor' }
+);
 ```
   #### 注册初始化函数
  - 注册在游戏初始化时需要执行的函数，用于设置初始变量、加载数据等
@@ -1196,6 +1202,7 @@ maplebirchFrameworks.onInit(() => {
 });
 ```
  #### 区域addonPlugin注册
+ + **CustomLinkZone区域** 为数组形式 如 **`[1, 'preLinkMenu']`**
 ```
 "params": {
   "framework": [
@@ -1672,6 +1679,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
