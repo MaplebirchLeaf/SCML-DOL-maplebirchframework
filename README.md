@@ -686,7 +686,7 @@ play() 方法选项:
 }
 ```
  ### 框架的实用工具
- + 可在 **非 `scriptFileList_inject_early` 时机** 使用如下逻辑。
+ + 可在 **非 `scriptFileList_inject_early` 时机** 使用如下逻辑，或 **确保可以使用的情况下** 使用。
  #### 一般实用工具
  + **`clone`** 函数
 ```
@@ -1679,6 +1679,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
