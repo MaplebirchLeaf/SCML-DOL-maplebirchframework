@@ -619,7 +619,7 @@ B. 相对时间偏移模式:
 ```
   #### 音频使用示例
 ```
-// 1. 从文件添加音频
+// 1. 从文件添加音频(导入步骤)
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
 fileInput.accept = 'audio/*';
@@ -629,11 +629,11 @@ fileInput.onchange = async (e) => {
 };
 fileInput.click();
 
-// 2. 从Mod加载音频
-await maplebirch.audio.importAllAudio('my-mod', 'audio');
+// 2. 从Mod加载音频(导入步骤)
+await maplebirch.audio.importAllAudio('<模组名称>my-mod', '<音频路径>audio');
 
-// 3. 获取音频播放器
-const player = maplebirch.audio.getPlayer('maplebirch-audio');
+// 3. 获取音频播放器(播放步骤)
+const player = maplebirch.audio.getPlayer('<模组名称>maplebirch-audio');
 
 // 4. 播放音频
 player.play('background-music', {
@@ -1679,6 +1679,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
