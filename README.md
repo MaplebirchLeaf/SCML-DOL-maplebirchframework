@@ -1524,8 +1524,8 @@ maplebirchFrameworks.addNPC({
   gender: "f",
   type: "human",
   description: "一位神秘的精灵魔法师",
-  eyeColour: "紫色",
-  hairColor: "银色"
+  eyeColour: "purple",
+  hairColor: "silvery"
 }, {
   loveAlias: ['爱意', 'Love']
   loveInterest: true,
@@ -1543,8 +1543,8 @@ maplebirchFrameworks.addNPC({
   gender: "f",
   type: "human",
   description: "一位神秘的精灵魔法师",
-  eyeColour: "紫色",
-  hairColor: "银色"
+  eyeColour: "purple",
+  hairColor: "silvery"
 }, {
 
 }, {
@@ -1632,8 +1632,8 @@ maplebirchFrameworks.addStats({
         "gender": "f", // 性别 (m/f/none)
         "type": "human", // NPC类型 (human/wolf/demon等)
         "description": "一位神秘的精灵魔法师", // 描述文本
-        "eyeColour": "紫色", // 眼睛颜色
-        "hairColor": "银色" // 头发颜色
+        "eyeColour": "purple", // 眼睛颜色
+        "hairColor": "silvery" // 头发颜色
       },
       "config": {
         "loveAlias": ["爱意", "Love"], // 好感度别名 [中文, 英文]
@@ -1679,6 +1679,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
