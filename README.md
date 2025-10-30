@@ -990,7 +990,7 @@ colorSelector.match('yellow'); // '#FFFFFF'
 使用 <<langbutton 'Temple'>><</langbutton>> 会在游戏中英文时显示 (1)Temple ，中文时显示(1)神殿。
 使用 <<langbutton 'Temple' 'upper'>><</langbutton>> 会在游戏中英文时显示 (1)TEMPLE
 ```
- + **`<<radiobuttonsfrom>>`** 的说明，它是**` <<radiobutton>>`** 宏的变种
+ + **`<<radiobuttonsfrom>>`** 的说明，它是 **`<<radiobutton>>`** 宏的变种
 ```
 生成包含多个label元素的span容器，每个label包含：
 - 一个单选按钮input元素
@@ -1759,6 +1759,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
