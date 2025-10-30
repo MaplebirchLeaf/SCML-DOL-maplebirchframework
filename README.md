@@ -1724,10 +1724,10 @@ maplebirchFrameworks.addStats({
 }
 ```
 #### NPC侧绘
-  #### NPC侧绘说明
+ #### NPC侧绘说明
 + 在模组设置中可以开启已命名npc的侧边栏立绘，需要自行导入相应的图片
 + 画布模式尚未完成，它将会是以pc模型为制作的立绘
-  #### NPC侧绘的addonPlugin注册
+ #### NPC侧绘的addonPlugin注册
 ```
 "params": {
     "npcSidebar": [
@@ -1759,6 +1759,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
