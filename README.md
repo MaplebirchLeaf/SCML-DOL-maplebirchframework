@@ -54,6 +54,9 @@
         - [NPC的关系文本](#NPC的关系文本)
         - [NPC属性详解](#NPC属性详解)
         - [NPC的addonPlugin注册](#NPC的addonPlugin注册)
+    - [NPC侧绘](#NPC侧绘)
+        - [NPC侧绘说明](#NPC侧绘说明)
+        - [NPC侧绘的addonPlugin注册](#NPC侧绘的addonPlugin注册)
 - [致谢](#致谢)
 - [未实现的功能构想](#未实现的功能构想)
 
@@ -102,6 +105,7 @@
 | 地点注册​​ | 动态添加游戏地点​ |
 | 商店注册 | 编写在游戏内添加商店 |
 | NPC注册 | 为游戏内添加NPC​ |
+| NPC侧绘 | 为游戏内添加NPC​的侧边栏立绘 |
 </details>
 
 ## 安装与依赖方式说明
@@ -865,6 +869,38 @@ either(['a', 'b'], { allowNull: true }); // 33%概率返回null
 // 直接传递选项
 either('cat', 'dog', { weights: [0.3, 0.7] });
 ```
+ + **`convert`** 函数
+```
+ @param {string} str - 要转换的字符串
+ @param {string} [mode='lower'] - 转换模式:
+   - 'upper': 全大写 (HELLO WORLD)
+   - 'lower': 全小写 (hello world)
+   - 'capitalize': 首字母大写 (Hello world)
+   - 'title': 标题格式 (Hello World)
+   - 'camel': 驼峰命名法 (helloWorld)
+   - 'pascal': 帕斯卡命名法 (HelloWorld)
+   - 'snake': 蛇形命名法 (hello_world)
+   - 'kebab': 烤肉串命名法 (hello-world)
+   - 'constant': 常量命名法 (HELLO_WORLD)
+ @param {Object} [options={}] - 可选配置
+ @param {string} [options.delimiter=' '] - 单词分隔符（用于title/camel/pascal模式）
+ @param {boolean} [options.preserveAcronyms=true] - 是否保留首字母缩略词的大写
+ @returns {string} 转换后的字符串
+ @example
+ // 基本用法
+ convert('hello world', 'upper'); // 'HELLO WORLD'
+ convert('Hello World', 'snake'); // 'hello_world'
+ @example
+ // 标题格式转换
+ convert('the lord of the rings', 'title'); // 'The Lord of the Rings'
+ @example
+ // 驼峰命名法
+ convert('user_profile_data', 'camel', { delimiter: '_' }); // 'userProfileData'
+ @example
+ // 保留首字母缩略词
+ convert('NASA space program', 'title'); // 'NASA Space Program'
+ convert('NASA space program', 'title', { preserveAcronyms: false }); // 'Nasa Space Program'
+```
  #### 灵活的条件匹配
 + 这个类提供了多种匹配模式，包括精确匹配、范围匹配、集合匹配、子串匹配、正则匹配和比较匹配以及自定义条件函数匹配
 ```
@@ -938,15 +974,35 @@ colorSelector.match('dark red'); // 'Dark variant'
 colorSelector.match('yellow'); // '#FFFFFF'
 ```
  #### Sugarcube宏
- + **`<<langlink>>`** 的说明: **`<<langlink>>`** 与原版的 **`<<link>>`** 很像，**但只支持 `<<langlink '卧室' 'Bedroom'>><</langlink>>` 而非 `<<link [[卧室|Bedroom]]>>` 的逻辑** [多语言管理](#多语言管理)
+ + **`<<lanSwitch>>`** 简易双语的使用
+```
+  <<lanSwitch 'language' '语言'>> 会在中文时输出语言，英文时输出language 在模组设置中选择。
+```
+ + **`<<langlink>>`** 的说明: **`<<langlink>>`** 与原版的 **`<<link>>`** 很像，**但只支持 `<<langlink '卧室' 'Bedroom'>><</langlink>>` 而非 `<<link [[卧室|Bedroom]]>>` 的逻辑** [多语言管理](#多语言管理)，**`<<langlink>>`** 的第三个字符串将支持 **`convert`** 函数。
 ```
 在你的翻译文件有对应数据时，使用 <<langlink '卧室' 'Bedroom'>><</langlink>> 会在游戏中英文时显示 (1)Bedroom ，中文时显示(1)卧室。
 使用 <<langlink 'Temple' 'Temple'>><</langlink>> 会在游戏中英文时显示 (1)Temple ,中文时显示(1)神殿。
+使用<<langlink 'Temple' 'Temple' 'upper'>> 在英文情况将显示 (1)TEMPLE
 ```
- + **`<<langbutton>>`** 的说明: **`<<langbutton>>`** 与原版的 **`<<button>>`** 相差无异，但添加了语言支持 [多语言管理](#多语言管理)
+ + **`<<langbutton>>`** 的说明: **`<<langbutton>>`** 与原版的 **`<<button>>`** 相差无异，但添加了语言支持 [多语言管理](#多语言管理)，**`<<langbutton>>`** 的第三个字符串将支持 **`convert`** 函数。
 ```
 在你的翻译文件有对应数据时，使用 <<langbutton '卧室'>><</langbutton>> 会在游戏中英文时显示 (1)Bedroom ，中文时显示(1)卧室。
 使用 <<langbutton 'Temple'>><</langbutton>> 会在游戏中英文时显示 (1)Temple ，中文时显示(1)神殿。
+使用 <<langbutton 'Temple' 'upper'>><</langbutton>> 会在游戏中英文时显示 (1)TEMPLE
+```
+ + **`<<radiobuttonsfrom>>`** 的说明，它是**` <<radiobutton>>`** 宏的变种
+```
+生成包含多个label元素的span容器，每个label包含：
+- 一个单选按钮input元素
+- 对应的选项文本
+- 选项间的分隔符
+基本用法 - 创建颜色选择单选按钮组
+<<radiobuttonsfrom "favoriteColor" ["红色", "蓝色", "绿色"]>>
+自定义分隔符
+<<radiobuttonsfrom "gender" ["男", "女", "其他"] " - ">>
+使用变量作为选项源
+<<set $colors = ["红", "蓝", "绿"]>>
+<<radiobuttonsfrom "selectedColor" $colors>>
 ```
  ### 变量迁徙
   #### 变量迁徙使用示例
@@ -1667,7 +1723,31 @@ maplebirchFrameworks.addStats({
   ]
 }
 ```
-
+#### NPC侧绘
+  #### NPC侧绘说明
++ 在模组设置中可以开启已命名npc的侧边栏立绘，需要自行导入相应的图片
++ 画布模式尚未完成，它将会是以pc模型为制作的立绘
+  #### NPC侧绘的addonPlugin注册
+```
+"params": {
+    "npcSidebar": [
+      {
+        "name": "sydney",
+        "imgFile": [
+          "img/ui/nnpc/sydney/au.png",
+          "img/ui/nnpc/sydney/goose.png"
+        ]
+      },
+      {
+        "name": "robin",
+        "imgFile": [
+          "img/ui/nnpc/robin/au.png",
+          "img/ui/nnpc/robin/goose.png"
+        ]
+      }
+    ]
+  }
+```
 ### 致谢
 在此，我想向所有支持、帮助过这个项目的朋友们表达最诚挚的感谢：  
 - 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 开发的Modloader系统，为模组开发提供了基础支持。
@@ -1679,6 +1759,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
