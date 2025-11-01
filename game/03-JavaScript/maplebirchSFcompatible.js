@@ -1,4 +1,5 @@
 (() => {
+  'use strict';
   const modUtils = window.modUtils;
   if (modUtils.getNowRunningModName() !== 'maplebirch' || !window.maplebirch) return;
   const maplebirch = window.maplebirch;
@@ -66,9 +67,7 @@
   window.maplebirchFrameworks = createFrameworkProxy();
 
   function _languageSwitch(...lanObj) {
-    const lancheck = modUtils.getLanguageManager().getLanguage() || navigator.language || navigator.userLanguage;
-    let currentLanguage = 'EN';
-    if (lancheck.includes('zh')) currentLanguage = 'CN';
+    const lancheck = maplebirch.Language;
     let targetObj;
     if (typeof lanObj[0] === 'object' && lanObj[0] !== null && !Array.isArray(lanObj[0])) {
       targetObj = lanObj[0];
@@ -82,11 +81,11 @@
         targetObj.CN = lanObj[0][1];
       }
     }
-    if (targetObj[currentLanguage] == undefined) {
+    if (targetObj[lancheck] == undefined) {
       const availableLanguages = Object.keys(targetObj);
-      currentLanguage = availableLanguages.length > 0 ? availableLanguages[0] : 'EN';
+      lancheck = availableLanguages.length > 0 ? availableLanguages[0] : 'EN';
     }
-    return targetObj[currentLanguage];
+    return targetObj[lancheck];
   }
 
   Object.defineProperties(window, {

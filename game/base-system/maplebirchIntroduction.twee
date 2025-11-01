@@ -48,7 +48,7 @@
 
 <<widget "maplebirchModHintDesktop">>
 	<<if $options.maplebirch?.modHint is 'desktop'>>
-    <<langbutton '秋枫白桦'>>
+    <<langbutton '秋枫白桦' 'upper'>>
     	<<maplebirchReplace "maplebirchModHint" "title">>
     <</langbutton>>
 	<</if>>

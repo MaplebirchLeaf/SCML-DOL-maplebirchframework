@@ -1,6 +1,7 @@
 (async() => {
-  const frameworkVersion = '2.4.8';
-  const lastUpdate = '2025.10.11';
+  'use strict';
+  const frameworkVersion = '2.5.0';
+  const lastUpdate = '2025.10.29';
   const lastModifiedBy = '楓樺葉';
   const DEBUGMODE = false;
 
@@ -51,8 +52,18 @@
         if (config.level < this.level) return;
         console.log(`%c[maplebirch]${config.tag} ${message}`, config.style);
         if (objects && objects.length > 0) objects.forEach(o => console.dir(o));
+        if (this.core.modUtils && this.core.modUtils.getLogger) {
+          const modLogger = this.core.modUtils.getLogger();
+          if (modLogger) {
+            if (lname === 'WARN' && modLogger.warn) {
+              modLogger.warn(message);
+            } else if (lname === 'ERROR' && modLogger.error) {
+              modLogger.error(message);
+            }
+          }
+        }
       } catch (e) {
-        try { console.error('[Logger] 写日志失败:', e); } catch (_) {}
+        try { console.error('[Logger] 写日志失败:', e); } catch (_) { }
       }
     }
 

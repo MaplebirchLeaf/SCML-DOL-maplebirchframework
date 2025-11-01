@@ -18,11 +18,13 @@
 'Clear': Clear
 'Module Introduction': Module Introduction
 'Character Panel': Character Panel
-'Maplebirch': Maplebirch
-'DEBUGMode': DEBUG Mode
+'maplebirch': maplebirch
+'Mode': Mode
+'DEBUG': DEBUG
 'Code Cheater': Code Cheater
 'permission': permission
-'sidebar position selection': sidebar position selection
+'sidebar': sidebar
+'position': position
 'music player': music player
 'previous song': previous song
 'next song': next song
@@ -42,6 +44,14 @@
 'disable': disable
 'enable': enable
 'execute': execute
+'display': display
+'model': model
+'canvas': canvas
+'graphic': graphic
+'selection': selection
+'celestial phenomenons': celestial phenomenons
+'solar eclipse': solar eclipse
+'settings': settings
 
 'View All': View All
 'View Headgear': View Headgear

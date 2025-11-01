@@ -1,4 +1,5 @@
 (async() => {
+  'use strict';
   if (!window.maplebirch) return;
   const maplebirch = window.maplebirch;
 
@@ -281,7 +282,6 @@
      * 获取随机数
      * @param {*} [options] - 随机数选项
      * @returns {number} 生成的随机数
-     * 
      * @example
      * random.get(); // 1-100之间的随机整数
      * random.get(10); // 0-9之间的随机整数
@@ -293,26 +293,21 @@
       return this.#generate(options);
     }
     
-    setSeed(newSeed) {
+    set Seed(newSeed) {
       const parsedSeed = parseInt(newSeed);
-      
-      if (isNaN(parsedSeed)) {
-        this.log(`设置种子失败: 无效的种子值 ${newSeed}`, 'WARN');
-        return false;
-      }
-      
-      this.state.seed = parsedSeed >>> 0; // 转换为32位无符号整数
+      if (isNaN(parsedSeed)) { this.log(`设置种子失败: 无效的种子值 ${newSeed}`, 'WARN'); return false; }
+      this.state.seed = parsedSeed >>> 0;
       this.state.callCount = 0;
       this.state.history = [];
       this.log(`种子已设置为: ${this.state.seed}`, 'DEBUG');
       return true;
     }
     
-    getSeed() {
+    get Seed() {
       return this.state.seed;
     }
     
-    getState() {
+    get State() {
       return {
         seed: this.state.seed,
         callCount: this.state.callCount,
@@ -323,7 +318,7 @@
     
     reset() {
       this.#initSeed();
-      return this.getState();
+      return this.State;
     }
     
     debug() {
@@ -334,14 +329,10 @@
         `- 历史记录: ${this.state.history.length} 条`,
         `- 下一个种子: ${this.state.seed ? (this.state.a * this.state.seed + this.state.c) % this.state.m : "N/A"}`
       ];
-      
       if (this.state.history.length > 0) {
         output.push("\n最近5次调用:");
-        this.state.history.slice(-5).forEach(entry => {
-          output.push(`#${entry.call}: ${entry.value} (种子: ${entry.seed})`);
-        });
+        this.state.history.slice(-5).forEach(entry => { output.push(`#${entry.call}: ${entry.value} (种子: ${entry.seed})`); });
       }
-      
       return output.join("\n");
     }
   }
@@ -690,7 +681,7 @@
         NPCinit                 : [], // 原版NPC初遇初始化(详情看原版initnpc宏)
       };
       this.initFunction = [];
-      this.specialWidget = {};
+      this.specialWidget = [];
       this.default = {};
       this.widgethtml = '';
       this.patchedPassage = new Set();
@@ -818,11 +809,11 @@
 
     async #createSpecialWidgets() {
       let html = '\r\n';
-      for (const widget in this.specialWidget) {
-        if (typeof this.specialWidget[widget] === 'function') {
-          html += this.specialWidget[widget]();
-        } else if (typeof this.specialWidget[widget] === 'string') {
-          html += this.specialWidget[widget];
+      for (const widget of this.specialWidget) {
+        if (typeof widget === 'function') {
+          html += widget();
+        } else if (typeof widget === 'string') {
+          html += widget;
         }
       }
 
@@ -1245,10 +1236,7 @@
       }
 
       #applyCustomLinkZone(position, config) {
-        if (position < 0 || position >= this.allLinks.length) {
-          this.log(`[link] 无效位置: ${position}（总链接数: ${this.allLinks.length}）`, 'WARN');
-          return null;
-        }
+        if (position < 0 || position >= this.allLinks.length) return null;
         const targetLink = this.allLinks[position];
         if (!targetLink) {
           this.log(`[link] 未找到位置 ${position} 的链接`, 'WARN');
@@ -1508,9 +1496,9 @@
           setup.LocationImages[locationId] = {
             folder: update.config.folder || current.folder || 'default',
             base: update.config.base || current.base || {},
-            emissive: update.config.emissive || current.emissive || {},
-            reflective: update.config.reflective || current.reflective || {},
-            layerTop: update.config.layerTop || current.layerTop || {}
+            emissive: update.config.emissive || current.emissive,
+            reflective: update.config.reflective || current.reflective,
+            layerTop: update.config.layerTop || current.layerTop
           };
         } else {
           setup.LocationImages[locationId] = this.#deepMergeLocationConfig(current, update.config);

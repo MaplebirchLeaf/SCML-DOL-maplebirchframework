@@ -18,6 +18,7 @@
 	background-color: transparent;
 }
 
+/* 控制台作弊器 */
 #ConsoleCheat details.JSCheatConsole,
 #ConsoleCheat details.TwineCheatConsole {
   border-radius: 5px;
@@ -154,7 +155,7 @@
   }
 }
 
-
+/* 音频播放器 */
 #maplebirch-playback-controls .audio-controls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
@@ -209,4 +210,32 @@ details[open] > summary.maplebirch-playback {
 .maplebirch-playback-content {
   padding: 1rem;
   background: var(--850);
+}
+
+/* NPC侧边栏 */
+#img-npc {
+	height: 192px;
+	width: 216px;
+	overflow: hidden;
+	top: 0;
+	left: 64px;
+}
+
+#img-npc > * {
+	position: absolute;
+	left: -32px;
+}
+
+#img-npc > canvas {
+  transform: translateZ(0) translateX(-48px) translateY(-8px);;
+  backface-visibility: hidden;
+  left: -32px;
+}
+
+@media screen and (min-color-index: 0) and (-webkit-min-device-pixel-ratio: 0) {
+	@media all { #img-npc { position: absolute; } }
+}
+
+@media not all and (min-resolution: 0.001dpcm) {
+	@media all { #img-npc { position: absolute; } }
 }

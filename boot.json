@@ -5,8 +5,12 @@
     "cn": "秋枫白桦"
   },
   "alias": ["Simple Frameworks"], 
-  "version": "2.4.8",
-  "imgFileList": [],
+  "version": "2.5.0",
+  "imgFileList": [
+    "img/misc/sky/solar-eclipse-0.png",
+    "img/misc/sky/solar-eclipse-1.png",
+    "img/misc/sky/solar-eclipse-2.png"
+  ],
   "styleFileList": [
     "styles/maplebirchDefault.css",
     "styles/maplebirchPanel​.css"
@@ -30,10 +34,12 @@
   ],
   "scriptFileList_inject_early": [
     "scriptEarly/maplebirch-core.js",
-    "scriptEarly/maplebirch-modload.js",
     "data/frameworkData.js",
+    "data/maplebirchWeather.js",
+    "scriptEarly/maplebirch-modload.js",
     "scriptEarly/Utils/maplebirchUtils.js",
     "scriptEarly/Utils/maplebirchFrameworks.js",
+    "scriptEarly/Utils/maplebirchNPC-model.js",
     "scriptEarly/modules/maplebirchTimeState.js"
   ],
   "tweeFileList": [
@@ -41,7 +47,7 @@
     "game/base-system/maplebirchWidgets.twee"
   ],
   "additionDir": [
-    "img/npcSidebar"
+    
   ],
   "additionBinaryFile": [
 
@@ -100,10 +106,6 @@
       "modVersion": "^2.0.0",
       "params": {
        "types": [
-          {
-            "type": "npcSidebar",
-            "imgDir": "img/npcSidebar"
-          }
         ]
       }
     }

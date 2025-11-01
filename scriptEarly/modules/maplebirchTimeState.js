@@ -1,4 +1,5 @@
 (async() => {
+  'use strict';
   if (!window.maplebirch) {
     console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
     return;
@@ -191,6 +192,8 @@
         year:   0
       };
       this.lastReportedCumulative = {...this.cumulativeTime};
+      maplebirch.trigger(':state-init', this);
+      maplebirch.once(':tool-init', (data) => this.solarEclipse = new this.constructor.solarEclipse(this, data));
     }
 
     #log(message, level = 'DEBUG', ...objects) {
@@ -498,84 +501,193 @@
       }
     }
 
-    async modifyDateTimeScript() {
-      const modSC2DataManager = window.modSC2DataManager;
-      const addonReplacePatcher = window.addonReplacePatcher;
-      const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
-      const SCdata = oldSCdata.cloneSC2DataInfo();
-      const datetimeScriptPath = 'datetime.js';
-      const datetimeFile = SCdata.scriptFileItems.getByNameWithOrWithoutPath(datetimeScriptPath);
-      if (datetimeFile) {
-        const originalContent = datetimeFile.content;
-        datetimeFile.content = this.applyAllOptimizations(originalContent);
-        if (this.debug) this.debugOptimizations();
-      } else {
-        this.#log(`找不到文件: ${datetimeScriptPath}`, 'ERROR');
+    #updateDateTime() {
+      const OriginalDateTime = window.DateTime;
+      class DateTime extends OriginalDateTime {
+        constructor(year = 2020, month = 1, day = 1, hour = 0, minute = 0, second = 1) {
+          if (arguments.length === 1 && year && typeof year === 'object') {
+            if (year instanceof DateTime || (year.timeStamp !== undefined && year.year !== undefined)) {
+              super(year.year, year.month, year.day, year.hour || 0, year.minute || 0, year.second || 0);
+              return;
+            }
+          }
+          if (arguments.length === 1 && typeof year === 'number') {
+            super();
+            if (year < -62135596800 || year > 315569437199) throw new Error("Invalid timestamp: Timestamp out of range.");
+            this.fromTimestamp(year);
+            return;
+          }
+          super(year, month, day, hour, minute, second);
+        }
+
+        static getTotalDaysSinceStart(year) {
+          if (year === 0) return DateTime.getTotalDaysSinceStart(-1);
+          let astronomicalYear;
+          if (year > 0) {
+            astronomicalYear = year;
+          } else {
+            astronomicalYear = year + 1;
+          }
+          if (astronomicalYear >= 1) {
+            const years = astronomicalYear - 1;
+            return years * 365 + Math.floor(years / 4) - Math.floor(years / 100) + Math.floor(years / 400);
+          } else {
+            const years = -astronomicalYear;
+            const leapCount = Math.floor((years + 3) / 4) - Math.floor((years + 99) / 100) + Math.floor((years + 399) / 400);
+            return -(years * 365 + leapCount + 366);
+          }
+        }
+
+        static isLeapYear(year) {
+          if (year === 0) return false;
+          let targetYear = year;
+          if (year < 0) {
+            targetYear = Math.abs(year);
+            return targetYear % 4 === 0;
+          }
+          const isDiv4 = targetYear % 4 === 0;
+          const isDiv100 = targetYear % 100 === 0;
+          const isDiv400 = targetYear % 400 === 0;
+          return (isDiv4 && !isDiv100) || isDiv400;
+        }
+
+        toTimestamp(year, month, day, hour, minute, second) {
+          if (year < -9999 || year > 9999) throw new Error("Invalid year: Year must be between -9999 to 9999.");
+          if (month < 1 || month > 12) throw new Error("Invalid month: Month must be 1-12.");
+          const daysInMonth = DateTime.getDaysOfMonthFromYear(year);
+          if (day < 1 || day > daysInMonth[month - 1]) throw new Error(`Invalid date: Day must be 1-${daysInMonth[month - 1]}.`);
+          const totalDays = DateTime.getTotalDaysSinceStart(year) + daysInMonth.slice(0, month - 1).reduce((a, b) => a + b, 0) + day - 1;
+          const totalSeconds = totalDays * TimeConstants.secondsPerDay + hour * TimeConstants.secondsPerHour + minute * TimeConstants.secondsPerMinute + second;
+          this.timeStamp = totalSeconds;
+          this.year = year;
+          this.month = month;
+          this.day = day;
+          this.hour = hour;
+          this.minute = minute;
+          this.second = second;
+        }
+
+        fromTimestamp(timestamp) {
+          let totalDays = Math.floor(timestamp / TimeConstants.secondsPerDay);
+          const remainingSeconds = timestamp - totalDays * TimeConstants.secondsPerDay;
+          this.hour = Math.floor(remainingSeconds / TimeConstants.secondsPerHour) % 24;
+          this.minute = Math.floor(remainingSeconds / TimeConstants.secondsPerMinute) % 60;
+          this.second = remainingSeconds % 60;
+          let approxYear = Math.floor(totalDays / 365.2425);
+          let year = 1 + approxYear; 
+          if (year <= 0) year = year <= 0 ? year - 1 : year;
+          let daysSinceStart = DateTime.getTotalDaysSinceStart(year);
+          while (totalDays < daysSinceStart) {
+            year--;
+            if (year === 0) year = -1;
+            daysSinceStart = DateTime.getTotalDaysSinceStart(year);
+          }
+          while (totalDays >= daysSinceStart + DateTime.getDaysOfYear(year)) {
+            daysSinceStart += DateTime.getDaysOfYear(year);
+            year++;
+            if (year === 0) year = 1;
+          }
+          this.year = year; 
+          if (this.year === 0) {
+            this.year = (timestamp >= 0) ? 1 : -1;
+            daysSinceStart = DateTime.getTotalDaysSinceStart(this.year);
+          }
+          totalDays -= daysSinceStart; 
+          const daysPerMonth = DateTime.getDaysOfMonthFromYear(this.year);
+          let month = 0;
+          let dayCount = totalDays;
+          while (dayCount >= daysPerMonth[month]) {
+            dayCount -= daysPerMonth[month];
+            month++;
+          }
+          this.month = month + 1;
+          this.day = dayCount + 1;
+          this.timeStamp = timestamp;
+        }
+
+        compareWith(otherDateTime, getSeconds = false) {
+          let diffSeconds = otherDateTime.timeStamp - this.timeStamp;
+          if (getSeconds) return diffSeconds;
+          const sign = Math.sign(diffSeconds);
+          diffSeconds = Math.abs(diffSeconds);
+          const totalDays = Math.floor(diffSeconds / TimeConstants.secondsPerDay);
+          const years = Math.floor(totalDays / 365.25);
+          let remainingDays = totalDays - years * 365;
+          const months = Math.floor(remainingDays / 30);
+          remainingDays -= months * 30;
+          const days = remainingDays;
+          diffSeconds -= totalDays * TimeConstants.secondsPerDay;
+          const hours = Math.floor(diffSeconds / TimeConstants.secondsPerHour);
+          diffSeconds -= hours * TimeConstants.secondsPerHour;
+          const minutes = Math.floor(diffSeconds / TimeConstants.secondsPerMinute);
+          diffSeconds -= minutes * TimeConstants.secondsPerMinute;
+          const seconds = diffSeconds;
+          return {
+            years: years * sign,
+            months: months * sign,
+            days: days * sign,
+            hours: hours * sign,
+            minutes: minutes * sign,
+            seconds: seconds * sign,
+          };
+        }
+
+        addYears(years) {
+          if (!years) return this;
+          let newYear = this.year + years;
+          if ((this.year < 0 && newYear >= 0) || (this.year > 0 && newYear <= 0)) newYear += Math.sign(years) * (newYear === 0 ? 1 : 0);
+          if (newYear === 0) newYear = Math.sign(years) > 0 ? 1 : -1;
+          const daysInMonth = DateTime.getDaysOfMonthFromYear(newYear);
+          const newDay = Math.min(this.day, daysInMonth[this.month - 1]);
+          this.toTimestamp(newYear, this.month, newDay, this.hour, this.minute, this.second);
+          return this;
+        }
+
+        addMonths(months) {
+          if (!months) return this;
+          const addedMonths = this.month + months;
+          let newYear = this.year + Math.floor((addedMonths - 1) / 12);
+          const newMonth = ((addedMonths - 1) % 12) + 1;
+          if (newYear === 0) newYear = Math.sign(months) > 0 ? 1 : -1;
+          const newDay = Math.min(this.day, DateTime.getDaysOfMonthFromYear(newYear)[newMonth - 1]);
+          this.toTimestamp(newYear, newMonth, newDay, this.hour, this.minute, this.second);
+          return this;
+        }
+
+        get weekDay() {
+          let y = this.year;
+          let m = this.month;
+          if (y < 0) y = y + 1;
+          if (m < 3) {
+            m += 12;
+            y--;
+          }
+          const h = (this.day + Math.floor((13 * (m + 1)) / 5) + y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400)) % 7;
+          return h === 0 ? 7 : h;
+        }
+
+        get moonPhaseFraction() {
+          const referenceNewMoon = new DateTime(-4713, 1, 1, 12, 0, 0);
+          let phaseFraction = ((this.timeStamp - referenceNewMoon.timeStamp) / (TimeConstants.synodicMonth * TimeConstants.secondsPerDay)) % 1;
+          return phaseFraction < 0 ? phaseFraction + 1 : phaseFraction;
+        }
+
+        get fractionOfDay() {
+          return (this.hour * 3600 + this.minute * 60 + this.second) / TimeConstants.secondsPerDay;
+        }
+
+        get fractionOfDayFromNoon() {
+          return (((this.hour + 12) % 24) * 3600 + this.minute * 60 + this.second) / TimeConstants.secondsPerDay;
+        }
       }
-      addonReplacePatcher.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);
-    }
-
-    applyAllOptimizations(content) {
-      const appliedOptimizations = [];
-
-      const regex1 = /if \(arguments\[0\] < 0 \|\| arguments\[0\] > 315569437199\)\s+throw new Error\("Invalid timestamp: Timestamp cannot be lower than 0 or higher than 315569437199\."\);/;
-      if (regex1.test(content)) {
-        content = content.replace(regex1, 'if (arguments[0] < -62135596800 || arguments[0] > 315569437199)\n        throw new Error("Invalid timestamp: Timestamp out of range.");');
-        appliedOptimizations.push("优化1");
-      }
-
-      const regex2 = /static getTotalDaysSinceStart\(year\) \{\s+return \(year - 1\) \* 365 \+ Math\.floor\(\(year - 1\) \/ 4\) - Math\.floor\(\(year - 1\) \/ 100\) \+ Math\.floor\(\(year - 1\) \/ 400\);\s+\}/;
-      if (regex2.test(content)) {
-        content = content.replace(regex2, 'static getTotalDaysSinceStart(year) {\n    if (year === 0) return DateTime.getTotalDaysSinceStart(-1);\n    \n    let astronomicalYear;\n    if (year > 0) {\n      astronomicalYear = year;\n    } else {\n      astronomicalYear = year + 1;\n    }\n\n    if (astronomicalYear >= 1) {\n      const years = astronomicalYear - 1;\n      return years * 365 + Math.floor(years / 4) - Math.floor(years / 100) + Math.floor(years / 400);\n    } else {\n      const years = -astronomicalYear;\n      const leapCount = Math.floor((years + 3) / 4) - Math.floor((years + 99) / 100) + Math.floor((years + 399) / 400);\n      return -(years * 365 + leapCount + 366);\n    }\n  }');
-        appliedOptimizations.push("优化2");
-      }
-
-      const regex3 = /static isLeapYear\(year\) \{\s+return year !== 0 && year % 4 === 0 && \(year % 100 !== 0 \|\| year % 400 === 0\);\s+\}/;
-      if (regex3.test(content)) {
-        content = content.replace(regex3, 'static isLeapYear(year) {\n    if (year === 0) return DateTime.isLeapYear(-1);\n    \n    let astronomicalYear;\n    if (year > 0) {\n      astronomicalYear = year;\n    } else {\n      astronomicalYear = year + 1;\n    }\n    \n    if (astronomicalYear % 4 !== 0) return false;\n    if (astronomicalYear % 100 !== 0) return true;\n    return astronomicalYear % 400 === 0;\n  }');
-        appliedOptimizations.push("优化3");
-      }
-
-      const regex4 = /toTimestamp\(year, month, day, hour, minute, second\) \{\s+if \(year < 1 \|\| year > 9999\) throw new Error\("Invalid year: Year must be between 1-9999\."\);\s+if \(month < 1 \|\| month > 12\) throw new Error\("Invalid month: Month must be between 1-12\."\);\s+const daysInMonth = DateTime\.getDaysOfMonthFromYear\(year\);\s+if \(day < 1 \|\| day > daysInMonth\[month - 1\]\) throw new Error\("Invalid date: Day must be between 1-" \+ daysInMonth\[month - 1\] \+ "."\);\s+const totalDays = DateTime\.getTotalDaysSinceStart\(year\) \+ daysInMonth\.slice\(0, month - 1\)\.reduce\(\(a, b\) => a \+ b, 0\) \+ day - 1;\s+const totalSeconds = totalDays \* TimeConstants\.secondsPerDay \+ hour \* TimeConstants\.secondsPerHour \+ minute \* TimeConstants\.secondsPerMinute \+ second;\s+this\.timeStamp = totalSeconds;\s+this\.year = year;\s+this\.month = month;\s+this\.day = day;\s+this\.hour = hour;\s+this\.minute = minute;\s+this\.second = second;\s+\}/;
-      if (regex4.test(content)) {
-        content = content.replace(regex4, 'toTimestamp(year, month, day, hour, minute, second) {\n    if (year < -9999 || year > 9999) throw new Error("Invalid year: Year must be between -9999 to 9999.");\n    if (month < 1 || month > 12) throw new Error("Invalid month: Month must be 1-12.");\n    \n    const daysInMonth = DateTime.getDaysOfMonthFromYear(year);\n    if (day < 1 || day > daysInMonth[month - 1]) \n      throw new Error(`Invalid date: Day must be 1-${daysInMonth[month - 1]}.`);\n\n    const totalDays = DateTime.getTotalDaysSinceStart(year) + \n                      daysInMonth.slice(0, month - 1).reduce((a, b) => a + b, 0) + \n                      day - 1;\n    \n    const totalSeconds = totalDays * TimeConstants.secondsPerDay + \n                         hour * TimeConstants.secondsPerHour + \n                         minute * TimeConstants.secondsPerMinute + \n                         second;\n\n    this.timeStamp = totalSeconds;\n    this.year = year;\n    this.month = month;\n    this.day = day;\n    this.hour = hour;\n    this.minute = minute;\n    this.second = second;\n  }');
-        appliedOptimizations.push("优化4");
-      }
-
-      const regex5 = /fromTimestamp\(timestamp\) \{\s*\/\/ Initialize the year to 1\s*let year = 1;\s*let month = 0;\s*let day = \(timestamp \/ TimeConstants\.secondsPerDay\) \| 0;\s*const hour = \(timestamp \/ TimeConstants\.secondsPerHour\) \| 0;\s*const minute = \(timestamp \/ TimeConstants\.secondsPerMinute\) \| 0;\s*const second = timestamp;\s*\/\/ Maps the total number of days to the corresponding year and day\.\s*while \(day > DateTime\.getDaysOfYear\(year\)\) \{\s*day -= DateTime\.getDaysOfYear\(year\+\+\);\s*\}\s*const daysPerMonth = DateTime\.getDaysOfMonthFromYear\(year\);\s*\/\/ Determines the month and day by subtracting the number of days in each month and incrementing the month value\.\s*while \(day >= daysPerMonth\[month\]\) \{\s*day -= daysPerMonth\[month\+\+\];\s*if \(month > 11\) \{\s*month = 0;\s*year\+\+;\s*\}\s*\}\s*this\.timeStamp = timestamp;\s*this\.year = year;\s*this\.month = month \+ 1;\s*this\.day = day \+ 1;\s*this\.hour = hour % 24;\s*this\.minute = minute % 60;\s*this\.second = second % 60;\s*\}/;
-      if (regex5.test(content)) {
-        content = content.replace(regex5, 'fromTimestamp(timestamp) {\n    let totalDays = Math.floor(timestamp / TimeConstants.secondsPerDay);\n    const remainingSeconds = timestamp - totalDays * TimeConstants.secondsPerDay;\n    \n    this.hour = Math.floor(remainingSeconds / TimeConstants.secondsPerHour) % 24;\n    this.minute = Math.floor(remainingSeconds / TimeConstants.secondsPerMinute) % 60;\n    this.second = remainingSeconds % 60;\n    \n    this.year = 1;\n    if (totalDays >= 0) {\n      while (totalDays >= DateTime.getDaysOfYear(this.year)) {\n        totalDays -= DateTime.getDaysOfYear(this.year);\n        this.year++;\n      }\n    } else {\n      while (totalDays < 0) {\n        this.year--;\n        if (this.year === 0) this.year = -1;\n        totalDays += DateTime.getDaysOfYear(this.year);\n      }\n    }\n    \n    const daysPerMonth = DateTime.getDaysOfMonthFromYear(this.year);\n    let month = 0;\n    let dayCount = totalDays;\n    while (dayCount >= daysPerMonth[month]) {\n      dayCount -= daysPerMonth[month];\n      month++;\n    }\n    \n    this.month = month + 1;\n    this.day = dayCount + 1;\n    this.timeStamp = timestamp;\n  }');
-        appliedOptimizations.push("优化5");
-      }
-
-      const regex6 = /get weekDay\(\) \{\s+const daysSinceStart = DateTime\.getTotalDaysSinceStart\(this\.year \+ 1\);\s+const daysInMonth = TimeConstants\.standardYearMonths\.slice\(0, this\.month - 1\)\.reduce\(\(a, b\) => a \+ b, 0\);\s+const isLeapYear = DateTime\.isLeapYear\(this\.year\) && this\.month < 3;\s+const weekDayOffset = V\.weekDayOffset !== undefined \? V\.weekDayOffset : 6;\s+const totalDays = daysSinceStart \+ daysInMonth \+ this\.day - Number\(isLeapYear\) \+ weekDayOffset;\s+const weekDay = \(totalDays % 7\) \+ 1;\s+return weekDay;\s+\}/;
-      if (regex6.test(content)) {
-        content = content.replace(regex6, 'get weekDay() {\n    let y = this.year;\n    let m = this.month;\n    \n    if (y < 0) y = y + 1;\n    \n    if (m < 3) {\n      m += 12;\n      y--;\n    }\n    \n    const h = (this.day + Math.floor((13 * (m + 1)) / 5) + y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400)) % 7;\n    return h === 0 ? 7 : h;\n  }');
-        appliedOptimizations.push("优化6");
-      }
-
-      const regex7 = /get moonPhaseFraction\(\) \{\s*\/\/ Real new moon \(in london\) as a reference point\s*const referenceNewMoon = new DateTime\(2022, 1, 2, 18, 33\);\s*let phaseFraction = \(\(this\.timeStamp - referenceNewMoon\.timeStamp\) \/ \(TimeConstants\.synodicMonth \* TimeConstants\.secondsPerDay\)\) % 1;\s*\/\/ Adjust in case of negative date \(date before the reference date\)\s*phaseFraction = \(phaseFraction \+ 1\) % 1;\s*\/\/ Special rounding cases - to round to a complete new-moon or full-moon more often\s*return phaseFraction >= 0\.48 && phaseFraction <= 0\.52 \? 0\.5 : phaseFraction < 0\.02 \|\| phaseFraction > 0\.98 \? 0 : round\(phaseFraction, 2\);\s*\}/;
-      if (regex7.test(content)) {
-        content = content.replace(regex7, 'get moonPhaseFraction() {\n    const referenceNewMoon = new DateTime(-4713, 1, 1, 12, 0, 0);\n    let phaseFraction = ((this.timeStamp - referenceNewMoon.timeStamp) / \n                        (TimeConstants.synodicMonth * TimeConstants.secondsPerDay)) % 1;\n    return phaseFraction < 0 ? phaseFraction + 1 : phaseFraction;\n  }');
-        appliedOptimizations.push("优化7");
-      }
-
-      this.appliedOptimizations = appliedOptimizations;
-      return content;
-    }
-
-    debugOptimizations() {
-      if (this.appliedOptimizations.length > 0) {
-        this.#log("应用的优化:", 'DEBUG');
-        this.appliedOptimizations.forEach(opt => this.#log(`- ${opt}`, 'DEBUG'));
-      } else {
-        this.#log("未应用任何优化", 'DEBUG');
-      }
+      Object.defineProperty(Time, 'monthName', { get: function() { return TimeStateManager.monthNames.EN[this.month - 1]; } });
+      Object.defineProperty(Time, 'monthCNName', { get: function() { return TimeStateManager.monthNames.CN[Time.month - 1]; } });
+      window.DateTime = DateTime;
     }
 
     updateTimeLanguage(choice=false) {
       if (choice) {
-        switch(choice) {
+        switch (choice) {
           case 'JournalTime':
             return maplebirch.Language === 'CN' ? '今天是' + (Time.year > 0 ? '公元' : '公元前') + Math.abs(Time.year) + '年' + getFormattedDate(Time.date) + '。' : 'It is ' + getFormattedDate(Time.date) + ', ' + Math.abs(Time.year) + (Time.year > 0 ? 'AD' : 'BC') + '.';
         }
@@ -590,7 +702,6 @@
     }
 
     async preInit() {
-      await this.modifyDateTimeScript();
       maplebirch.on(':passageinit', (ev) => {
         this.passage = ev.passage;
         if (this.#shouldCollectPassage(this.passage)) this.#log(`处理段落: ${this.passage.title}`, 'INFO');
@@ -599,26 +710,36 @@
       maplebirch.on(':onSave', (State) => this.receiveVariables(State.variables));
       maplebirch.on(':storyready', (State) => this.receiveVariables(State.variables));
       maplebirch.once(':passagestart', () => {
-        this.updateTimeLanguage();
-        window.getFormattedDate = createDateFormatters().getFormattedDate;
-        window.getShortFormattedDate = createDateFormatters().getShortFormattedDate;
-        maplebirch.on(':languageChange', () => this.updateTimeLanguage());
+        try {
+          this.#updateDateTime();
+          this.updateTimeLanguage();
+          if (typeof Time.pass === 'function') {
+            this.originalTimePass = Time.pass;
+            this.#log('原始Time.pass方法已保存', 'DEBUG');
+          } else {
+            this.originalTimePass = function(passedSeconds) {
+              V.timeStamp += passedSeconds;
+              return '';
+            };
+            this.#log('使用默认时间流逝实现', 'WARN');
+          }
+          Time.pass = (passedSeconds) => {
+            try { return this.handleTimePass(passedSeconds); }
+            catch (error) {
+              this.#log(`时间流逝处理错误: ${error.message}`, 'ERROR');
+              return this.originalTimePass(passedSeconds);
+            }
+          };
+          this.#log('时间事件系统已激活', 'INFO');
+          window.getFormattedDate = createDateFormatters().getFormattedDate;
+          window.getShortFormattedDate = createDateFormatters().getShortFormattedDate;
+          maplebirch.on(':languageChange', () => this.updateTimeLanguage());
+        } catch (error) { this.#log(`初始化时间系统失败: ${error.message}`, 'ERROR'); }
       });
     }
 
     Init() {
-      if (typeof Time.pass === 'function') {
-        this.originalTimePass = Time.pass;
-        this.#log('原始Time.pass方法已保存', 'DEBUG');
-      } else {
-        this.originalTimePass = function(passedSeconds) {
-          V.timeStamp += passedSeconds;
-          return '';
-        };
-        this.#log('使用默认时间流逝实现', 'WARN');
-      }
-      Time.pass = (passedSeconds) => this.handleTimePass(passedSeconds);
-      this.#log('时间事件系统已激活', 'INFO');
+      
     }
   }
 

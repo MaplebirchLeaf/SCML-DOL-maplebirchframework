@@ -1,4 +1,5 @@
 (async() => {
+  'use strict';
   if (!window.maplebirch) {
     console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
     return;
@@ -52,6 +53,30 @@
     static eyeColor = ['purple', 'dark blue', 'light blue', 'amber', 'hazel', 'green', 'red', 'pink', 'grey', 'light grey', 'lime green']
     // 头发颜色
     static hairColor = ['red', 'black', 'brown', 'lightbrown', 'blond', 'platinumblond', 'strawberryblond', 'ginger']
+
+    // 性别代词映射表
+    static pronounsMap = {
+      m: {
+        CN: { he: "他", his: "他的", hers: "他的", him: "他", himself: "他自己", man: "男人", boy: "男孩", men: "男人们" },
+        EN: { he: "he", his: "his", hers: "his", him: "him", himself: "himself", man: "man", boy: "boy", men: "men" }
+      },
+      f: {
+        CN: { he: "她", his: "她的", hers: "她的", him: "她", himself: "她自己", man: "女人", boy: "女孩", men: "女人们" },
+        EN: { he: "she", his: "her", hers: "hers", him: "her", himself: "herself", man: "woman", boy: "girl", men: "women" }
+      },
+      i: {
+        CN: { he: "它", his: "它的", hers: "它的", him: "它", himself: "它自己", man: "那个东西", boy: "小家伙", men: "它们" },
+        EN: { he: "it", his: "its", hers: "its", him: "it", himself: "itself", man: "thing", boy: "little one", men: "them" }
+      },
+      n: {
+        CN: { he: "她", his: "她的", hers: "她的", him: "她", himself: "她自己", man: "人", boy: "孩子", men: "人们" },
+        EN: { he: "they", his: "their", hers: "theirs", him: "them", himself: "themself", man: "person", boy: "kid", men: "people" }
+      },
+      t: {
+        CN: { he: "他们", his: "他们的", hers: "他们的", him: "他们", himself: "他们自己", man: "人", boy: "孩子们", men: "大家" },
+        EN: { he: "they", his: "their", hers: "theirs", him: "them", himself: "themselves", man: "people", boy: "kids", men: "everyone" }
+      }
+    };
 
     // 童贞类型
     static virginityTypes = {
@@ -365,7 +390,7 @@
       V.maplebirch.combat.npcList = manager.tool.clone(NPCList);
     }
 
-    static npcData(manager) {
+    static setupNpcData(manager, phase = 'init') {
       const NPCNameList = manager.NPCNameList;
       NPCNameList.forEach(npcName => {
         const name = npcName.toLowerCase();
@@ -375,8 +400,11 @@
         if (!V.maplebirch.npc[name].bodydata) V.maplebirch.npc[name].bodydata = {};
         if (!V.maplebirch.npc[name].outfits) V.maplebirch.npc[name].outfits = [];
         if (!V.maplebirch.npc[name].clothes) V.maplebirch.npc[name].clothes = {};
-        NPCUtils.bodyDataProperties(npcName);
-        NPCUtils.npcSeenProperty(name);
+        if (!V.maplebirch.npc[name].location) V.maplebirch.npc[name].location = '';
+        if (phase === 'postInit') {
+          NPCUtils.bodyDataProperties(npcName);
+          NPCUtils.npcSeenProperty(name);
+        }
       });
     }
   }
@@ -448,6 +476,7 @@
       NPCUtils.updateNPCdata(this);
       NPCUtils.processSetup(this);
       NPCUtils.updateCNPCProxy(this);
+      this.Sidebar.init();
     }
 
     #mergeConfigs(base, mod) {
@@ -520,10 +549,6 @@
       NPCUtils.npcList(this, maxValue);
     }
 
-    #npcData() {
-      NPCUtils.npcData(this);
-    }
-
     preInit() {
       this.tool = maplebirch.tool;
       this.log = this.tool.createLog('npc');
@@ -534,16 +559,18 @@
     }
 
     Init() {
+      NPCUtils.setupNpcData(this, 'init');
       this.#npcList();
     }
 
     loadInit() {
       this.injectModNPCs();
+      NPCUtils.setupNpcData(this, 'init');
       this.#npcList();
     }
 
     postInit() {
-      this.#npcData();
+      NPCUtils.setupNpcData(this, 'postInit');
     }
   }
 

@@ -1,30 +1,216 @@
 (() => {
+  'use strict';
   const maplebirch = window.maplebirch;
 
-  const specialWidget = {
-    Replace: `
-      <<widget "maplebirchReplace">>
-        <<set _key to _args[0]>>
-        <<if !_key>><<exit>><</if>>
-
-        <<if _currentOverlay is _key>>
-          <<run closeOverlay()>>
-          <<exit>>
+  const specialWidget = [
+    `<<widget "maplebirchReplace">>
+      <<set _key to _args[0]>>
+      <<if !_key>><<exit>><</if>>
+      <<if _currentOverlay is _key>>
+        <<run closeOverlay()>>
+        <<exit>>
+      <</if>>
+      <<script>>
+        T.buttons.toggle();
+        updateOptions();
+        T.currentOverlay = T.key;
+        $("#customOverlay").removeClass("hidden").parent().removeClass("hidden");
+        $("#customOverlay").attr("data-overlay", T.currentOverlay);
+      <</script>>
+      <<if _args[1] is 'customize'>><<= '<<'+_key+'>>'>><<exit>><</if>>
+      <<if _args[1] is 'title'>><<set _titleKey to "title" + maplebirch.tool.convert(_key,'pascal')>><</if>>
+      <<if maplebirch.tool.widget.Macro.has(_titleKey)>><<replace #customOverlayTitle>><<= '<<'+_titleKey+'>>'>><</replace>><</if>>
+      <<replace #customOverlayContent>><<= '<<'+_key+'>>'>><</replace>>
+    <</widget>>`,
+    `<<widget 'maplebirch-playback'>>
+      <div class="settingsToggleItemWide">
+        <details class="maplebirch-playback">
+          <summary class="maplebirch-playback"><<= maplebirch.t('music player')>></summary>
+          <div class="maplebirch-playback-content">
+            <<set $maplebirch.audio.playlist to maplebirch.audio.getPlayer(_args[0]).audioKeys>>
+            <<for _key range $maplebirch.audio.playlist>>
+              <<capture _key>>
+              <<link _key>>
+                <<run $maplebirch.audio.currentTrack = _key>>
+                <<run $maplebirch.audio.currentIndex = $maplebirch.audio.playlist.indexOf(_key)>>
+                <<run maplebirch.audio.getPlayer(_args[0]).stopAll()>>
+                <<run maplebirch.audio.getPlayer(_args[0]).play(_key, { loop: V.maplebirch.audio.loopMode === "single" })>>
+                <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
+              <</link>><br>
+              <</capture>>
+            <</for>><br>
+            <div id='maplebirch-playback-controls'><<maplebirch-playback-controls _args[0]>></div><br>
+            <<= maplebirch.t('import audio')>>: <input type='file' accept='audio/*' onchange='maplebirch.audio.addAudioFromFile(this.files[0]).then(success => {if (success) maplebirch.audio.initStorage()});'>
+            <<set $_clearCache to maplebirch.t('Clear',true)+maplebirch.t('Cache')>>
+            <<link $_clearCache>><<set $maplebirch.audio.storage to {}>><</link>>
+          </div>
+        </details>
+      </div>
+    <</widget>>`,
+    `<<widget 'maplebirch-playback-controls'>>
+      <<set _playing to maplebirch.audio.getPlayer(_args[0]) ? maplebirch.audio.getPlayer(_args[0]).isPlaying() : []>>
+      <<if !V.maplebirch.audio.currentAudio>>
+        <<set V.maplebirch.audio.currentAudio to _playing[0] ? _playing[0] : V.maplebirch.audio.currentTrack>>
+      <</if>>
+      <<if !V.maplebirch.audio.volume>><<set V.maplebirch.audio.volume = 1.0>><</if>>
+      <<set _isPaused to false>>
+      <<if maplebirch.audio.getPlayer(_args[0]) && maplebirch.audio.getPlayer(_args[0]).pausedStates && V.maplebirch.audio.currentTrack>>
+        <<set _isPaused to maplebirch.audio.getPlayer(_args[0]).pausedStates.has('maplebirch-audio:' + V.maplebirch.audio.currentTrack)>>
+      <</if>>
+      <div class="current-track-display">
+        <<if V.maplebirch.audio.currentTrack>>
+          <<= maplebirch.t('currently playing')>>: <strong><span class='gold'><<= V.maplebirch.audio.currentTrack>></span></strong>
+          <<if V.maplebirch.audio.loopMode === "single">>(<<= maplebirch.t('single repeat')>>)<</if>>
+        <<else>>
+          <<= maplebirch.t('there are no tracks playing')>>
         <</if>>
-
+      </div>
+      <<if V.maplebirch.audio.currentTrack && maplebirch.audio.getPlayer(_args[0])>>
+        <<set _duration to maplebirch.audio.getPlayer(_args[0]).getDuration(V.maplebirch.audio.currentTrack)>>
+        <<set _currentTime to 0>>
+        <<set _progress to 0>>
+        <<if _playing.includes(V.maplebirch.audio.currentTrack)>>
+          <<set _matchKey to Array.from(maplebirch.audio.getPlayer(_args[0]).activeSources.keys()).find(k => k.startsWith(\`maplebirch-audio:\${V.maplebirch.audio.currentTrack}\`))>>
+          <<if _matchKey>>
+            <<set _source to maplebirch.audio.getPlayer(_args[0]).activeSources.get(_matchKey)>>
+            <<set _currentTime to Math.min(_duration, maplebirch.audio.getPlayer(_args[0]).audioManager.audioContext.currentTime - _source.playStartTime + _source.currentOffset)>>
+            <<set _progress to Math.round((_currentTime / _duration) * 1000)>>
+          <</if>>
+        <</if>>
+        <div class="audio-progress-container">
+          <input id="maplebirch-progress-range" class="maplebirch-progress" type="range" min="0" max="1000" step="1" value="<<= _progress>>" style="width: 100%;" disabled>
+          <div class="audio-time-display">
+            <<= Math.floor(_currentTime / 60)>>:<<= ('0' + Math.floor(_currentTime % 60)).slice(-2)>> / 
+            <<= Math.floor(_duration / 60)>>:<<= ('0' + Math.floor(_duration % 60)).slice(-2)>>
+          </div>
+        </div>
         <<script>>
-          T.buttons.toggle();
-          updateOptions();
-          T.currentOverlay = T.key;
-          $("#customOverlay").removeClass("hidden").parent().removeClass("hidden");
-          $("#customOverlay").attr("data-overlay", T.currentOverlay);
+          (function() {
+            const player = maplebirch.audio.getPlayer(T.args[0]);
+            const currentTrack = V.maplebirch.audio.currentTrack;
+            if (!player || !currentTrack) return;
+            if (V.maplebirch.audio.progressTimer) clearInterval(V.maplebirch.audio.progressTimer);
+            V.maplebirch.audio.progressTimer = setInterval(() => {
+              const baseKey = \`maplebirch-audio:\${currentTrack}\`;
+              const matchKey = Array.from(player.activeSources.keys()).find(k => k.startsWith(baseKey));
+              let currentTime = 0;
+              const duration = player.getDuration(currentTrack) || 0;
+              if (duration === 0) {
+                $('#maplebirch-playback-controls input[type="range"]').val(0);
+                $('#maplebirch-playback-controls .audio-time-display').html('0:00 / 0:00');
+                return;
+              }
+              if (matchKey) {
+                const sourceWrapper = player.activeSources.get(matchKey);
+                const source = sourceWrapper.source;
+                const elapsed = player.audioManager.audioContext.currentTime - sourceWrapper.playStartTime;
+                if (source.loop) {
+                  const loopStart = (typeof source.loopStart === 'number' && source.loopStart >= 0) ? source.loopStart : 0;
+                  let loopEnd;
+                  if (typeof source.loopEnd === 'number' && source.loopEnd > loopStart) {
+                    loopEnd = source.loopEnd;
+                  } else {
+                    loopEnd = duration;
+                  }
+                  let loopDuration = loopEnd - loopStart;
+                  if (!(loopDuration > 0)) loopDuration = duration;
+                  const baseOffset = sourceWrapper.currentOffset || 0;
+                  const relative = (baseOffset + elapsed) % loopDuration;
+                  currentTime = loopStart + relative;
+                } else {
+                  currentTime = Math.min(duration, (sourceWrapper.currentOffset || 0) + elapsed);
+                }
+              } else if (player.pausedStates.has(baseKey)) {
+                currentTime = player.pausedStates.get(baseKey).offset || 0;
+              }
+              const progress = Math.min(1000, Math.max(0, Math.round((currentTime / duration) * 1000)));
+              $('#maplebirch-playback-controls input.maplebirch-progress').val(progress);
+              const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return \`\${mins}:\${secs < 10 ? '0' : ''}\${secs}\`;
+              };
+              $('#maplebirch-playback-controls .audio-time-display').html(\`\${formatTime(currentTime)} / \${formatTime(duration)}\`);
+            }, 100);
+          })();
         <</script>>
-        <<if _args[1] is 'customize'>><<= '<<'+_key+'>>'>><<exit>><</if>>
-        <<if _args[1] is 'title'>><<set _titleKey to "title" + _key.charAt(0).toUpperCase() + _key.slice(1)>><</if>>
-        <<if maplebirch.tool.widget.Macro.has(_titleKey)>><<replace #customOverlayTitle>><<= '<<'+_titleKey+'>>'>><</replace>><</if>>
-        <<replace #customOverlayContent>><<= '<<'+_key+'>>'>><</replace>>
-      <</widget>>`
-  };
+      <</if>>
+      <div class="audio-controls">
+        <<langlink 'previous song'>>
+          <<if V.maplebirch.audio.currentIndex > 0>>
+            <<set V.maplebirch.audio.currentIndex to V.maplebirch.audio.currentIndex - 1>>
+          <<else>>
+            <<set V.maplebirch.audio.currentIndex to V.maplebirch.audio.playlist.length - 1>>
+          <</if>>
+          <<set V.maplebirch.audio.currentTrack to V.maplebirch.audio.playlist[V.maplebirch.audio.currentIndex]>>
+          <<run maplebirch.audio.getPlayer(_args[0]).stopAll()>>
+          <<run maplebirch.audio.getPlayer(_args[0]).play(V.maplebirch.audio.currentTrack, {loop: V.maplebirch.audio.loopMode === "single", volume: V.maplebirch.audio.volume})>>
+          <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
+        <</langlink>>
+        <<if _playing.includes(V.maplebirch.audio.currentTrack)>>
+          <<langlink 'pause'>>
+            <<run maplebirch.audio.getPlayer(_args[0]).togglePause(V.maplebirch.audio.currentTrack)>>
+            <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
+          <</langlink>>
+        <<elseif _isPaused>>
+          <<langlink 'resume'>>
+            <<run maplebirch.audio.getPlayer(_args[0]).togglePause(V.maplebirch.audio.currentTrack)>>
+            <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
+          <</langlink>>
+        <<elseif V.maplebirch.audio.currentTrack>>
+          <<langlink 'playback'>>
+            <<run maplebirch.audio.getPlayer(_args[0]).play(
+              V.maplebirch.audio.currentTrack,
+              { loop: V.maplebirch.audio.loopMode === "single", volume: V.maplebirch.audio.volume, stopOthers: false }
+            )>>
+            <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
+          <</langlink>>
+        <</if>>
+        <<langlink 'next song'>>
+          <<if V.maplebirch.audio.currentIndex < V.maplebirch.audio.playlist.length - 1>>
+            <<set V.maplebirch.audio.currentIndex to V.maplebirch.audio.currentIndex + 1>>
+          <<else>>
+            <<set V.maplebirch.audio.currentIndex to 0>>
+          <</if>>
+          <<set V.maplebirch.audio.currentTrack to V.maplebirch.audio.playlist[V.maplebirch.audio.currentIndex]>>
+          <<run maplebirch.audio.getPlayer(_args[0]).stopAll()>>
+          <<run maplebirch.audio.getPlayer(_args[0]).play(V.maplebirch.audio.currentTrack, {loop: V.maplebirch.audio.loopMode === "single", volume: V.maplebirch.audio.volume})>>
+          <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
+        <</langlink>>
+        <<langlink 'stop'>>
+          <<run maplebirch.audio.getPlayer(_args[0]).stopAll()>>
+          <<set V.maplebirch.audio.currentTrack to null>>
+          <<set V.maplebirch.audio.currentIndex to -1>>
+          <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
+        <</langlink>>
+        <<langlink 'loop mode'>>
+          <<if V.maplebirch.audio.loopMode === "none">>
+            <<set V.maplebirch.audio.loopMode to "single">>
+          <<else>>
+            <<set V.maplebirch.audio.loopMode to "none">>
+          <</if>>
+          <<replace "#maplebirch-playback-controls">><<maplebirch-playback-controls _args[0]>><</replace>>
+        <</langlink>>
+      </div>
+      <label><<= maplebirch.t('volume')>>:</label>
+      <<numberslider '$maplebirch.audio.volume' $maplebirch.audio.volume 0 1 0.01 {
+        value: v => Math.round(v * 100) + '%',
+        onInputChange: value => {
+          maplebirch.audio.getPlayer(_args[0]).setVolume(value);
+        }
+      }>>
+    <</widget>>`,
+    `<<widget 'maplebirch-npc-model'>>
+      <div id="img-npc">
+        <<selectmodel "npcmodel" "sidebar">>
+        <<if $options.sidebarAnimations>>
+          <<animatemodel 'mainCanvas'>>
+        <<else>>
+          <<rendermodel 'mainCanvas'>>
+        <</if>>
+      </div>
+    <</widget>>`
+  ];
 
   const defaultData = {
     Init   : '<<run maplebirch.tool.framework.storyInit()>>',
@@ -41,29 +227,42 @@
         <div class="settingsToggleItem">
           <span class="gold"><<= maplebirch.t("Current Mods Language Setting")>>:</span>
           <<set _selectedLang to maplebirch.lang.language>>
-          <<set _langOptions = {
-            [maplebirch.t('English')]: "EN",
-            [maplebirch.t('Chinese')]: "CN",
-          }>>
-          <<listbox "_selectedLang" autoselect>>
-            <<optionsfrom _langOptions>>
-          <</listbox>>
+          <<set _langOptions = { [maplebirch.t('English')]: "EN", [maplebirch.t('Chinese')]: "CN", }>>
+          <<listbox "_selectedLang" autoselect>><<optionsfrom _langOptions>><</listbox>>
         </div>
         <div class="settingsToggleItem">
-          <label><<checkbox "$options.maplebirch.debug" false true autocheck>><<= maplebirch.t('DEBUGMode')>></label>
+          <label><<checkbox "$options.maplebirch.debug" false true autocheck>><<= maplebirch.t('DEBUG')+maplebirch.t('Mode')>></label>
         </div>
-        <div class="settingsToggleItemWide">
-          <span class="gold"><<= maplebirch.t('Maplebirch',true) + maplebirch.autoTranslate('侧边栏位置选择')>>：</span>
-          <span class="tooltip-anchor linkBlue" tooltip="在下次打开界面时更新">(?)</span>
-          <br>
+        <div class="settingsToggleItem">
+          <span class="gold"><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('sidebar',true)+maplebirch.t('position',true)+maplebirch.t('selection'),'capitalize')>>：</span>
+          <span class="tooltip-anchor linkBlue" tooltip="<span class='teal'><<lanSwitch 'Update next time the interface is opened' '在下次打开界面时更新'>></span>">(?)</span><br>
           <<set _modHintLocation = {
             [maplebirch.t('mobile client')]: "mobile",
             [maplebirch.t('desktop client')]: "desktop",
             [maplebirch.t('disable')]: "disable"
           }>>
-          <<listbox "$options.maplebirch.modHint" autoselect>>
-            <<optionsfrom _modHintLocation>>
-          <</listbox>>
+          <<listbox "$options.maplebirch.modHint" autoselect>><<optionsfrom _modHintLocation>><</listbox>>
+        </div>
+        <div class="settingsToggleItem">
+          <<set _npcsidebarName = {}>>
+          <<set setup.NPCNameList.forEach(name => T.npcsidebarName[maplebirch.autoTranslate(maplebirch.tool.convert(name, 'title'))] = name)>>
+          <label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.npcsidebar.show" false true autocheck>><<= maplebirch.tool.convert('NPC '+maplebirch.t('model',true)+maplebirch.t('display',true),'title')>></label> |
+          <label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.npcsidebar.model" false true autocheck>><<= maplebirch.tool.convert(maplebirch.t('canvas')+maplebirch.t('Mode'),'pascal')>></label>
+          <span class="tooltip-anchor linkBlue" tooltip="<span class='teal'><<lanSwitch 'After enabling the display, named NPCs will show their models when nearby, with the canvas mode set to the player model' '开启显示后命名NPC在附近将显示模型，画布模式为玩家模型'>></span>">(?)</span><br>
+          <<listbox "$options.maplebirch.npcsidebar.nnpc" autoselect>><<optionsfrom _npcsidebarName>><</listbox>><br>
+          <<if $options.maplebirch.npcsidebar.nnpc>>
+            <<if !['none'].concat(Array.from(maplebirch.npc.Sidebar.display[$options.maplebirch.npcsidebar.nnpc])).includes($options.maplebirch.npcsidebar.display[$options.maplebirch.npcsidebar.nnpc])>>
+              <<set $options.maplebirch.npcsidebar.display[$options.maplebirch.npcsidebar.nnpc] = 'none'>>
+            <</if>>
+            <<set _fixedName = \`$options.maplebirch.npcsidebar.display.\${$options.maplebirch.npcsidebar.nnpc}\`>>
+            <<set _npcsidebarDisplay = ['none'].concat(Array.from(maplebirch.npc.Sidebar.display[$options.maplebirch.npcsidebar.nnpc]))>>
+            <<= maplebirch.tool.convert(maplebirch.t('graphic',true)+maplebirch.t('selection'), 'capitalize')>>：<<radiobuttonsfrom _fixedName _npcsidebarDisplay>>
+          <</if>>
+        </div>
+        <div class="settingsToggleItem">
+          <span class="gold"><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('celestial phenomenons',true)+maplebirch.t('settings'),'capitalize')>>：</span><br>
+          <label><<checkbox "$options.maplebirch.solarEclipse" false true autocheck>><<= maplebirch.t('solar eclipse')>></label>
+          <span class="tooltip-anchor linkBlue" tooltip="<span class='teal'><<lanSwitch 'When enabled, a solar eclipse will occur in the specified month.' '启用后将在指定月份出现日蚀'>></span>">(?)</span>
         </div>
       </div><hr>`,
     Cheats : `
@@ -75,7 +274,7 @@
           <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.V" false true autocheck>> V <<= maplebirch.t('permission')>></label></div>
           <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.T" false true autocheck>> T <<= maplebirch.t('permission')>></label></div>
           <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.maplebirch" false true autocheck>> Maplebirch <<= maplebirch.t('permission')>></label></div>
-          <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.window" false true autocheck>> window <<= maplebirch.t('permission')>>(完全权限)</label></div>
+          <div class="settingsToggleItem"><label onclick='maplebirch.trigger("update")'><<checkbox "$options.maplebirch.sandbox.window" false true autocheck>> window <<= maplebirch.t('permission')>></label></div>
           <div id="ConsoleCheat" class="settingsToggleItemWide">
             <<set _CodeCheater to maplebirch.t('Code Cheater')>>
             <details class="JSCheatConsole">

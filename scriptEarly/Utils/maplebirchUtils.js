@@ -1,4 +1,5 @@
 (async() => {
+  'use strict';
   if (!window.maplebirch) return;
   const maplebirch = window.maplebirch;
 
@@ -350,8 +351,6 @@
   }
 
   /**
-   * 高级条件选择器，支持多种匹配模式和链式调用
-   * 
    * @example <caption>基本用法（单一类型匹配）</caption>
    * // 创建数字选择器（所有条件都是数字类型）
    * const numberSelector = new selectCase()
@@ -579,6 +578,64 @@
     }
   }
 
+  /**
+   * @param {string} str - 要转换的字符串
+   * @param {string} [mode='lower'] - 转换模式:
+   *   - 'upper': 全大写 (HELLO WORLD)
+   *   - 'lower': 全小写 (hello world)
+   *   - 'capitalize': 首字母大写 (Hello world)
+   *   - 'title': 标题格式 (Hello World)
+   *   - 'camel': 驼峰命名法 (helloWorld)
+   *   - 'pascal': 帕斯卡命名法 (HelloWorld)
+   *   - 'snake': 蛇形命名法 (hello_world)
+   *   - 'kebab': 烤肉串命名法 (hello-world)
+   *   - 'constant': 常量命名法 (HELLO_WORLD)
+   * @param {Object} [options={}] - 可选配置
+   * @param {string} [options.delimiter=' '] - 单词分隔符（用于title/camel/pascal模式）
+   * @param {boolean} [options.preserveAcronyms=true] - 是否保留首字母缩略词的大写
+   * @returns {string} 转换后的字符串
+   * @example
+   * // 基本用法
+   * convert('hello world', 'upper'); // 'HELLO WORLD'
+   * convert('Hello World', 'snake'); // 'hello_world'
+   * @example
+   * // 标题格式转换
+   * convert('the lord of the rings', 'title'); // 'The Lord of the Rings'
+   * @example
+   * // 驼峰命名法
+   * convert('user_profile_data', 'camel', { delimiter: '_' }); // 'userProfileData'
+   * @example
+   * // 保留首字母缩略词
+   * convert('NASA space program', 'title'); // 'NASA Space Program'
+   * convert('NASA space program', 'title', { preserveAcronyms: false }); // 'Nasa Space Program'
+   */
+  function convert(str, mode = 'lower', options = {}) {
+    if (typeof str !== 'string') return str;
+    const {
+      delimiter = ' ',
+      preserveAcronyms = true
+    } = options;
+    const splitWords = (s) => {
+      if (s.includes(delimiter)) return s.split(delimiter);
+      return s.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2').split(' ');
+    };
+    const isUpperCase = (s) => s === s.toUpperCase();
+    const words = splitWords(str).filter(word => word.length > 0);
+    if (words.length === 0) return '';
+    switch (mode) {
+      case 'upper': return str.toUpperCase();
+      case 'lower': return str.toLowerCase();
+      case 'capitalize': return words.map((word, i) => i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word).join(' ');
+      case 'title': return words.map(word => preserveAcronyms && isUpperCase(word) ? word : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+      case 'camel': return words.map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1)).join('');
+      case 'pascal': return words.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+      case 'snake': return words.map(word => word.toLowerCase()).join('_');
+      case 'kebab': return words.map(word => word.toLowerCase()).join('-');
+      case 'constant': return words.map(word => word.toUpperCase()).join('_');
+      default: return str;
+    }
+  }
+
   const tools = {
     clone: Object.freeze(clone),
     merge: Object.freeze(merge),
@@ -587,9 +644,10 @@
     SelectCase: Object.freeze(selectCase),
     random: Object.freeze(random),
     either: Object.freeze(either),
-    loadImage: Object.freeze(loadImageWithModLoader)
+    loadImage: Object.freeze(loadImageWithModLoader),
+    convert: Object.freeze(convert)
   };
-  const toolNames = ['clone', 'merge', 'equal', 'contains', 'SelectCase','random','either','loadImage'];
+  const toolNames = ['clone', 'merge', 'equal', 'contains', 'SelectCase','random','either','loadImage','convert'];
   toolNames.forEach(name => { if (!window.hasOwnProperty(name)) Object.defineProperty(window, name, { value: tools[name], enumerable: true}); });
   maplebirch.once(':tool-init', (data) => Object.assign(data, tools));
 })();

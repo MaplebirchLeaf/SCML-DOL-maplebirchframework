@@ -18,11 +18,13 @@
 'Clear': 清除
 'Module Introduction': 模组介绍
 'Character Panel': 角色面板
-'Maplebirch': 秋枫白桦
-'DEBUGMode': 调试模式
+'maplebirch': 秋枫白桦
+'Mode': 模式
+'DEBUG': 调试
 'Code Cheater': 代码作弊器
 'permission': 权限
-'sidebar position selection': 侧边栏位置选择
+'sidebar': 侧边栏
+'position': 位置
 'music player': 音乐播放器
 'previous song': 上一首
 'next song': 下一首
@@ -42,6 +44,14 @@
 'disable': 禁用
 'enable': 启用
 'execute': 执行
+'display': 显示
+'model': 模型
+'canvas': 画布
+'graphic': 图形
+'selection': 选择
+'celestial phenomenons': 天象
+'solar eclipse': 日蚀
+'settings': 设置
 
 'View All': 查看全部
 'View Headgear': 查看外衣(头套)

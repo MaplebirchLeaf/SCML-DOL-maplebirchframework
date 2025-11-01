@@ -1,9 +1,11 @@
 // 此处来源于Dom罗宾模组
 (async() => {
+  'use strict';
   if (!window.maplebirch) return;
   const modUtils = window.modUtils;
   const logger = modUtils.getLogger();
   const modSC2DataManager = window.modSC2DataManager;
+  const addonBeautySelectorAddon = window.addonBeautySelectorAddon;
   const addonTweeReplacer = window.addonTweeReplacer; // Twee
   const addonReplacePatcher = window.addonReplacePatcher; // JavaScript
   const maplebirch = window.maplebirch;
@@ -54,15 +56,31 @@
     addonTweeReplacer.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);  
   }
 
+  async function joinNPCSidebar() {
+    const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
+    const SCdata = oldSCdata.cloneSC2DataInfo();
+    const passageData = SCdata.passageDataItems.map;
+    const ImgTwinePath = 'Widgets Img';
+    const modify = passageData.get(ImgTwinePath);
+    const regex = /<div\s+id\s*=\s*"img"\s*>/;
+    if (regex.test(modify.content)) modify.content = modify.content.replace(regex,`<<maplebirch-npc-model>>\n\t<div id="img">`);
+    passageData.set(ImgTwinePath, modify);
+    SCdata.passageDataItems.back2Array();
+    addonTweeReplacer.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);  
+  }
+
   class MaplebirchFrameworkAddon {
     constructor(core, gSC2DataManager, gModUtils) {
       this.core = core;
       this.gSC2DataManager = gSC2DataManager;
       this.gModUtils = gModUtils;
+      this.addonTweeReplacer = addonTweeReplacer;
+      this.addonReplacePatcher = addonReplacePatcher;
+      maplebirch.trigger(':beforePatch', this);
       this.info = new Map();
       this.logger = gModUtils.getLogger();
       this.gModUtils.getAddonPluginManager().registerAddonPlugin('maplebirch', 'maplebirchAddon', this);
-      this.supportedConfigs = ['language', 'audio', 'framework', 'npc', 'shop'];
+      this.supportedConfigs = ['language', 'audio', 'framework', 'npc', 'shop', 'npcSidebar'];
       this.queue = {};
       this.processed = {};
       this.supportedConfigs.forEach(type => {
@@ -83,6 +101,8 @@
       this.core.log('开始执行正则替换', 'DEBUG');
       await modifyOptionsDateFormat();
       await modifyJournalTime();
+      await joinNPCSidebar();
+      await this.modifyWeather.modifyWeatherJavaScript();
     }
 
     #getModConfig(modInfo) {
@@ -122,6 +142,7 @@
       await this.#processAudio();
       await this.#processFramework();
       await this.#processNpc();
+      await this.#processNpcSidebar();
       await this.core.shop.beforePatchModToGame();
     }
 
@@ -281,6 +302,93 @@
         this.processed.shop = true;
       } catch (e) {
         this.core.log(`商店配置处理失败: ${e.message}`, 'ERROR');
+      }
+    }
+
+    async #processNpcSidebar() {
+      if (this.processed.npcSidebar || this.queue.npcSidebar.length === 0) return;
+      try {
+        const npcDisplay = {};
+        for (const task of this.queue.npcSidebar) {
+          const { modName, modZip, config } = task;
+          if (!Array.isArray(config)) continue;
+          const modImages = [];
+          config.forEach(npcSidebar => {
+            const npcName = this.core.tool.convert(npcSidebar.name, 'capitalize');
+            if (!npcName) return;
+            if (!npcDisplay[npcName]) npcDisplay[npcName] = new Set();
+            npcSidebar.imgFile.forEach(imgPath => {
+              const extractFileName = (path) => {
+                if (!path) return null;
+                const baseName = path.split('/').pop();
+                return baseName.split('.')[0];
+              };
+              const fileName = extractFileName(imgPath);
+              if (fileName) {
+                npcDisplay[npcName].add(fileName);
+                modImages.push(imgPath);
+              }
+            });
+          });
+          if (modImages.length > 0) await this.#injectBSAImages(modName, modZip, modImages);
+        }
+        this.core.npc.Sidebar.display = npcDisplay;
+        this.processed.npcSidebar = true;
+      } catch (e) {
+        this.core.log(`npcSidebar 处理失败: ${e.message}`, 'ERROR');
+      }
+    }
+
+    async #injectBSAImages(modName, modZip, imgPaths) {
+      try {
+        const imgs = [];
+        for (const imgPath of imgPaths) {
+          try {
+            if (typeof imgPath !== 'string') continue;
+            const file = modZip.zip.file(imgPath);
+            if (!file) { this.core.log(`图片未找到: ${imgPath} (模组: ${modName})`, 'WARN'); continue; }
+            const base64Data = await file.async('base64');
+            const mimeType = {
+              png: 'image/png',
+              jpg: 'image/jpeg',
+              jpeg: 'image/jpeg',
+              gif: 'image/gif',
+              webp: 'image/webp',
+              svg: 'image/svg+xml'
+            }[imgPath.split('.').pop().toLowerCase()] || 'image/png';
+            const dataUrl = `data:${mimeType};base64,${base64Data}`;
+            imgs.push({
+              path: imgPath,
+              getter: {
+                getBase64Image: async () => dataUrl,
+                invalid: false
+              }
+            });
+          } catch (e) {
+            this.core.log(`加载图片失败: ${imgPath} - ${e.message}`, 'WARN');
+          }
+        }
+        if (imgs.length === 0) return;
+        await addonBeautySelectorAddon.registerMod(
+          "BeautySelectorAddon",
+          {
+            name: 'maplebirch',
+            bootJson: {
+              addonPlugin: [
+                {
+                  modName: "BeautySelectorAddon",
+                  addonName: "BeautySelectorAddon",
+                  params: { type: `npc-sidebar-[${modName}]` }
+                }
+              ]
+            },
+            imgs: imgs
+          },
+          modZip
+        );
+        this.core.log(`成功注册 ${modName} 的 ${imgs.length} 个 NPC 侧边栏图片`, 'DEBUG');
+      } catch (e) {
+        this.core.log(`注册 ${modName} 的 NPC 侧边栏图片失败: ${e.message}`, 'ERROR');
       }
     }
   }

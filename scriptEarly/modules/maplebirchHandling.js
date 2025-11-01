@@ -1,4 +1,5 @@
 (async() => {
+  'use strict';
   if (!window.maplebirch) {
     console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
     return;
@@ -7,6 +8,15 @@
   const maplebirch = window.maplebirch;
 
   class processHandling {
+    static getTranslation(key, core = maplebirch) {
+      try { key = String(key); }
+      catch (e) { return ''; }
+      const autoTranslated = core.autoTranslate(key);
+      if (autoTranslated !== key) return autoTranslated;
+      const result = core.t(key);
+      return (result[0] === '[' && result[result.length - 1] === ']') ? autoTranslated : result;
+    }
+
     constructor() {
       this.lang = maplebirch.lang;
       this.tool = null;
@@ -20,17 +30,11 @@
         const arg = this.args[0];
         let buttonText = '';
         let translationKey = '';
+        let convertMode = null;
+        if (this.args.length > 1 && typeof this.args[1] === 'string') convertMode = this.args[1];
         if (typeof arg === 'string') {
           translationKey = arg;
-          const hasSpaceArg = this.args.length > 1 && typeof this.args[1] === 'boolean';
-          const space = hasSpaceArg ? this.args[1] : false;
-          if (typeof maplebirch?.autoTranslate === 'function') {
-            buttonText = maplebirch.autoTranslate(translationKey);
-          } else if (typeof maplebirch?.t === 'function') {
-            buttonText = maplebirch.t(translationKey, space);
-          } else {
-            buttonText = translationKey;
-          }
+          buttonText = processHandling.getTranslation(translationKey, maplebirch);
         } else if (typeof arg === 'function') {
           try {
             buttonText = arg();
@@ -42,6 +46,7 @@
         } else {
           return this.error('<<langbutton>> 参数必须是字符串或翻译函数');
         }
+        if (convertMode) buttonText = maplebirch.tool.convert(buttonText, convertMode);
         const payloadContent = this.payload[0]?.contents ?? '';
         const $output = $(this.output);
         let buttonCall = `<<button "${buttonText.replace(/"/g, '\\"')}">>`;
@@ -66,31 +71,26 @@
         let linkText = '';
         let translationKey = '';
         let passageName = null;
+        let convertMode = null;
         if (typeof arg === 'string') {
           translationKey = arg;
-          const hasSpaceArg = this.args.length > 1 && typeof this.args[1] === 'boolean';
-          const space = hasSpaceArg ? this.args[1] : false;
-          passageName = this.args.length > (hasSpaceArg ? 2 : 1) ? this.args[hasSpaceArg ? 2 : 1] : null;
-          
-          if (typeof maplebirch?.autoTranslate === 'function') {
-            linkText = maplebirch.autoTranslate(translationKey);
-          } else if (typeof maplebirch?.t === 'function') {
-            linkText = maplebirch.t(translationKey, space);
-          } else {
-            linkText = translationKey;
-          }
+          passageName = this.args.length > 1 ? this.args[1] : null;
+          convertMode = this.args.length > 2 ? this.args[2] : null;
+          linkText = processHandling.getTranslation(translationKey, maplebirch);
         } else if (typeof arg === 'function') {
           try {
             linkText = arg();
             const match = arg.toString().match(/t\(['"]([^'"]+)['"]/);
             translationKey = match ? match[1] : 'dynamic';
             passageName = this.args.length > 1 ? this.args[1] : null;
+            convertMode = this.args.length > 2 ? this.args[2] : null;
           } catch (e) {
             return this.error(`<<langlink>> 函数调用失败: ${e.message}`);
           }
         } else {
           return this.error('<<langlink>> 参数必须是字符串或翻译函数');
         }
+        if (convertMode) linkText = maplebirch.tool.convert(linkText, convertMode);
         const payloadContent = this.payload[0]?.contents ?? '';
         const $output = $(this.output);
         let linkCall = `<<link "${linkText.replace(/"/g, '\\"')}"`;
@@ -108,6 +108,31 @@
         console.error('<<langlink>> 宏处理错误', e);
         return this.error(`<<langlink>> 执行错误: ${e.message}`);
       }
+    }
+
+    _radiobuttonsfrom() {
+      if (this.args.length < 2) return this.error('缺少参数：变量名和选项数组');
+      let varPath = this.args[0];
+      if (typeof varPath === 'string') {
+      } else if (typeof varPath === 'object' && varPath.raw) {
+        varPath = varPath.raw[0];
+      } else {
+        varPath = String(varPath);
+      }
+      const options = this.args[1];
+      if (!Array.isArray(options)) return this.error('第二个参数必须是数组');
+      const separator = this.args.length > 2 ? this.args[2] : ' | ';
+      const container = $('<span>').addClass('radiobuttonsfrom-container');
+      options.forEach((option, index) => {
+        const label = $('<label>').addClass('radiobuttonsfrom-label');
+        const temp = document.createElement('div');
+        new Wikifier(temp, `<<radiobutton "${varPath}" "${option}" autocheck>>`);
+        $(temp).children().appendTo(label);
+        label.append(document.createTextNode(option));
+        container.append(label);
+        if (index < options.length - 1) container.append(document.createTextNode(separator));
+      });
+      container.appendTo(this.output);
     }
 
     _fixDynamicTask(fn, name) {
@@ -211,7 +236,7 @@
       return html_1;
     }
 
-    _updatePermissions() {
+    #updatePermissions() {
       if (!V.options?.maplebirch?.sandbox) return;
       const sandbox = V.options.maplebirch.sandbox;
       const allowedObjects = this.tool.console.allowedObjects;
@@ -227,26 +252,14 @@
       }
       if (sandbox.maplebirch && (!sandbox.V || !sandbox.T)) sandbox.maplebirch = false;
       if (sandbox.window && !sandbox.maplebirch) sandbox.window = false;
-      if (sandbox.V && !allowedObjects.has('V')) {
-        this.tool.console.allowObject('V');
-      } else if (!sandbox.V && allowedObjects.has('V')) {
-        this.tool.console.disallowObject('V');
-      }
-      if (sandbox.T && !allowedObjects.has('T')) {
-        this.tool.console.allowObject('T');
-      } else if (!sandbox.T && allowedObjects.has('T')) {
-        this.tool.console.disallowObject('T');
-      }
-      if (sandbox.maplebirch && !allowedObjects.has('maplebirch')) {
-        this.tool.console.allowObject('maplebirch');
-      } else if (!sandbox.maplebirch && allowedObjects.has('maplebirch')) {
-        this.tool.console.disallowObject('maplebirch');
-      }
-      if (sandbox.window && !this.tool.console.fullAccess) {
-        this.tool.console.enableFullAccess();
-      } else if (!sandbox.window && this.tool.console.fullAccess) {
-        this.tool.console.disableFullAccess();
-      }
+      if (sandbox.V && !allowedObjects.has('V')) { this.tool.console.allowObject('V'); }
+      else if (!sandbox.V && allowedObjects.has('V')) { this.tool.console.disallowObject('V'); }
+      if (sandbox.T && !allowedObjects.has('T')) { this.tool.console.allowObject('T');}
+      else if (!sandbox.T && allowedObjects.has('T')) { this.tool.console.disallowObject('T'); }
+      if (sandbox.maplebirch && !allowedObjects.has('maplebirch')) { this.tool.console.allowObject('maplebirch'); }
+      else if (!sandbox.maplebirch && allowedObjects.has('maplebirch')) { this.tool.console.disallowObject('maplebirch'); }
+      if (sandbox.window && !this.tool.console.fullAccess) { this.tool.console.enableFullAccess(); }
+      else if (!sandbox.window && this.tool.console.fullAccess) { this.tool.console.disableFullAccess(); }
       const text = maplebirch.t('permission');
       const vItem = $(`label:contains("V ${text}")`).closest('.settingsToggleItem');
       const tItem = $(`label:contains("T ${text}")`).closest('.settingsToggleItem');
@@ -269,6 +282,7 @@
     preInit() {
       this.tool = maplebirch.tool;
       this.log = this.tool.createLog('widget');
+      this.tool.framework.onInit(() => setup.maplebirch = {});
       this.tool.framework.addTo('HintMobile', 'maplebirchModHintMobile');
       this.tool.framework.addTo('MenuBig', 'maplebirchModHintDesktop');
       this.tool.other.configureLocation('lake_ruin', {
@@ -282,6 +296,7 @@
       maplebirch.once(':definewidget', () => {
         this.tool.widget.defineMacro('langbutton', this._languageButton, null, false);
         this.tool.widget.defineMacro('langlink', this._languageLink, null, false);
+        this.tool.widget.defineMacro('radiobuttonsfrom', this._radiobuttonsfrom);
         this.tool.widget.defineMacro('maplebirchTextOutput', this.tool.text.makeMacroHandler());
         this.tool.widget.defineMacroS('maplebirchFrameworkVersions', this._showModVersions);
         this.tool.widget.defineMacroS('maplebirchFrameworkInfo', () => this._showFrameworkInfo());
@@ -294,15 +309,18 @@
       $(document).on('mouseup touchend', () => {
         if (!maplebirch.modules.initPhase.preInitCompleted) return;
         try {
+          let needsRefresh = false;
           if (typeof T.selectedLang === 'string' && maplebirch.constructor.meta.availableLanguages.includes(T.selectedLang)) {
             if (T.selectedLang !== maplebirch.lang.language) {
               maplebirch.Language = T.selectedLang;
               if (typeof V.maplebirch !== 'object') V.maplebirch = {};
               V.maplebirch.language = T.selectedLang;
-              T.tab.toggle();
-              $.wiki('<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>');
+              needsRefresh = true;
             }
           }
+          const npcSidebarName = V.options?.maplebirch?.npcsidebar?.nnpc;
+          if (T.fixedName && typeof T.fixedName === 'string' && npcSidebarName) if (T.fixedName.split('.')[T.fixedName.split('.').length - 1] !== npcSidebarName) needsRefresh = true;
+          if (needsRefresh) $.wiki('<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>');
         } catch (error) {
           console.log('鼠标事件处理错误:', error);
         }
@@ -311,7 +329,7 @@
       maplebirch.on('update', () => {
         if (this.updateTimer) clearTimeout(this.updateTimer);
         this.updateTimer = setTimeout(() => {
-          this._updatePermissions();
+          this.#updatePermissions();
           this.updateTimer = null;
         }, 50);
       });
