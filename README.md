@@ -404,12 +404,12 @@ maplebirchFrameworks.addTimeEvent(
   #### 时间事件使用示例  
 ```
 // 基础事件类型示例
-maplebirch.state.regTimeEvent('onSec', 'sec-counter', {
+maplebirchFrameworks.addTimeEvent('onSec', 'sec-counter', {
   action: () => V.secondCounter = (V.secondCounter || 0) + 1,
   description: '每秒计数器'
 });
 
-maplebirch.state.regTimeEvent('onMin', 'minute-alert', {
+maplebirchFrameworks.addTimeEvent('onMin', 'minute-alert', {
   action: () => console.log('又过去了一分钟'),
   cond: () => V.player.awake, // 仅在玩家清醒时触发
   priority: 5,
@@ -417,7 +417,7 @@ maplebirch.state.regTimeEvent('onMin', 'minute-alert', {
 });
 
 // 精确时间点事件
-maplebirch.state.regTimeEvent('onHour', 'dawn-event', {
+maplebirchFrameworks.addTimeEvent('onHour', 'dawn-event', {
   action: () => {
     if (Time.hour === 6) {
       console.log('黎明到来，新的一天开始了');
@@ -429,7 +429,7 @@ maplebirch.state.regTimeEvent('onHour', 'dawn-event', {
 });
 
 // 周期性累积事件
-maplebirch.state.regTimeEvent('onDay', 'fatigue-system', {
+maplebirchFrameworks.addTimeEvent('onDay', 'fatigue-system', {
   action: (data) => {
     const hoursAwake = data.cumulative.hour;
     if (hoursAwake > 16) {
@@ -442,7 +442,7 @@ maplebirch.state.regTimeEvent('onDay', 'fatigue-system', {
 });
 
 // 周循环事件
-maplebirch.state.regTimeEvent('onWeek', 'market-day', {
+maplebirchFrameworks.addTimeEvent('onWeek', 'market-day', {
   action: () => {
     if (Time.weekDay === 6) { // 星期六
       V.marketOpen = true;
@@ -454,7 +454,7 @@ maplebirch.state.regTimeEvent('onWeek', 'market-day', {
 });
 
 // 月相事件
-maplebirch.state.regTimeEvent('onMonth', 'full-moon', {
+maplebirchFrameworks.addTimeEvent('onMonth', 'full-moon', {
   action: () => {
     if (Time.moonPhase === 'full') {
       console.log('满月之夜，特殊事件触发');
@@ -466,7 +466,7 @@ maplebirch.state.regTimeEvent('onMonth', 'full-moon', {
 });
 
 // 年度事件
-maplebirch.state.regTimeEvent('onYear', 'birthday-event', {
+maplebirchFrameworks.addTimeEvent('onYear', 'birthday-event', {
   action: () => {
     console.log(`今天是${V.playerName}的生日！`);
     V.age += 1;
@@ -480,7 +480,7 @@ maplebirch.state.regTimeEvent('onYear', 'birthday-event', {
 });
 
 // 时间旅行事件
-maplebirch.state.regTimeEvent('onTimeTravel', 'time-paradox', {
+maplebirchFrameworks.addTimeEvent('onTimeTravel', 'time-paradox', {
   action: (data) => {
     const diff = data.diffSeconds;
     if (Math.abs(diff) > 31536000) { // 超过1年
@@ -493,7 +493,7 @@ maplebirch.state.regTimeEvent('onTimeTravel', 'time-paradox', {
 });
 
 // 复合事件处理
-maplebirch.state.regTimeEvent('onAfter', 'save-autosave', {
+maplebirchFrameworks.addTimeEvent('onAfter', 'save-autosave', {
   action: (data) => {
     if (data.changes.day > 0) {
       console.log('每日自动存档');
@@ -504,7 +504,7 @@ maplebirch.state.regTimeEvent('onAfter', 'save-autosave', {
 });
 
 // 一次性事件示例
-maplebirch.state.regTimeEvent('onDay', 'special-event-2025', {
+maplebirchFrameworks.addTimeEvent('onDay', 'special-event-2025', {
   action: () => {
     console.log('限时事件触发！');
     V.specialEventCompleted = true;
@@ -519,7 +519,7 @@ maplebirch.state.regTimeEvent('onDay', 'special-event-2025', {
 });
 
 // 带累积的精确事件
-maplebirch.state.regTimeEvent('onMin', 'meditation', {
+maplebirchFrameworks.addTimeEvent('onMin', 'meditation', {
   action: (data) => {
     if (data.triggeredByAccumulator) {
       console.log(`冥想完成！累计${data.triggeredByAccumulator.count}分钟`);
@@ -532,7 +532,7 @@ maplebirch.state.regTimeEvent('onMin', 'meditation', {
 });
 
 // 条件复杂的事件
-maplebirch.state.regTimeEvent('onHour', 'guard-patrol', {
+maplebirchFrameworks.addTimeEvent('onHour', 'guard-patrol', {
   action: () => {
     const hour = Time.hour;
     if (hour >= 2 && hour <= 4) {
@@ -1759,6 +1759,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
