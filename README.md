@@ -134,7 +134,7 @@
   <img width="1848" height="1192" alt="image" src="https://github.com/user-attachments/assets/dd8aca44-0619-4f1f-bec5-8d1f2f30f5f4" />
 </details>
 
-+ 第三种自助 `addonPlugin` 声明依赖，**详情**看对应区块说明
++ 第三种自助 `addonPlugin` 声明依赖只要用到了其中的功能框架就能检测，**详情**看对应区块说明
 
 ```
 "addonPlugin": [
@@ -1759,3 +1759,4 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
