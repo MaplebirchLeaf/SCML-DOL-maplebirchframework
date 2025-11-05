@@ -1311,6 +1311,7 @@ maplebirchFrameworks.onInit(() => {
 ```
  ### 特质注册
   - 原版特质对照
+
 | 英文类别名称        | 中文类别名称 |
 | :----------------: | :---------: |
 | General Traits     | 一般特质     |
@@ -1321,6 +1322,7 @@ maplebirchFrameworks.onInit(() => {
 | NPC Traits         | NPC特质      |
 | Hypnosis Traits    | 催眠特质     |
 | Acceptance Traits  | 接纳特质     |
+
  - 使用 `maplebirchFrameworks.addTraits(...data)` 添加或更新角色特质
 ```
 特质对象结构：
@@ -1759,4 +1761,5 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
