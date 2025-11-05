@@ -145,34 +145,10 @@
       "params": {
         "language": [],
         "audio": [""],
-        "framework": [
-          {
-            "addto": "",
-            "widget": ""
-          },
-          {
-            "addto": "",
-            "widget": {
-              "widget": "",
-              "exclude": [],
-              "passage": [],
-              "match": ""
-            }
-          },
-          {
-            "traits": []
-          }
-        ],
-        "shop": [
-          "shop/XXX.json",
-          "XXX/XXX.json
-        ],
-        "npc": [
-          {
-            "data": {},
-            "state": {}
-          }
-        ]
+        "framework": [],
+        "shop": [],
+        "npc": [],
+        "npcSidebar": [],
       }
     }
 ```
@@ -1761,5 +1737,6 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
