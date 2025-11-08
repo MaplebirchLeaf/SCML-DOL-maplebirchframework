@@ -954,13 +954,14 @@ colorSelector.match('yellow'); // '#FFFFFF'
 ```
   <<lanSwitch 'language' '语言'>> 会在中文时输出语言，英文时输出language 在模组设置中选择。
 ```
- + **`<<langlink>>`** 的说明: **`<<langlink>>`** 与原版的 **`<<link>>`** 很像，**但只支持 `<<langlink '卧室' 'Bedroom'>><</langlink>>` 而非 `<<link [[卧室|Bedroom]]>>` 的逻辑** [多语言管理](#多语言管理)，**`<<langlink>>`** 的第三个字符串将支持 **`convert`** 函数。
+ + **`<<langlink>>`** 的说明: **`<<langlink>>`** 完全支持原版的 **`<<link>>`** 逻辑 [多语言管理](#多语言管理)，**`<<langlink>>`** 的第三个字符串将支持 **`convert`** 函数。
 ```
 在你的翻译文件有对应数据时，使用 <<langlink '卧室' 'Bedroom'>><</langlink>> 会在游戏中英文时显示 (1)Bedroom ，中文时显示(1)卧室。
 使用 <<langlink 'Temple' 'Temple'>><</langlink>> 会在游戏中英文时显示 (1)Temple ,中文时显示(1)神殿。
-使用<<langlink 'Temple' 'Temple' 'upper'>> 在英文情况将显示 (1)TEMPLE
+使用 <<langlink 'Temple' 'Temple' 'upper'>> 在英文情况将显示 (1)TEMPLE
+使用 <<langlink [[卧室|Bedroom]]>><</langlink>> 时与 <<langlink 'Temple' 'Temple'>><</langlink>> 同理
 ```
- + **`<<langbutton>>`** 的说明: **`<<langbutton>>`** 与原版的 **`<<button>>`** 相差无异，但添加了语言支持 [多语言管理](#多语言管理)，**`<<langbutton>>`** 的第三个字符串将支持 **`convert`** 函数。
+ + **`<<langbutton>>`** 的说明: **`<<langbutton>>`** 完全支持原版的 **`<<button>>`** 逻辑，但添加了语言支持 [多语言管理](#多语言管理)，**`<<langbutton>>`** 的第三个字符串将支持 **`convert`** 函数。
 ```
 在你的翻译文件有对应数据时，使用 <<langbutton '卧室'>><</langbutton>> 会在游戏中英文时显示 (1)Bedroom ，中文时显示(1)卧室。
 使用 <<langbutton 'Temple'>><</langbutton>> 会在游戏中英文时显示 (1)Temple ，中文时显示(1)神殿。
@@ -1739,6 +1740,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
