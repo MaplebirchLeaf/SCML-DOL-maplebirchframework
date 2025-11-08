@@ -1713,14 +1713,16 @@ maplebirchFrameworks.addStats({
         "name": "sydney",
         "imgFile": [
           "img/ui/nnpc/sydney/au.png",
-          "img/ui/nnpc/sydney/goose.png"
+          "img/ui/nnpc/sydney/goose.png",
+          "img/ui/nnpc/sydney/xxx.png"
         ]
       },
       {
         "name": "robin",
         "imgFile": [
           "img/ui/nnpc/robin/au.png",
-          "img/ui/nnpc/robin/goose.png"
+          "img/ui/nnpc/robin/goose.png",
+          "img/ui/nnpc/robin/xxx.png"
         ]
       }
     ]
@@ -1737,6 +1739,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
