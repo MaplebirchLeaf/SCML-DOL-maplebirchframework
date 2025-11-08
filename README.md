@@ -10,6 +10,10 @@
         - [语言addonPlugin注册](#语言addonPlugin注册)
     - [事件注册](#事件注册)
     - [模块管理](#模块管理)
+    - [状态事件](#状态事件)
+        - [状态事件的注册方式](#状态事件的注册方式)
+        - [状态事件的配置选项](#状态事件的配置选项)
+        - [状态事件使用示例](#状态事件使用示例)
     - [时间事件](#时间事件)
         - [时间事件的注册方式](#时间事件的注册方式)
         - [时间事件的配置选项](#时间事件的配置选项)
@@ -71,6 +75,7 @@
 | 提供的功能 | 映射方法使用 | 对应路径 |
 | :-: | :-: | :-: |
 | 导入语言文件 | `maplebirchFrameworks.addLanguage` / `simplebirchFrameworks.addLanguage` | `maplebirch.lang.importAllLanguages` |
+| 注册状态事件 | `maplebirchFrameworks.addStateEvent` / `simplebirchFrameworks.addStateEvent` | `maplebirch.state.regStateEvent` |
 | 注册时间事件 | `maplebirchFrameworks.addTimeEvent` / `simplebirchFrameworks.addTimeEvent` | `maplebirch.state.regTimeEvent` |
 | 时间旅行 | `maplebirchFrameworks.timeTravel` / `simplebirchFrameworks.timeTravel` | `maplebirch.state.timeTravel` |
 | 导入音频文件 | `maplebirchFrameworks.addAudio` / `simplebirchFrameworks.addAudio` | `maplebirch.audio.importAllAudio` |
@@ -93,6 +98,7 @@
 | 多语言管理 | 提供国际化和多语言翻译支持 |
 | 事件注册 | 允许注册和触发自定义事件 |
 | 模块管理​ | 管理模组依赖和生命周期 |
+| 状态事件 | 管理段落中的触发事件 |
 | 时间事件 | 管理各种时间触发事件 |
 | 时间旅行​ | 实现游戏内时间跳跃功能 |
 | 音频管理​ | 处理音频资源的加载和播放 |
@@ -292,6 +298,56 @@ maplebirch.register('aiSystem', {
   }
 }, ['gameData']);
 ```
+ ### 状态事件
+   #### 状态事件的注册方式
+   - 使用 `maplebirchFrameworks.addStateEvent` 、 `simpleFrameworks.addStateEvent` 和 `maplebirch.state.regStateEvent` 任选其一注册时间事件
+```
+maplebirchFrameworks.addStateEvent(
+  type,       // 事件类型 (字符串)
+  eventId,    // 事件唯一标识符 (字符串)
+  options     // 事件配置选项 (对象)
+);
+
+支持的事件类型：
+- 'interrupt': 中断型事件 - 在段落开头触发，可选择是否中断后续内容显示
+- 'overlay'  : 叠加型事件 - 在段落末尾触发，不影响主内容
+```
+  #### 状态事件的配置选项
+ + **`output`** 文本输出 可与 **`action`** 回调函数 同时具有，但至少有其一
+```
+{
+  output: 'widgetName',        // 可选：事件触发时输出的widget名称
+  action: function() { ... },  // 可选：事件触发时执行的回调函数
+  cond: function() { ... },    // 可选：条件检查函数，返回true时触发
+  priority: 0,                 // 可选：事件优先级（数值越大优先级越高）
+  once: false,                 // 可选：是否一次性事件（触发后自动移除）
+  forceExit: false,            // 可选：是否强制中断（仅中断型事件有效）
+  extra: {                     // 可选：段落过滤配置
+    passage: ['passage1', 'passage2'],  // 指定段落名称数组
+    exclude: ['passage3', 'passage4'],  // 排除段落名称数组  
+    match: /pattern/                    // 正则表达式匹配段落名
+  }
+}
+```
+  #### 时间事件使用示例  
+```
+// 中断型事件 - 压力崩溃
+maplebirchFrameworks.addStateEvent('interrupt', 'stress', {
+  output: 'stress-widget',
+  action: () => {
+    V.stress / 5;
+    console.log('压力过大导致崩溃！');
+  },
+  cond: () => V.stress >= V.stressmax;,
+  forceExit: true, // 强制中断当前段落
+});
+
+// 叠加型事件 - 低金钱警告
+maplebirchFrameworks.addStateEvent('overlay', 'low-money-warning', {
+  output: 'moneyWarningWidget',
+  cond: () => V.money < 5,
+});
+```
  ### 时间事件
   #### 时间事件的注册方式
    - 使用 `maplebirchFrameworks.addTimeEvent` 、 `simpleFrameworks.addTimeEvent` 和 `maplebirch.state.regTimeEvent` 任选其一注册时间事件  
@@ -322,7 +378,6 @@ maplebirchFrameworks.addTimeEvent(
   cond: function(enhancedTimeData) { ... },    // 可选：条件检查函数，返回true时触发
   priority: 0,                                 // 可选：事件优先级（数值越大优先级越高）
   once: false,                                 // 可选：是否一次性事件（触发后自动移除）
-  description: '事件描述',                      // 可选：事件描述文本
   accumulate: {                                // 可选：累积触发配置
     unit: 'sec',                               // 累积单位（'sec','min','hour','day','week','month','year'）
     target: 1                                  // 累积目标值
@@ -382,14 +437,12 @@ maplebirchFrameworks.addTimeEvent(
 // 基础事件类型示例
 maplebirchFrameworks.addTimeEvent('onSec', 'sec-counter', {
   action: () => V.secondCounter = (V.secondCounter || 0) + 1,
-  description: '每秒计数器'
 });
 
 maplebirchFrameworks.addTimeEvent('onMin', 'minute-alert', {
   action: () => console.log('又过去了一分钟'),
   cond: () => V.player.awake, // 仅在玩家清醒时触发
   priority: 5,
-  description: '每分钟提示'
 });
 
 // 精确时间点事件
@@ -401,7 +454,6 @@ maplebirchFrameworks.addTimeEvent('onHour', 'dawn-event', {
     }
   },
   exact: true,
-  description: '黎明事件'
 });
 
 // 周期性累积事件
@@ -414,7 +466,6 @@ maplebirchFrameworks.addTimeEvent('onDay', 'fatigue-system', {
     }
   },
   accumulate: { unit: 'hour', target: 1 },
-  description: '疲劳度累积系统'
 });
 
 // 周循环事件
@@ -426,7 +477,6 @@ maplebirchFrameworks.addTimeEvent('onWeek', 'market-day', {
     }
   },
   exact: true,
-  description: '周末集市'
 });
 
 // 月相事件
@@ -438,7 +488,6 @@ maplebirchFrameworks.addTimeEvent('onMonth', 'full-moon', {
     }
   },
   cond: () => Time.hour === 23, // 仅在夜晚触发
-  description: '满月事件'
 });
 
 // 年度事件
@@ -452,7 +501,6 @@ maplebirchFrameworks.addTimeEvent('onYear', 'birthday-event', {
     data.currentDate.month === V.playerBirthMonth && 
     data.currentDate.day === V.playerBirthDay,
   once: false, // 每年重复
-  description: '角色生日'
 });
 
 // 时间旅行事件
@@ -465,7 +513,6 @@ maplebirchFrameworks.addTimeEvent('onTimeTravel', 'time-paradox', {
     }
   },
   priority: 100, // 最高优先级
-  description: '时间悖论检测'
 });
 
 // 复合事件处理
@@ -476,7 +523,6 @@ maplebirchFrameworks.addTimeEvent('onAfter', 'save-autosave', {
       Save.slot.save('auto');
     }
   },
-  description: '自动存档系统'
 });
 
 // 一次性事件示例
@@ -491,7 +537,6 @@ maplebirchFrameworks.addTimeEvent('onDay', 'special-event-2025', {
     data.currentDate.day === 5,
   once: true, // 仅触发一次
   priority: 10,
-  description: '2025年限定事件'
 });
 
 // 带累积的精确事件
@@ -504,7 +549,6 @@ maplebirchFrameworks.addTimeEvent('onMin', 'meditation', {
   },
   accumulate: { unit: 'min', target: 15 },
   exact: true, // 只在整15分钟时触发
-  description: '冥想计时器'
 });
 
 // 条件复杂的事件
@@ -518,7 +562,6 @@ maplebirchFrameworks.addTimeEvent('onHour', 'guard-patrol', {
   },
   cond: () => V.location === 'castle' && V.playerStealth < 30,
   priority: 7,
-  description: '守卫巡逻系统'
 });
 ```
  ### 时间旅行
@@ -1151,6 +1194,7 @@ maplebirchFrameworks.addText('hint_links', t => {
 | `Fame`                  | 知名度显示区域           |
 | `StatusSocial`          | 自定义社交状态区域       |
 | `NPCinit`               | 原版NPC初遇初始化区域    |
+| `NPCspawn`              | 原版NPC入场初始化区域    |
 </details>
 
   #### 添加内容到指定区域
@@ -1740,6 +1784,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
