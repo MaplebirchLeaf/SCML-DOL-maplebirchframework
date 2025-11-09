@@ -329,7 +329,7 @@ maplebirchFrameworks.addStateEvent(
   }
 }
 ```
-  #### 时间事件使用示例  
+  #### 状态事件使用示例  
 ```
 // 中断型事件 - 压力崩溃
 maplebirchFrameworks.addStateEvent('interrupt', 'stress', {
@@ -1784,6 +1784,7 @@ maplebirchFrameworks.addStats({
 ### 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
 
 
