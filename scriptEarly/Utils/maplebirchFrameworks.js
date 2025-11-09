@@ -1,3 +1,5 @@
+// @ts-expect-error
+/// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
   if (!window.maplebirch) return;
@@ -58,9 +60,7 @@
          */
         rename: renameFunc,
 
-        /**
-         * 移动对象属性（rename的别名）
-         */
+        /** 移动对象属性（rename的别名） */
         move: renameFunc,
 
         /**
@@ -359,14 +359,15 @@
      * @param {Array} [tags] - 标签配置
      * @param {boolean} [skipArgs] - 是否跳过参数解析
      */
-    defineMacro(macroName, macroFunction, tags, skipArgs) {
+    defineMacro(macroName, macroFunction, tags, skipArgs, isAsync=false) {
       if (this.Macro.has(macroName)) {
         this.Macro.delete(macroName);
         this.log(`已删除现有宏: ${macroName}`, 'DEBUG');
       }
       const logger = this.log; 
       this.Macro.add(macroName, {
-        isWidget: true,
+        isAsync: isAsync ? true : false,
+        isWidget: isAsync ? false : true,
         tags,
         skipArgs,
         handler() {
@@ -679,6 +680,7 @@
         StatusSocial            : [], // 自定义社交状态
 
         NPCinit                 : [], // 原版NPC初遇初始化(详情看原版initnpc宏)
+        NPCspawn                : [], // 原版NPC出现初始化(详情看原版npc宏)
       };
       this.initFunction = [];
       this.specialWidget = [];
@@ -777,7 +779,6 @@
       const print = {
         start : zone => {
           let html = `<<widget "maplebirch${zone}">>\n\t`;
-
           if (typeof this.default[zone] === 'function') {
             html += `${this.default[zone]()}\n\t`;
           } else if (typeof this.default[zone] === 'string') {
@@ -963,8 +964,8 @@
       const wrappers = {
         'StoryCaption': content => content,
         'PassageHeader': content => `<div id="passage-header">\n${content}\n<<maplebirchHeader>>\n</div>`,
-        'PassageFooter': content => `<div id="passage-footer">\n${content}\n<<maplebirchFooter>>\n</div>`,
-        'default': content => `<div id="passage-content">\n${content}\n</div>`
+        'PassageFooter': content => `<div id="passage-footer">\n<<maplebirchFooter>>\n${content}\n</div>`,
+        'default': content => `<div id="passage-content">\n<<maplebirchMonitor "interrupt">>\n${content}\n<<maplebirchMonitor "overlay">>\n</div>`
       };
       
       const wrapper = wrappers[title] || wrappers.default;

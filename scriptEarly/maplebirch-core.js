@@ -1,9 +1,11 @@
+// @ts-check
+/// <reference path='../maplebirch.d.ts' />
 (async() => {
   'use strict';
   const frameworkVersion = '2.5.0';
   const lastUpdate = '2025.10.29';
   const lastModifiedBy = '楓樺葉';
-  const DEBUGMODE = false;
+  const DEBUGMODE = true;
 
   const ModuleState = {
     PENDING: 0,
@@ -23,14 +25,16 @@
   }
 
   class Logger {
+    /** @type {Object<string, {level: number, tag: string, style: string}>} */
     static LogConfig = {
       DEBUG: { level: 0, tag: '[调试]', style: 'color: #9E9E9E; font-weight: bold;' },
       INFO:  { level: 1, tag: '[信息]', style: 'color: #2E7D32; font-weight: bold;' },
       WARN:  { level: 2, tag: '[警告]', style: 'color: #FF8F00; font-weight: bold;' },
       ERROR: { level: 3, tag: '[错误]', style: 'color: #C62828; font-weight: bold;' }
     };
-
+    /** @type {Object<string|number, string|number>} */
     static LogLevel = (() => {
+      /** @type {Object<string|number, string|number>} */
       const map = {};
       Object.entries(Logger.LogConfig).forEach(([name, cfg]) => {
         map[name] = cfg.level;
@@ -38,13 +42,18 @@
       });
       return map;
     })();
-
+    /** @param {MaplebirchCore} core */
     constructor(core) {
       this.core = core;
       const start = DEBUGMODE ? 'DEBUG' : 'INFO';
       this.level = Logger.LogLevel[start] ?? Logger.LogLevel.INFO;
     }
-
+    /**
+     * 记录日志
+     * @param {string} message 日志消息
+     * @param {string|number} [levelName] 日志级别(字符串或数字)
+     * @param {...any} objects 额外对象
+     */
     log(message, levelName = 'INFO', ...objects) {
       try {
         const lname = ('' + (levelName || 'INFO')).toUpperCase();
@@ -66,20 +75,16 @@
         try { console.error('[Logger] 写日志失败:', e); } catch (_) { }
       }
     }
-
-    setLevel(levelName) {
-      if (!levelName) return false;
+    
+    set LevelName(levelName) {
+      if (!levelName) return;
       const u = ('' + levelName).toUpperCase();
-      if (!(u in Logger.LogConfig)) {
-        this.log(`无效日志级别: ${levelName}`, 'WARN');
-        return false;
-      }
+      if (!(u in Logger.LogConfig)) { this.log(`无效日志级别: ${levelName}`, 'WARN'); return; }
       this.level = Logger.LogConfig[u].level;
       this.log(`日志级别变更为: ${u}`, u);
-      return true;
     }
 
-    getLevelName() {
+    get LevelName() {
       return Logger.LogLevel[this.level] || 'INFO';
     }
   }
@@ -89,7 +94,7 @@
     static DEFAULT_IMPORT_CONCURRENCY = 2;    // 默认并发导入数
     static DEFAULT_BATCH_SIZE = 500;          // 默认批处理大小
     static DEFAULT_PRELOAD_YIELD = 500;       // 默认预加载让步间隔
-
+    /** @param {MaplebirchCore} core */
     constructor(core) {
       this.core = core;
       this.language = this.#detectLanguage();  // 自动检测语言
@@ -108,16 +113,18 @@
     }
 
     #detectLanguage() {
+      // @ts-ignore
       const lang = navigator.language || navigator.userLanguage || 'en';
       return lang.includes('zh') ? 'CN' : 'EN';
     }
-
+    /** 初始化翻译数据库 @returns {Promise<void>} */
     async initDatabase() {
       if (this.db) return;
       try {
         const idbRef = this.core.modUtils.getIdbRef();
         const dbName = 'maplebirch_translations';
         this.db = await idbRef.idb_openDB(dbName, 2, {
+          /** @param {any} db @param {number} oldVersion @param {number} newVersion @param {any} transaction */
           upgrade: (db, oldVersion, newVersion, transaction) => {
             if (!db.objectStoreNames.contains('metadata')) db.createObjectStore('metadata', { keyPath: 'key' });
             if (!db.objectStoreNames.contains('translations')) {
@@ -133,19 +140,24 @@
           }
         });
         this.core.logger.log('翻译数据库初始化成功', 'DEBUG');
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`翻译数据库初始化失败: ${err?.message || err}`, 'ERROR');
         this.db = null;
       }
     }
-
+    /** 设置当前语言 @param {string} lang 语言代码 */
     setLanguage(lang) {
       if (!lang) return;
       this.language = ('' + lang).toUpperCase();
       this.cache.clear();
       this.core.logger.log(`语言设置为: ${this.language}`, 'DEBUG');
     }
-
+    /**
+     * 导入所有语言的翻译文件
+     * @param {string} modName 模块名称
+     * @param {string[]} [languages] 语言列表，默认为 DEFAULT_LANGS
+     * @returns {Promise<boolean>} 是否全部导入成功
+     */
     async importAllLanguages(modName, languages = LanguageManager.DEFAULT_LANGS) {
       if (!this.core.modLoader) { this.core.logger.log('Mod 加载器未设置，无法导入翻译', 'ERROR'); return false; }
       const concurrency = this.#importConcurrency;
@@ -155,6 +167,7 @@
           const formats = ['json', 'yml', 'yaml'];
           let foundAny = false;
           let loadedAny = false;
+          /** @type {Object<string, string>} */
           const allTranslations = {};
           for (const format of formats) {
             const filePath = `translations/${lang.toLowerCase()}.${format}`;
@@ -174,7 +187,7 @@
               Object.assign(allTranslations, data);
               loadedAny = true;
               this.core.logger.log(`成功加载翻译内容: ${filePath}`, 'DEBUG');
-            } catch (err) {
+            } catch (/** @type {any} */err) {
               this.core.logger.log(`加载失败: ${filePath} - ${err?.message || err}`, 'ERROR');
             }
           }
@@ -193,7 +206,13 @@
       }
       return results.every(Boolean);
     }
-
+    /**
+     * 加载指定翻译文件
+     * @param {string} modName 模块名称
+     * @param {string} languageCode 语言代码
+     * @param {string} filePath 文件路径
+     * @returns {Promise<boolean>} 是否成功加载
+     */
     async loadTranslations(modName, languageCode, filePath) {
       if (!this.core.modLoader) { this.core.logger.log('Mod 加载器未设置', 'ERROR'); return false; }
       const modZip = this.core.modLoader.getModZip(modName);
@@ -206,14 +225,14 @@
         if (filePath.endsWith('.json')) {
           try {
             data = JSON.parse(content);
-          } catch (jsonErr) {
+          } catch (/** @type {any} */jsonErr) {
             this.core.logger.log(`JSON 解析失败: ${filePath} - ${jsonErr.message}`, 'ERROR');
             return false;
           }
         } else if (filePath.endsWith('.yml') || filePath.endsWith('.yaml')) {
           try {
             data = yaml.load(content);
-          } catch (yamlErr) {
+          } catch (/** @type {any} */yamlErr) {
             this.core.logger.log(`YAML 解析失败: ${filePath} - ${yamlErr.message}`, 'ERROR');
             return false;
           }
@@ -222,13 +241,13 @@
           return false;
         }
         return await this.#processTranslations(modName, languageCode, data);
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`加载失败: ${modName}/${filePath} - ${err?.message || err}`, 'ERROR');
         return false;
       }
     }
-
-    t(key, space = false) {
+    /** 获取翻译文本 @param {string} key 翻译键名 @param {boolean} [space=false] 是否在英文后添加空格 @returns {string} 翻译后的文本 */
+    t(key, space=false) {
       const rec = this.translations.get(key);
       if (!rec) {
         this.#loadTranslationFromIDB(key);
@@ -238,7 +257,7 @@
       if (this.language === 'EN' && space === true) return result + ' ';
       return result;
     }
-
+    /** 自动翻译文本 @param {string} sourceText 源文本 @returns {string} 翻译后的文本 */
     autoTranslate(sourceText) {
       if (!sourceText) return sourceText;
       if (this.#isCurrentLanguage(sourceText)) return sourceText;
@@ -271,7 +290,7 @@
         }
         this.isPreloaded = true;
         this.core.logger.log(`预加载完成: ${count} 条翻译`, 'INFO');
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`预加载失败: ${err?.message || err}`, 'ERROR');
       }
     }
@@ -288,7 +307,7 @@
         this.fileHashes.clear();
         this.core.logger.log('翻译数据库已清空', 'DEBUG');
         await this.initDatabase();
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`数据库清空失败: ${err?.message || err}`, 'ERROR');
       }
     }
@@ -309,15 +328,23 @@
           if (latest.get(base).key !== rec.key) await store.delete(rec.key);
         }
         this.core.logger.log('清理旧版本翻译数据完成', 'INFO');
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`清理旧版本失败: ${err?.message || err}`, 'ERROR');
       }
     }
-
+    // @ts-ignore
     #importConcurrency;
+    // @ts-ignore
     #batchSize;
+    // @ts-ignore
     #preloadYieldEvery;
-
+    /**
+     * 处理翻译数据
+     * @param {string} modName 模块名称
+     * @param {string} lang 语言代码
+     * @param {Object<string, string>} translations 翻译数据对象
+     * @returns {Promise<boolean>} 处理是否成功
+     */
     async #processTranslations(modName, lang, translations) {
       try {
         const combinedContent = JSON.stringify(translations);
@@ -347,31 +374,42 @@
           const chunk = entries.slice(i, i + this.#batchSize);
           await this.#storeBatchInDB(chunk);
         }
-        const existingKeys = await this.#getExistingKeysForMod(modName, lang);
+        const existingKeys = await this.#getExistingKeysForMod(modName);
         const newKeys = new Set(keys);
         const obsoleteKeys = new Set([...existingKeys].filter(k => !newKeys.has(k)));
-        if (obsoleteKeys.size > 0) await this.#cleanupObsoleteKeys(obsoleteKeys, modName, lang);
+        if (obsoleteKeys.size > 0) await this.#cleanupObsoleteKeys(obsoleteKeys, lang);
         await this.#storeFileHash(modName, lang, fileHash);
         this.core.logger.log(`加载翻译: ${lang} (${keys.length} 项)`, 'DEBUG');
         return true;
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`处理翻译失败: ${modName}/${lang} - ${err?.message || err}`, 'ERROR');
         return false;
       }
     }
-
+    /**
+     * 获取上次文件哈希值
+     * @param {string} modName 模块名称
+     * @param {string} lang 语言代码
+     * @returns {Promise<string|null>} 文件哈希值或null
+     */
     async #getLastFileHash(modName, lang) {
       if (!this.db) return null;
       try {
         const tx = this.db.transaction('metadata', 'readonly');
         const store = tx.objectStore('metadata');
         return (await store.get(`${modName}_${lang}`))?.hash || null;
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`获取文件哈希失败: ${modName}_${lang} - ${err?.message || err}`, 'DEBUG');
         return null;
       }
     }
-
+    /**
+     * 存储文件哈希值
+     * @param {string} modName 模块名称
+     * @param {string} lang 语言代码
+     * @param {string} hash 文件哈希值
+     * @returns {Promise<void>}
+     */
     async #storeFileHash(modName, lang, hash) {
       if (!this.db) return;
       try {
@@ -379,11 +417,15 @@
         const store = tx.objectStore('metadata');
         await store.put({ key: `${modName}_${lang}`, hash, timestamp: Date.now() });
         this.fileHashes.set(`${modName}_${lang}`, hash);
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`存储文件哈希失败: ${err?.message || err}`, 'ERROR');
       }
     }
-
+    /**
+     * 批量存储到数据库
+     * @param {Array<{key: string, translations: Object<string, string>, mod: string}>} entries 翻译条目数组
+     * @returns {Promise<void>}
+     */
     async #storeBatchInDB(entries) {
       if (!this.db || !entries || entries.length === 0) return;
       try {
@@ -394,12 +436,10 @@
           bucket.translations = { ...bucket.translations, ...translations };
           if (mod) bucket.mod = mod;
         }
-
         const tx = this.db.transaction(['translations', 'text_index'], 'readwrite');
         const tStore = tx.objectStore('translations');
         const textStore = tx.objectStore('text_index');
         const keyIndex = textStore.index('key');
-
         const keys = Array.from(map.keys());
         const existingArr = await Promise.all(keys.map(k => tStore.get(k)));
         for (let i = 0; i < keys.length; i++) {
@@ -409,7 +449,6 @@
           const merged = existing ? { ...existing.translations, ...newBucket.translations } : newBucket.translations;
           await tStore.put({ key, translations: merged, mod: newBucket.mod || existing?.mod, timestamp: Date.now() });
         }
-
         for (const key of keys) {
           let cursor = await keyIndex.openCursor(IDBKeyRange.only(key));
           while (cursor) {
@@ -417,26 +456,28 @@
             cursor = await cursor.continue();
           }
         }
-
         for (const key of keys) {
           const translations = map.get(key).translations;
           for (const lang in translations) {
             await textStore.add({ text_value: translations[lang], key, language: lang });
           }
         }
-
         await tx.done;
         this.core.logger.log(`批量存储完成: ${keys.length} 条`, 'DEBUG');
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`批量存储失败: ${err?.message || err}`, 'ERROR');
         try {
           await this.#retryStoreInSmallerChunks(entries);
-        } catch (e) {
+        } catch (/** @type {any} */e) {
           this.core.logger.log(`重试也失败: ${e?.message || e}`, 'ERROR');
         }
       }
     }
-
+    /**
+     * 重试存储小块数据
+     * @param {Array<{key: string, translations: Object<string, string>, mod: string}>} entries 翻译条目数组
+     * @returns {Promise<void>}
+     */
     async #retryStoreInSmallerChunks(entries) {
       const small = Math.max(50, Math.floor(this.#batchSize / 10));
       for (let i = 0; i < entries.length; i += small) {
@@ -445,7 +486,6 @@
         const tStore = tx.objectStore('translations');
         const textStore = tx.objectStore('text_index');
         const keyIndex = textStore.index('key');
-
         for (const { key, translations, mod } of chunk) {
           const existing = await tStore.get(key);
           const merged = existing ? { ...existing.translations, ...translations } : translations;
@@ -463,29 +503,28 @@
       }
       this.core.logger.log(`降级重试批量写入完成`, 'DEBUG');
     }
-
-    async #getExistingKeysForMod(modName, lang) {
+    /** 获取模块的现有键 @param {string} modName 模块名称 @returns {Promise<Set<string>>} 现有键的集合 */
+    async #getExistingKeysForMod(modName) {
       if (!this.db) return new Set();
       try {
         const tx = this.db.transaction('translations', 'readonly');
         const store = tx.objectStore('translations');
         const index = store.index('mod');
         const records = await index.getAll(modName);
-        return new Set(records.map(r => r.key));
-      } catch (err) {
+        return new Set(records.map((/** @type {{key: string}} */r) => r.key));
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`获取现有键失败: ${modName} - ${err?.message || err}`, 'DEBUG');
         return new Set();
       }
     }
-
-    async #cleanupObsoleteKeys(obsoleteKeys, modName, lang) {
+    /** 清理过时的键 @param {Set<string>} obsoleteKeys 过时的键集合 @param {string} lang 语言代码 @returns {Promise<void>} */
+    async #cleanupObsoleteKeys(obsoleteKeys, lang) {
       if (!this.db || obsoleteKeys.size === 0) return;
       try {
         const tx = this.db.transaction(['translations', 'text_index'], 'readwrite');
         const tStore = tx.objectStore('translations');
         const textStore = tx.objectStore('text_index');
         const keyIndex = textStore.index('key');
-
         for (const key of Array.from(obsoleteKeys)) {
           const record = await tStore.get(key);
           if (!record) continue;
@@ -499,20 +538,17 @@
           }
           let cursor = await keyIndex.openCursor(IDBKeyRange.only(key));
           while (cursor) {
-            if (cursor.value.language === lang) {
-              await cursor.delete();
-            }
+            if (cursor.value.language === lang) await cursor.delete();
             cursor = await cursor.continue();
           }
         }
-
         await tx.done;
         this.core.logger.log(`清理过时键: ${obsoleteKeys.size} 个`, 'DEBUG');
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`清理过时键失败: ${err?.message || err}`, 'ERROR');
       }
     }
-
+    /** 从数据库加载翻译 @param {string} key 翻译键名 @returns {Promise<void>} */
     async #loadTranslationFromIDB(key) {
       if (!this.db) return;
       try {
@@ -520,11 +556,11 @@
         const store = tx.objectStore('translations');
         const record = await store.get(key);
         if (record) this.translations.set(key, record.translations || {});
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`加载翻译失败: ${key} - ${err?.message || err}`, 'DEBUG');
       }
     }
-
+    /** 异步查找翻译键 @param {string} text 文本内容 @returns {Promise<void>} */
     async #findKeyByTextAsync(text) {
       if (!this.db) return;
       try {
@@ -536,11 +572,11 @@
           const key = records[0].key;
           this.cache.set(text, key);
         }
-      } catch (err) {
+      } catch (/** @type {any} */err) {
         this.core.logger.log(`查找翻译键失败: ${text} - ${err?.message || err}`, 'DEBUG');
       }
     }
-
+     /** 检查是否为当前语言 @param {string} text 文本内容 @returns {boolean} */
     #isCurrentLanguage(text) {
       if (this.cache.has(text)) {
         const key = this.cache.get(text);
@@ -559,11 +595,12 @@
       batchSize: 15,     // 每批处理监听器数量
       yieldInterval: 1   // 批处理间让步(ms)
     }
-
+    /** @param {MaplebirchCore} core */
     constructor(core) {
       this.core = core;
       this.executionQueue = new Map();
       this.isProcessing = new Map();
+      /** @type {Object<string, Array<{callback: Function, description: string, internalId: string}>>} 事件监听器集合，使用字符串索引签名 */
       this.events = {
         ':coreReady':           [], // (本)框架核心完成
         ':expectedmodulecount': [], // (本)框架模块就绪
@@ -584,7 +621,13 @@
         ':finally':             [], // 最后时机
       };
     }
-
+    /**
+     * 注册事件监听器
+     * @param {string} eventName 事件名称
+     * @param {Function} callback 回调函数
+     * @param {string} [description] 监听器描述
+     * @returns {boolean} 是否注册成功
+     */
     on(eventName, callback, description = '') {
       if (!this.events[eventName]) {
         this.events[eventName] = [];
@@ -602,7 +645,12 @@
       this.core.logger.log(`注册事件监听器: ${eventName}${description ? ` (描述: ${description})` : ''} (当前: ${this.events[eventName].length})`,'DEBUG');
       return true;
     }
-
+    /**
+     * 移除事件监听器
+     * @param {string} eventName 事件名称
+     * @param {Function|string} identifier 监听器标识符
+     * @returns {boolean}
+     */
     off(eventName, identifier) {
       if (!this.events[eventName]) {
         this.core.logger.log(`无效事件名: ${eventName}`, 'WARN');
@@ -625,14 +673,20 @@
       }
       return removed;
     }
-
+    /**
+     * 注册一次性事件监听器
+     * @param {string} eventName 事件名称
+     * @param {Function} callback 回调函数
+     * @param {string} [description] 监听器描述
+     * @returns {boolean} 是否注册成功
+     */
     once(eventName, callback, description = '') {
-      const onceWrapper = (...args) => {
+      const onceWrapper = (/** @type {...any} */ ...args) => {
         try { callback(...args); } finally { this.off(eventName, onceWrapper); }
       };
       return this.on(eventName, onceWrapper, description);
     }
-
+    /** 触发事件 @param {string} eventName 事件名称 @param {...any} args 事件参数 */
     trigger(eventName, ...args) {
       if (!this.events[eventName] || this.events[eventName].length === 0) return;
       const queue = this.executionQueue.get(eventName) || [];
@@ -640,7 +694,7 @@
       this.executionQueue.set(eventName, queue);
       if (!this.isProcessing.get(eventName)) this.#processQueue(eventName);
     }
-
+    /** 处理事件队列 @param {string} eventName 事件名称 @returns {Promise<void>} */
     async #processQueue(eventName) {
       this.isProcessing.set(eventName, true);
       const queue = this.executionQueue.get(eventName);
@@ -650,7 +704,7 @@
         for (let i = 0; i < listeners.length; i += EventEmitter.streamConfig.batchSize) {
           const batch = listeners.slice(i, i + EventEmitter.streamConfig.batchSize);
           await Promise.all(batch.map(listener => {
-            return new Promise(resolve => {
+            return /** @type {Promise<void>} */(new Promise(resolve => {
               try {
                 const result = listener.callback(...eventData.args);
                 if (result instanceof Promise) {
@@ -661,11 +715,11 @@
                 } else {
                   resolve();
                 }
-              } catch (error) {
+              } catch (/** @type {any} */error) {
                 this.core.logger.log(`${eventName}事件处理错误: ${error.message}`, 'ERROR');
                 resolve();
               }
-            });
+            }));
           }));
           if (EventEmitter.streamConfig.yieldInterval > 0) await new Promise(r => setTimeout(r, EventEmitter.streamConfig.yieldInterval));
         }
@@ -679,7 +733,7 @@
       batchSize: 7,     // 批处理大小
       yieldInterval: 1  // 批处理间让步时间(ms)
     }
-
+    /** @param {MaplebirchCore} core */
     constructor(core) {
       this.core = core;
       this.registry = {
@@ -705,7 +759,13 @@
       this.#waitingResolvers = new Map();   // 等待解析器
       this.#depthMemo = new Map();          // 深度计算缓存
     }
-
+    /**
+     * 注册模块
+     * @param {string} name 模块名称
+     * @param {any} module 模块对象
+     * @param {string[]} [dependencies] 依赖列表
+     * @returns {Promise<boolean>} 是否注册成功
+     */
     async register(name, module, dependencies = []) {
       const reg = this.registry;
       if (reg.modules.has(name)) {
@@ -714,6 +774,7 @@
       }
       const moduleDependencies = [...(module.dependencies || []), ...dependencies];
       const allDependencies = new Set();
+      /** 递归收集依赖 @param {string} depName 依赖名称 @param {Set<string>} [visited] 已访问的依赖集合 */
       const collectDependencies = (depName, visited = new Set()) => {
         if (visited.has(depName)) return;
         visited.add(depName);
@@ -753,18 +814,19 @@
           if (reg.states.get(moduleName) === ModuleState.PENDING) setTimeout(() => this.#initModule(moduleName), 0);
         });
       }
-
       return true;
     }
-
+    /** 设置预期模块数量 @param {number} count 预期模块数量 */
     setExpectedModuleCount(count) {
       this.initPhase.expectedModuleCount = count;
       this.#checkModuleRegistration();
     }
-
+    
     getDependencyGraph() {
       const reg = this.registry;
+      /** @type {Object<string, {dependencies: string[], dependents: string[], state: string, allDependencies: string[]}>} */
       const graph = {};
+      /** @type {Object<number, string>} */
       const StateName = {
         0: 'PENDING',
         1: 'MOUNTED',
@@ -812,7 +874,7 @@
               const result = module.loadInit();
               if (result instanceof Promise) await result;
               this.core.logger.log(`[${name}] 读档初始化完成`, 'DEBUG');
-            } catch (error) {
+            } catch (/** @type {any} */error) {
               this.core.logger.log(`${name} 读档初始化失败: ${error.message}`, 'ERROR');
             }
           }
@@ -838,7 +900,7 @@
               const result = module.postInit();
               if (result instanceof Promise) await result;
               this.core.logger.log(`[${name}] 后初始化完成`, 'DEBUG');
-            } catch (error) {
+            } catch (/** @type {any} */error) {
               this.core.logger.log(`${name} 后初始化失败: ${error.message}`, 'ERROR');
             }
           }
@@ -861,7 +923,7 @@
         this.initPhase.allModuleRegisteredTriggered = true;
       }
     }
-
+    /** 等待模块初始化完成 @param {string} moduleName 模块名称 @returns {Promise<void>} */
     #waitForModule(moduleName) {
       const reg = this.registry;
       if (this.preInitialized.has(moduleName) || reg.states.get(moduleName) === ModuleState.MOUNTED || reg.states.get(moduleName) === ModuleState.ERROR) return Promise.resolve();
@@ -870,14 +932,19 @@
         this.#waitingResolvers.get(moduleName).push(resolve);
       });
     }
-
+    /** 解析等待器 @param {string} moduleName 模块名称 */
     #resolveWaiters(moduleName) {
       const list = this.#waitingResolvers.get(moduleName);
       if (!list) return;
       for (const res of list) try { res(); } catch (e) {}
       this.#waitingResolvers.delete(moduleName);
     }
-
+    /**
+     * 检查模块依赖
+     * @param {string} moduleName 模块名称
+     * @param {boolean} [isPreInit] 是否为预初始化
+     * @returns {Promise<boolean>} 依赖是否就绪
+     */
     async #checkDependencies(moduleName, isPreInit = false) {
       const reg = this.registry;
       const dependencies = [...(reg.allDependencies.get(moduleName) || [])];
@@ -909,7 +976,12 @@
         await new Promise(resolve => setTimeout(resolve, ModuleManager.streamConfig.yieldInterval));
       }
     }
-
+    /**
+     * 初始化单个模块
+     * @param {string} moduleName 模块名称
+     * @param {boolean} isPreInit 是否为预初始化
+     * @returns {Promise<boolean>} 是否初始化成功
+     */
     async #initModule(moduleName, isPreInit = false) {
       const reg = this.registry;
       const module = reg.modules.get(moduleName);
@@ -926,7 +998,7 @@
           if (result instanceof Promise) await result;
         }
         if (isPreInit) {
-          if (this.core.meta.coreModules?.includes(moduleName)) this.core[moduleName] = module;
+          if (this.core.meta.coreModules?.includes(moduleName))  /** @type {any} */(this.core)[moduleName] = module;
           this.preInitialized.add(moduleName);
         } else {
           reg.states.set(moduleName, ModuleState.MOUNTED);
@@ -939,33 +1011,36 @@
         return false;
       }
     }
-
+    /** 获取拓扑排序顺序 @returns {string[]} 拓扑排序后的模块名称数组 */
     #getTopologicalOrder() {
       const reg = this.registry;
       const inDegree = new Map();
+      /** @type {string[]} 队列 */
       const queue = [];
       const result = [];
-
       reg.modules.forEach((_, name) => {
         const deg = reg.dependencies.get(name)?.size || 0;
         inDegree.set(name, deg);
         if (deg === 0) queue.push(name);
       });
-
       let head = 0;
       while (head < queue.length) {
         const name = queue[head++];
         result.push(name);
-        (reg.dependents.get(name) || []).forEach(dep => {
+        (reg.dependents.get(name) || []).forEach((/** @type {string} */dep) => {
           const deg = inDegree.get(dep) - 1;
           inDegree.set(dep, deg);
           if (deg === 0) queue.push(dep);
         });
       }
-
       return result;
     }
-
+    /**
+     * 检测循环依赖
+     * @param {string} startName 起始模块名称
+     * @param {string[]} dependencies 依赖列表
+     * @returns {boolean} 是否存在循环依赖
+     */
     #detectCircularDependency(startName, dependencies) {
       const reg = this.registry;
       const visited = new Set();
@@ -973,7 +1048,7 @@
       const graph = new Map();
       reg.modules.forEach((_, nm) => graph.set(nm, Array.from(reg.dependencies.get(nm) || [])));
       if (!graph.has(startName)) graph.set(startName, dependencies || []);
-
+      /** 深度优先搜索函数 @param {string} node 当前节点 @returns {boolean} 是否检测到循环依赖 */
       const dfs = node => {
         if (onStack.has(node)) return true;
         if (visited.has(node)) return false;
@@ -984,14 +1059,13 @@
         onStack.delete(node);
         return false;
       };
-
       if (dfs(startName)) {
         this.core.logger.log(`循环依赖检测到: ${startName}`, 'ERROR');
         return true;
       }
       return false;
     }
-
+    /** 获取模块深度 @param {string} moduleName 模块名称 @returns {number} 模块深度 */
     #getModuleDepth(moduleName) {
       if (this.#depthMemo.has(moduleName)) return this.#depthMemo.get(moduleName);
       const deps = this.registry.dependencies.get(moduleName) || new Set();
@@ -1030,6 +1104,7 @@
         coreModules: ['state', 'audio', 'tool', 'var', 'npc', 'char', 'shop'],
         initializedAt: new Date().toLocaleString(),
       };
+      /** @type {string[]} */
       this.modList = [];
       this.logger = new Logger(this);
       this.lang = new LanguageManager(this);
@@ -1039,27 +1114,27 @@
       this.modUtils = null;
       this.onLoad = false;
     }
-
+    /** @param {string} msg @param {any[]} objs */
     log(msg, level = 'INFO', ...objs) {
       this.logger.log(msg, level, ...objs);
-    }
-    
+    }  
+    /** @param {string} evt @param {Function} handler */
     on(evt, handler, desc = '') {
       return this.events.on(evt, handler, desc);
     }
-    
+    /** @param {string} evt @param {string|Function} identifier */
     off(evt, identifier) {
       return this.events.off(evt, identifier);
     }
-    
+    /** @param {string} evt @param {Function} handler */
     once(evt, handler, desc = '') {
       return this.events.once(evt, handler, desc);
-    }
-    
+    }    
+    /** @param {string} evt @param {...any} args */
     trigger(evt, ...args) {
       this.events.trigger(evt, ...args);
     }
-    
+    /** @param {string} name @param {any} module @param {string[]} [dependencies] */
     async register(name, module, dependencies = []) {
       return this.modules.register(name, module, dependencies);
     }
@@ -1079,15 +1154,15 @@
     async postInit() {
       return this.modules.postInit();
     }
-
+    /** @param {string} key @param {boolean} [space=false] */
     t(key, space = false) {
       return this.lang.t(key, space);
     }
-
+    /** @param {string} text */
     autoTranslate(text) {
       return this.lang.autoTranslate(text);
     }
-
+    /** @param {any} modLoader @param {any} modUtils */
     setModLoader(modLoader,  modUtils) {
       this.modLoader = modLoader;
       this.modUtils = modUtils;
@@ -1100,14 +1175,14 @@
     }
 
     set LogLevel(level) {
-      this.logger.setLevel(level);
+      this.logger.LevelName = level;
     }
-
+    /** @param {number} count */
     set ExModCount(count) {
       this.logger.log(`设置预期模块数量: ${count}`, 'DEBUG');
       this.modules.setExpectedModuleCount(count);
-    }
-    
+    }    
+    /** @param {any} name */
     getModule(name) {
       return this.modules.registry.modules.get(name);
     }
@@ -1117,7 +1192,7 @@
     }
 
     get LogLevel() {
-      return this.logger.getLevelName();
+      return this.logger.LevelName;
     }
 
     get expectedModuleCount() {
@@ -1144,7 +1219,7 @@
     maplebirch.log(`核心系统创建完成 (v${MaplebirchCore.meta.version})\n初始化时间: ${maplebirch.meta.initializedAt}\n开始设置初始化流程`, 'INFO');
     maplebirch.log('初始化内置监听', 'DEBUG');
     $(document).on(':oncloseoverlay', () => maplebirch.trigger(':oncloseoverlay'));
-    $(document).on(':passageinit', (ev) => maplebirch.trigger(':passageinit' , ev));
+    $(document).on(':passageinit', (/** @type {any} */ev) => maplebirch.trigger(':passageinit' , ev));
     $(document).on(':passagestart', () => maplebirch.trigger(':passagestart'));
     $(document).on(':passagerender', () => maplebirch.trigger(':passagerender'));
     $(document).on(':passagedisplay', () => maplebirch.trigger(':passagedisplay'));
@@ -1166,7 +1241,7 @@
       maplebirch.trigger(':dataImport');
     });
 
-    maplebirch.on(':passageinit', async (ev) => {
+    maplebirch.on(':passageinit', async (/** @type {{ passage: any; }} */ev) => {
       const passage = ev.passage;
       if (!passage || passage.tags.includes('widget')) return;
       if (passage.title == 'Start' || passage.title == 'Downgrade Waiting Room') return;

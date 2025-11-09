@@ -270,13 +270,7 @@
           this.#updateTwineStatus(`正在导航到: ${passage}...`, true);
           setTimeout(() => {
             try {
-              if (SugarCube.Engine?.play) {
-                SugarCube.Engine.play(passage);
-              } else if (SugarCube.Story?.show) {
-                SugarCube.Story.show(passage);
-              } else {
-                throw new Error('导航API不可用');
-              }
+              SugarCube.Engine.play(passage);
             } catch (err) {
               console.error('导航失败:', err);
               this.#updateTwineStatus(`导航失败: ${err.message}`, false);

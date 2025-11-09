@@ -1,4 +1,5 @@
-// 此处来源于Dom罗宾模组
+// @ts-check
+/// <reference path='../maplebirch.d.ts' />
 (async() => {
   'use strict';
   if (!window.maplebirch) return;
@@ -50,7 +51,7 @@
     const JournalTwinePath = 'Widgets Journal';
     const modify = passageData.get(JournalTwinePath);
     const regex = /<<print\s*("It is "\s*\+\s*getFormattedDate\(Time\.date\)\s*\+\s*",\s*"\s*\+\s*Time\.year\s*\+\s*"\."|"今天是"\s*\+\s*Time\.year\s*\+\s*"年"\s*\+\s*getFormattedDate\(Time\.date\)\s*\+\s*"。"|ordinalSuffixOf\(Time\.monthDay\)\s*\+\s*"\s*"\s*\+\s*Time\.monthName\.slice\(0,3\)|Time\.month\s*\+\s*"月"\s*\+\s*ordinalSuffixOf\(Time\.monthDay\)\s*\+\s*"日")\s*>>/;
-    if (regex.test(modify.content)) modify.content = modify.content.replace(regex,`<<= maplebirch.state.updateTimeLanguage('JournalTime')>>`);
+    if (regex.test(modify.content)) modify.content = modify.content.replace(regex,`<<= maplebirch.state.TimeManager.updateTimeLanguage('JournalTime')>>`);
     passageData.set(JournalTwinePath, modify);
     SCdata.passageDataItems.back2Array();
     addonTweeReplacer.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);  
@@ -70,18 +71,23 @@
   }
 
   class MaplebirchFrameworkAddon {
+    /** @param {maplebirch} core @param {modSC2DataManager} gSC2DataManager @param {modUtils} gModUtils */
     constructor(core, gSC2DataManager, gModUtils) {
       this.core = core;
       this.gSC2DataManager = gSC2DataManager;
       this.gModUtils = gModUtils;
       this.addonTweeReplacer = addonTweeReplacer;
       this.addonReplacePatcher = addonReplacePatcher;
+      /** @type {{ modifyWeatherJavaScript: () => any; }} */
+      this.modifyWeather;
       maplebirch.trigger(':beforePatch', this);
       this.info = new Map();
       this.logger = gModUtils.getLogger();
       this.gModUtils.getAddonPluginManager().registerAddonPlugin('maplebirch', 'maplebirchAddon', this);
       this.supportedConfigs = ['language', 'audio', 'framework', 'npc', 'shop', 'npcSidebar'];
+      /** @type {Object<any, {modName: string, mod: any, modZip: any}>} */
       this.queue = {};
+      /** @type {Object<string, boolean>} */
       this.processed = {};
       this.supportedConfigs.forEach(type => {
         this.queue[type] = [];
@@ -99,17 +105,19 @@
 
     async #vanillaDataReplace() {
       this.core.log('开始执行正则替换', 'DEBUG');
-      await modifyOptionsDateFormat();
-      await modifyJournalTime();
-      await joinNPCSidebar();
-      await this.modifyWeather.modifyWeatherJavaScript();
+      try { await modifyOptionsDateFormat(); } catch (e) { this.core.log('modifyOptionsDateFormat 出错', 'ERROR'); }
+      try { await modifyJournalTime(); } catch (e) { this.core.log('modifyJournalTime 出错', 'ERROR'); }
+      try { await joinNPCSidebar(); } catch (e) { this.core.log('joinNPCSidebar 出错', 'ERROR'); }
+      try { await this.modifyWeather.modifyWeatherJavaScript(); } catch (e) { this.core.log('modifyWeatherJavaScript 出错', 'ERROR'); }
     }
 
+    /** @param {{ bootJson: { addonPlugin: any[]; }; }} modInfo */
     #getModConfig(modInfo) {
       const pluginConfig = modInfo.bootJson.addonPlugin?.find(p => p.modName === 'maplebirch' && p.addonName === 'maplebirchAddon');
       return pluginConfig || {};
     }
 
+    /** @param {string} addonName @param {{ name?: string; bootJson: { addonPlugin: any[]; }; }} mod @param {any} modZip */
     async registerMod(addonName, mod, modZip) {
       this.info.set(mod.name, {
         addonName: addonName,
@@ -137,13 +145,17 @@
 
     async beforePatchModToGame() {
       await this.#vanillaDataReplace();
-      await this.#processShop();
-      await this.#processLanguage();
-      await this.#processAudio();
-      await this.#processFramework();
-      await this.#processNpc();
-      await this.#processNpcSidebar();
+      await this.#processInit();
       await this.core.shop.beforePatchModToGame();
+    }
+
+    async #processInit() {
+      try { await this.#processShop(); } catch (/** @type {any} */e) { this.core.log(`商店处理过程失败: ${e.message}`, 'ERROR'); }
+      try { await this.#processLanguage(); } catch (/** @type {any} */e) { this.core.log(`语言处理过程失败: ${e.message}`, 'ERROR'); }
+      try { await this.#processAudio(); } catch (/** @type {any} */e) { this.core.log(`音频处理过程失败: ${e.message}`, 'ERROR'); }
+      try { await this.#processFramework(); } catch (/** @type {any} */e) { this.core.log(`框架处理过程失败: ${e.message}`, 'ERROR'); }
+      try { await this.#processNpc(); } catch (/** @type {any} */e) { this.core.log(`NPC处理过程失败: ${e.message}`, 'ERROR'); }
+      try { await this.#processNpcSidebar(); } catch (/** @type {any} */e) { this.core.log(`NPC侧边栏处理过程失败: ${e.message}`, 'ERROR'); }
     }
 
     async #processLanguage() {
@@ -168,7 +180,7 @@
           }
         }
         this.processed.language = true;
-      } catch (e) {
+      } catch (/** @type {any} */e) {
         this.core.log(`语言配置处理失败: ${e.message}`, 'ERROR');
       }
     }
@@ -189,7 +201,7 @@
           }
         }
         this.processed.audio = true;
-      } catch (e) {
+      } catch (/** @type {any} */e) {
         this.core.log(`音频配置处理失败: ${e.message}`, 'ERROR');
       }
     }
@@ -199,21 +211,24 @@
       try {
         for (const task of this.queue.framework) {
           const { modName, config } = task;
-          if (config.traits) this.#handleTraits(modName, config.traits);
-          if (Array.isArray(config)) {
-            config.forEach(item => {
-              if (item.addto && item.widget) this.#addWidgetWithConditions(modName, item.addto, item.widget);
-            });
-          } else if (typeof config === 'object' && config.addto && config.widget) {
-            this.#addWidgetWithConditions(modName, config.addto, config.widget);
+          const configs = Array.isArray(config) ? config : [config];
+          for (const singleConfig of configs) {
+            if (singleConfig.traits) {
+              this.#handleTraits(modName, singleConfig.traits);
+            } else if (singleConfig.addto && singleConfig.widget) {
+              this.#addWidgetWithConditions(modName, singleConfig.addto, singleConfig.widget);
+            } else {
+              this.core.log(`模块 ${modName} 的框架配置格式无效: ${JSON.stringify(singleConfig)}`, 'WARN');
+            }
           }
         }
         this.processed.framework = true;
-      } catch (e) {
+      } catch (/** @type {any} */e) {
         this.core.log(`框架配置处理失败: ${e.message}`, 'ERROR');
       }
     }
 
+    /** @param {string} modName 模块名称 @param {string|object} zone 目标区域 @param {string|Object<string, {widget: string,exclude: string[], match: RegExp, passage: string[]}>} widget 部件配置 */
     #addWidgetWithConditions(modName, zone, widget) {
       if (typeof widget === 'string') {
         this.core.log(`为Mod ${modName}添加部件到区域: ${zone} (${widget})`, 'DEBUG');
@@ -231,14 +246,20 @@
       }
     }
 
+    /** 
+     * 处理特质配置
+     * @param {string} modName 模块名称
+     * @param {Array<any>} traitsConfig 特质配置数组
+     */
     #handleTraits(modName, traitsConfig) {
-      if (Array.isArray(traitsConfig)) {
-        traitsConfig.forEach(trait => this.#addTrait(modName, trait));
-      } else if (typeof traitsConfig === 'object') {
-        this.#addTrait(traitsConfig);
+      if (!traitsConfig || !Array.isArray(traitsConfig) || traitsConfig.length === 0) {
+        this.core.log(`模块 ${modName} 的特质配置无效或为空`, 'DEBUG');
+        return;
       }
+      traitsConfig.forEach(trait => this.#addTrait(trait));
     }
 
+    /** @param {{ title: string|Function; name: string|Function; colour: string|Function; has: boolean|Function; text: string|Function; }} traitConfig */
     #addTrait(traitConfig) {
       const { title, name, colour, has, text } = traitConfig;
       if (!title || !name) { this.core.log(`无效的特质配置: ${JSON.stringify(traitConfig)}`, 'WARN'); return;}
@@ -280,7 +301,7 @@
           });
         }
         this.processed.npc = true;
-      } catch (e) {
+      } catch (/** @type {any} */e) {
         this.core.log(`NPC 配置处理失败: ${e.message}`, 'ERROR');
       }
     }
@@ -300,7 +321,7 @@
           }
         }
         this.processed.shop = true;
-      } catch (e) {
+      } catch (/** @type {any} */e) {
         this.core.log(`商店配置处理失败: ${e.message}`, 'ERROR');
       }
     }
@@ -308,19 +329,21 @@
     async #processNpcSidebar() {
       if (this.processed.npcSidebar || this.queue.npcSidebar.length === 0) return;
       try {
+        /** @type {Object<string,Set<string>>} */
         const npcDisplay = {};
         for (const task of this.queue.npcSidebar) {
           const { modName, modZip, config } = task;
           if (!Array.isArray(config)) continue;
+          /** @type {string[]} */
           const modImages = [];
           config.forEach(npcSidebar => {
             const npcName = this.core.tool.convert(npcSidebar.name, 'capitalize');
             if (!npcName) return;
             if (!npcDisplay[npcName]) npcDisplay[npcName] = new Set();
-            npcSidebar.imgFile.forEach(imgPath => {
-              const extractFileName = (path) => {
+            npcSidebar.imgFile.forEach((/** @type {string} */imgPath) => {
+              const extractFileName = (/** @type {string} */path) => {
                 if (!path) return null;
-                const baseName = path.split('/').pop();
+                const baseName = /** @type {string} */(path.split('/').pop());
                 return baseName.split('.')[0];
               };
               const fileName = extractFileName(imgPath);
@@ -334,11 +357,12 @@
         }
         this.core.npc.Sidebar.display = npcDisplay;
         this.processed.npcSidebar = true;
-      } catch (e) {
+      } catch (/** @type {any} */e) {
         this.core.log(`npcSidebar 处理失败: ${e.message}`, 'ERROR');
       }
     }
 
+    /** @param {string} modName @param {any} modZip @param {string[]} imgPaths */
     async #injectBSAImages(modName, modZip, imgPaths) {
       try {
         const imgs = [];
@@ -355,29 +379,23 @@
               gif: 'image/gif',
               webp: 'image/webp',
               svg: 'image/svg+xml'
-            }[imgPath.split('.').pop().toLowerCase()] || 'image/png';
+            }[/** @type {string} */(imgPath.split('.').pop()?.toLowerCase())] || 'image/png';
             const dataUrl = `data:${mimeType};base64,${base64Data}`;
-            imgs.push({
-              path: imgPath,
-              getter: {
-                getBase64Image: async () => dataUrl,
-                invalid: false
-              }
-            });
-          } catch (e) {
+            imgs.push({ path: imgPath, getter: { getBase64Image: async () => dataUrl, invalid: false } });
+          } catch (/** @type {any} */e) {
             this.core.log(`加载图片失败: ${imgPath} - ${e.message}`, 'WARN');
           }
         }
         if (imgs.length === 0) return;
         await addonBeautySelectorAddon.registerMod(
-          "BeautySelectorAddon",
+          'BeautySelectorAddon',
           {
             name: 'maplebirch',
             bootJson: {
               addonPlugin: [
                 {
-                  modName: "BeautySelectorAddon",
-                  addonName: "BeautySelectorAddon",
+                  modName: 'BeautySelectorAddon',
+                  addonName: 'BeautySelectorAddon',
                   params: { type: `npc-sidebar-[${modName}]` }
                 }
               ]
@@ -387,7 +405,7 @@
           modZip
         );
         this.core.log(`成功注册 ${modName} 的 ${imgs.length} 个 NPC 侧边栏图片`, 'DEBUG');
-      } catch (e) {
+      } catch (/** @type {any} */e) {
         this.core.log(`注册 ${modName} 的 NPC 侧边栏图片失败: ${e.message}`, 'ERROR');
       }
     }

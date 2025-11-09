@@ -26,38 +26,55 @@
 
     _languageButton() {
       try {
-        if (!this.args || this.args.length === 0) return this.error('<<langbutton>> 需要至少一个参数（翻译键或翻译函数调用）');
+        if (!this.args || this.args.length === 0) return this.error('<<langbutton>> 需要至少一个参数');
         const arg = this.args[0];
         let buttonText = '';
         let translationKey = '';
         let convertMode = null;
-        if (this.args.length > 1 && typeof this.args[1] === 'string') convertMode = this.args[1];
+        let $image = null;
         if (typeof arg === 'string') {
           translationKey = arg;
+          convertMode = this.args.length > 1 ? this.args[1] : null;
           buttonText = processHandling.getTranslation(translationKey, maplebirch);
-        } else if (typeof arg === 'function') {
-          try {
-            buttonText = arg();
-            const match = arg.toString().match(/t\(['"]([^'"]+)['"]/);
-            translationKey = match ? match[1] : 'dynamic';
-          } catch (e) {
-            return this.error(`<<langbutton>> 函数调用失败: ${e.message}`);
-          }
-        } else {
-          return this.error('<<langbutton>> 参数必须是字符串或翻译函数');
         }
-        if (convertMode) buttonText = maplebirch.tool.convert(buttonText, convertMode);
-        const payloadContent = this.payload[0]?.contents ?? '';
-        const $output = $(this.output);
-        let buttonCall = `<<button "${buttonText.replace(/"/g, '\\"')}">>`;
-        buttonCall += payloadContent;
-        buttonCall += '<</button>>';
-        const $tempContainer = $('<div style="display:none;"></div>').appendTo($output);
-        new Wikifier($tempContainer[0], buttonCall);
-        const $button = $tempContainer.find('button');
-        $button.attr('data-translation-key', translationKey);
-        $output.append($button);
-        $tempContainer.remove();
+        else if (typeof arg === 'object') {
+          if (arg.isImage) {
+            $image = jQuery(document.createElement('img')).attr('src', arg.source);
+            if (arg.passage) $image.attr('data-passage', arg.passage);
+            if (arg.title) $image.attr('title', arg.title);
+            if (arg.align) $image.attr('align', arg.align);
+            translationKey = `image:${arg.source}`;
+            convertMode = this.args.length > 1 ? this.args[1] : null;
+          } else if (arg.text) {
+            translationKey = arg.text;
+            convertMode = this.args.length > 1 ? this.args[1] : null;
+            buttonText = processHandling.getTranslation(translationKey, maplebirch);
+          } else {
+            return this.error('<<langbutton>> 不支持的参数对象类型');
+          }
+        }
+        else {
+          return this.error('<<langbutton>> 参数必须是字符串、函数或对象');
+        }
+
+        if (convertMode && buttonText) buttonText = maplebirch.tool.convert(buttonText, convertMode);
+
+        const $button = jQuery(document.createElement('button')).addClass('macro-button link-internal').attr('data-translation-key', translationKey);
+
+        if ($image) { $button.append($image).addClass('link-image'); }
+        else { $button.append(document.createTextNode(buttonText)); }
+
+        const payloadContent = this.payload[0]?.contents?.trim() || '';
+        const macroThis = this;
+
+        $button.ariaClick({
+          namespace: '.macros',
+          role: 'button',
+          one: false
+        }, this.createShadowWrapper(
+          payloadContent ? () => { Wikifier.wikifyEval(payloadContent, macroThis.passageObj); } : null
+        ));
+        $button.appendTo(this.output);
       } catch (e) {
         console.error('<<langbutton>> 宏处理错误', e);
         return this.error(`<<langbutton>> 执行错误: ${e.message}`);
@@ -66,44 +83,76 @@
 
     _languageLink() {
       try {
-        if (!this.args || this.args.length === 0) return this.error('<<langlink>> 需要至少一个参数（翻译键或翻译函数调用）');
+        if (!this.args || this.args.length === 0) return this.error('<<langlink>> 需要至少一个参数');
+
         const arg = this.args[0];
         let linkText = '';
         let translationKey = '';
         let passageName = null;
         let convertMode = null;
+        let $image = null;
+
         if (typeof arg === 'string') {
           translationKey = arg;
           passageName = this.args.length > 1 ? this.args[1] : null;
           convertMode = this.args.length > 2 ? this.args[2] : null;
           linkText = processHandling.getTranslation(translationKey, maplebirch);
-        } else if (typeof arg === 'function') {
-          try {
-            linkText = arg();
-            const match = arg.toString().match(/t\(['"]([^'"]+)['"]/);
-            translationKey = match ? match[1] : 'dynamic';
-            passageName = this.args.length > 1 ? this.args[1] : null;
-            convertMode = this.args.length > 2 ? this.args[2] : null;
-          } catch (e) {
-            return this.error(`<<langlink>> 函数调用失败: ${e.message}`);
-          }
-        } else {
-          return this.error('<<langlink>> 参数必须是字符串或翻译函数');
         }
-        if (convertMode) linkText = maplebirch.tool.convert(linkText, convertMode);
-        const payloadContent = this.payload[0]?.contents ?? '';
-        const $output = $(this.output);
-        let linkCall = `<<link "${linkText.replace(/"/g, '\\"')}"`;
-        if (passageName) linkCall += ` "${passageName}"`;
-        linkCall += '>>';
-        linkCall += payloadContent;
-        linkCall += '<</link>>';
-        const $tempContainer = $('<div style="display:none;"></div>').appendTo($output);
-        new Wikifier($tempContainer[0], linkCall);
-        const $link = $tempContainer.find('a.link-internal');
-        $link.attr('data-translation-key', translationKey);
-        $output.append($link);
-        $tempContainer.remove();
+        else if (typeof arg === 'object') {
+          if (arg.isImage) {
+            $image = jQuery(document.createElement('img')).attr('src', arg.source);
+
+            if (arg.passage) $image.attr('data-passage', arg.passage);
+            if (arg.title) $image.attr('title', arg.title);
+            if (arg.align) $image.attr('align', arg.align);
+
+            passageName = arg.link;
+            translationKey = `image:${arg.source}`;
+            convertMode = this.args.length > 1 ? this.args[1] : null;
+          }
+          else if (arg.link) {
+            translationKey = arg.text;
+            passageName = arg.link;
+            convertMode = this.args.length > 1 ? this.args[1] : null;
+            linkText = processHandling.getTranslation(translationKey, maplebirch);
+          }
+          else {
+            return this.error('<<langlink>> 不支持的参数对象类型');
+          }
+        }
+        else {
+          return this.error('<<langlink>> 参数必须是字符串、函数或链接对象');
+        }
+
+        if (convertMode && linkText) linkText = maplebirch.tool.convert(linkText, convertMode);
+
+        const $link = jQuery(document.createElement('a')).addClass('macro-link link-internal').attr('data-translation-key', translationKey);
+
+        if ($image) { $link.append($image).addClass('link-image'); }
+        else { $link.append(document.createTextNode(linkText)); }
+
+        if (passageName != null) {
+          $link.attr('data-passage', passageName);
+          if (maplebirch.SugarCube.Story.has(passageName)) {
+            if (maplebirch.SugarCube.Config.addVisitedLinkClass && maplebirch.SugarCube.State.hasPlayed(passageName)) $link.addClass('link-visited');
+          } else {
+            $link.addClass('link-broken');
+          }
+        }
+
+        const payloadContent = this.payload[0]?.contents?.trim() || '';
+        const macroThis = this;
+
+        $link.ariaClick({
+          namespace: '.macros',
+          role: passageName != null ? 'link' : 'button',
+          one: passageName != null
+        }, this.createShadowWrapper(
+          payloadContent ? () => { Wikifier.wikifyEval(payloadContent, macroThis.passageObj); } : null,
+          passageName != null ? () => maplebirch.SugarCube.Engine.play(passageName) : null
+        ));
+        $link.appendTo(this.output);
+
       } catch (e) {
         console.error('<<langlink>> 宏处理错误', e);
         return this.error(`<<langlink>> 执行错误: ${e.message}`);
@@ -185,7 +234,7 @@
     }
 
     _showModVersions() {
-      const html = `<div id="modversions">Maplebirch Framework v${maplebirch.constructor.meta.version} | </div>`;
+      const html = `<div id="modversions">Maplebirch Framework v${maplebirch.constructor.meta.version}|${maplebirch.t('Dependence')}:${maplebirch.modList.length}</div>`;
       return html;
     }
 
@@ -294,8 +343,8 @@
       }, { layer: 'base', element: 'bloodmoon_snow' });
 
       maplebirch.once(':definewidget', () => {
-        this.tool.widget.defineMacro('langbutton', this._languageButton, null, false);
-        this.tool.widget.defineMacro('langlink', this._languageLink, null, false);
+        this.tool.widget.defineMacro('langbutton', this._languageButton, null, false, true);
+        this.tool.widget.defineMacro('langlink', this._languageLink, null, false, true);
         this.tool.widget.defineMacro('radiobuttonsfrom', this._radiobuttonsfrom);
         this.tool.widget.defineMacro('maplebirchTextOutput', this.tool.text.makeMacroHandler());
         this.tool.widget.defineMacroS('maplebirchFrameworkVersions', this._showModVersions);

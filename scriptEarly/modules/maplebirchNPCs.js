@@ -8,6 +8,16 @@
   const maplebirch = window.maplebirch;
 
   class NPCcreator {
+    // 童贞类型
+    static virginityTypes = {
+      anal:         true, // 肛门
+      oral:         true, // 口腔
+      penile:       true, // 阴茎
+      vaginal:      true, // 阴道
+      handholding:  true, // 牵手
+      temple:       false,// 神殿
+      kiss:         true, // 接吻
+    }
     // 基本命名NPC数据
     static baseNamedNPC = {
       penis : 0         , // 阴茎
@@ -44,7 +54,7 @@
         vagina: ""      , // 阴道童贞
         anus: ""        , // 肛门童贞
       },
-      virginity: {}     , // 贞洁
+      virginity: NPCcreator.virginityTypes,   // 贞洁
     }
 
     // 不安感 力量-外貌-道德-技术
@@ -77,17 +87,6 @@
         EN: { he: "they", his: "their", hers: "theirs", him: "them", himself: "themselves", man: "people", boy: "kids", men: "everyone" }
       }
     };
-
-    // 童贞类型
-    static virginityTypes = {
-      anal:         true, // 肛门
-      oral:         true, // 口腔
-      penile:       true, // 阴茎
-      vaginal:      true, // 阴道
-      handholding:  true, // 牵手
-      temple:       false,// 神殿
-      kiss:         true, // 接吻
-    }
 
     /**
      * 向NPC管理器中添加一个新NPC角色
@@ -476,7 +475,7 @@
       NPCUtils.updateNPCdata(this);
       NPCUtils.processSetup(this);
       NPCUtils.updateCNPCProxy(this);
-      this.Sidebar.init();
+      this.Sidebar.init(false);
     }
 
     #mergeConfigs(base, mod) {
@@ -545,8 +544,8 @@
       V.NPCName[idx][Object.keys(maplebirch.npc.customStats)] = 0;
     }
 
-    #npcList(maxValue) {
-      NPCUtils.npcList(this, maxValue);
+    NPCSpawn(...args) {
+      NPCUtils.npcList(this, args[1]+1);
     }
 
     preInit() {
@@ -560,13 +559,11 @@
 
     Init() {
       NPCUtils.setupNpcData(this, 'init');
-      this.#npcList();
     }
 
     loadInit() {
       this.injectModNPCs();
       NPCUtils.setupNpcData(this, 'init');
-      this.#npcList();
     }
 
     postInit() {

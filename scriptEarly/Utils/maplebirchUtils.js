@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
   if (!window.maplebirch) return;
@@ -15,7 +17,7 @@
    * @param {Object} [options={}] - 克隆选项
    * @param {boolean} [options.deep=true] - 是否深克隆（默认true）
    * @param {boolean} [options.preservePrototype=true] - 是否保留原型链（默认true）
-   * @param {WeakMap} [map=new WeakMap()] - 内部WeakMap(处理循环引用，用户通常无需传递)
+   * @param {WeakMap<object,any>} [map=new WeakMap()] - 内部WeakMap(处理循环引用，用户通常无需传递)
    * @returns {any} 克隆后的对象
    * 
    * @example
@@ -44,33 +46,32 @@
       source.forEach((value, key) => copy.set(deep ? clone(key, options, map) : key, deep ? clone(value, options, map) : value));
       return copy;
     }
-    
     if (source instanceof Set) {
       const copy = new Set();
       map.set(source, copy);
       source.forEach(value => copy.add(deep ? clone(value, options, map) : value));
       return copy;
     }
-    
     if (ArrayBuffer.isView(source)) {
+      // @ts-ignore
       return new source.constructor(
         source.buffer.slice(0),
         source.byteOffset,
+        // @ts-ignore
         source.length || source.byteLength
       );
     }
     if (source instanceof ArrayBuffer) return source.slice(0);
     if (typeof source === 'function') return source;
     if (Array.isArray(source)) {
+      /** @type {any[]} */
       const copy = [];
       map.set(source, copy);
       for (let i = 0; i < source.length; i++) copy[i] = deep ? clone(source[i], options, map) : source[i];
       return copy;
     }
-    
     const copy = preservePrototype ? Object.create(Object.getPrototypeOf(source)) : {};
     map.set(source, copy);
-    
     const keys = [...Object.getOwnPropertyNames(source), ...Object.getOwnPropertySymbols(source)];
     for (const key of keys) {
       const descriptor = Object.getOwnPropertyDescriptor(source, key);
@@ -78,7 +79,6 @@
       const value = source[key];
       copy[key] = deep ? clone(value, options, map) : value;
     }
-    
     return copy;
   }
 
@@ -163,8 +163,10 @@
    * // 结果: { public: "info" }
    */
   function merge(target, ...sources) {
+    /** @type {Object<any,{arrayBehaviour:string,filterFn:any}>} */
     const options = typeof sources[sources.length - 1] === "object" && !Array.isArray(sources[sources.length - 1]) ? sources.pop() : {};
     const { arrayBehaviour = "replace", filterFn = null } = options;
+    /** @param {any} target @param {any} source */
     const mergeRecursive = (target, source, depth = 1) => {
       if (source === null || typeof source !== 'object') return source;
       for (const key in source) {
@@ -199,8 +201,8 @@
    *  - 'any': 包含任意一个元素即返回true（默认）
    *  - 'all': 必须包含所有元素才返回true
    *  - 'none': 不包含任何元素才返回true
-   * @param {Array} arr - 目标数组
-   * @param {any|Array} value - 要查找的值或值数组
+   * @param {Array<number|string>} arr - 目标数组
+   * @param {any|Array<number|string>} value - 要查找的值或值数组
    * @param {Object} [options={}] - 配置选项
    * @param {string} [options.mode='any'] - 匹配模式('any', 'all', 'none')
    * @param {boolean} [options.caseSensitive=true] - 字符串是否区分大小写
@@ -285,18 +287,21 @@
     if (min === undefined && max === undefined) return Math.random();
     if (max === undefined) {
       if (typeof min === 'object' && min !== null) {
+        /** @type {Object<any,{min:number,max:number,float:boolean}>} */
         const { min: mn = 0, max: mx = 1, float: flt = false } = min;
         return flt ? (Math.random() * (mx - mn) + mn) : Math.floor(Math.random() * (mx - mn + 1)) + mn;
       }
-      return Math.floor(Math.random() * min);
+      return Math.floor(Math.random() * /** @type {number} */(min));
     }
-    return float ? (Math.random() * (max - min) + min) : Math.floor(Math.random() * (max - min + 1)) + min;
+    return float ? 
+    (Math.random() * (/** @type {number} */(max) - /** @type {number} */(min)) + /** @type {number} */(min)) : 
+    Math.floor(Math.random() * (/** @type {number} */(max) - /** @type {number} */(min) + 1)) + /** @type {number} */(min);
   }
 
   /**
    *  - either([item1, item2, ...], options)
    *  - either(item1, item2, ..., options)
-   * @param {Array|any} itemsOrA - 选项数组或第一个选项
+   * @param {Array<number|string>|any} itemsOrA - 选项数组或第一个选项
    * @param {...any} rest - 其他选项或配置对象
    * @param {Object} [options] - 配置选项
    * @param {number[]} [options.weights] - 选项权重数组（长度必须与选项一致）
@@ -329,6 +334,7 @@
       items = [itemsOrA, ...rest];
       if (typeof items[items.length - 1] === 'object' && !Array.isArray(items[items.length - 1])) options = items.pop();
     }
+    /** @type {Object<any,{weights:any,allowNull:boolean}>} */
     const { weights = null, allowNull = false } = options;
     if (!items.length) return undefined;
     if (weights) {
@@ -402,7 +408,7 @@
    * 
    * **caseIn(values, result)**
    *   - 添加集合包含匹配条件
-   *   - @param {Array} values - 要匹配的值数组
+   *   - @param {Array<any>} values - 要匹配的值数组
    *   - @param {any} result - 匹配成功时返回的结果
    *   - 当输入值严格等于values数组中的任意一个值时匹配
    * 
@@ -422,12 +428,14 @@
    */
   class selectCase {
     constructor() {
+      /** @type {{ type: string; condition: any; result: any; }[]} */
       this.cases = [];
       this.defaultResult = null;
       this.valueType = null;
       this.allowMixedTypes = false;
     }
 
+    /** 添加精确匹配条件 @param {string|number} condition - 要匹配的精确值 @param {any} result - 匹配成功时返回的结果（可以是值或函数） @returns {selectCase} 当前实例，支持链式调用 */
     case(condition, result) {
       if (typeof condition === 'function') {
         this.allowMixedTypes = true;
@@ -438,21 +446,21 @@
       }
       return this;
     }
-
+    /** 添加自定义条件函数 @param {Function} fn - 自定义条件函数，形式为 (input, meta) => boolean @param {any} result - 匹配成功时返回的结果（可以是值或函数） @returns {selectCase} 当前实例，支持链式调用 @throws {TypeError} 当条件不是函数时抛出 */
     casePredicate(fn, result) {
       if (typeof fn !== 'function') throw new TypeError('predicate must be a function');
       this.allowMixedTypes = true;
       this.cases.push({ type: 'predicate', condition: fn, result });
       return this;
     }
-
+    /** 添加数值范围匹配条件 @param {number} min - 范围最小值（包含） @param {number} max - 范围最大值（包含） @param {any} result - 匹配成功时返回的结果 @returns {selectCase} 当前实例，支持链式调用 @throws {TypeError} 当范围值不是数字时抛出 */
     caseRange(min, max, result) {
       if (typeof min !== 'number' || typeof max !== 'number') throw new TypeError('range values must be numbers');
       this.#validateType(min);
       this.cases.push({ type: 'range', condition: [min, max], result });
       return this;
     }
-
+    /** 添加集合包含匹配条件 @param {Array<any>} values - 要匹配的值数组 @param {any} result - 匹配成功时返回的结果 @returns {selectCase} 当前实例，支持链式调用 @throws {TypeError} 当参数不是数组时抛出 */
     caseIn(values, result) {
       if (!Array.isArray(values)) throw new TypeError('set values must be an array');
       if (values.length === 0) return this;
@@ -460,7 +468,7 @@
       this.cases.push({ type: 'set', condition: values, result });
       return this;
     }
-
+    /** 添加子字符串包含匹配条件 @param {string|string[]} substrings - 要匹配的子字符串或子字符串数组 @param {any} result - 匹配成功时返回的结果（可以是值或函数） @returns {selectCase} 当前实例，支持链式调用 @throws {TypeError} 当子字符串不是字符串时抛出 */
     caseIncludes(substrings, result) {
       if (!Array.isArray(substrings)) substrings = [substrings];
       substrings.forEach(s => {
@@ -470,14 +478,14 @@
       this.cases.push({ type: 'substring', condition: substrings, result });
       return this;
     }
-
+    /** 添加正则表达式匹配条件 @param {RegExp} regex - 用于匹配的正则表达式对象 @param {any} result - 匹配成功时返回的结果（可以是值或函数） @returns {selectCase} 当前实例，支持链式调用 @throws {TypeError} 当参数不是正则表达式时抛出 */
     caseRegex(regex, result) {
       if (!(regex instanceof RegExp)) throw new TypeError('condition must be a RegExp');
       this.#validateType('string');
       this.cases.push({ type: 'regex', condition: regex, result });
       return this;
     }
-
+    /** 添加数值比较条件 @param {string} comparator - 比较运算符（'<', '<=', '>', '>='） @param {number} value - 要比较的数值 @param {any} result - 匹配成功时返回的结果 @returns {selectCase} 当前实例，支持链式调用 @throws {Error} 当比较符无效时抛出 @throws {TypeError} 当比较值不是数字时抛出 */
     caseCompare(comparator, value, result) {
       const validComparators = ['<', '<=', '>', '>='];
       if (!validComparators.includes(comparator)) throw new Error(`Invalid comparator: ${comparator}`);
@@ -490,12 +498,12 @@
       });
       return this;
     }
-
+    /** 设置默认返回值（当所有条件都不匹配时返回） @param {any} result - 默认返回的结果（可以是值或函数） @returns {selectCase} 当前实例，支持链式调用 */
     else(result) {
       this.defaultResult = result;
       return this;
     }
-
+    /** 执行匹配操作 @param {any} input - 要匹配的输入值 @param {Object} [meta={}] - 可选的元数据对象，会传递给条件函数 @returns {any} 匹配到的结果或默认结果 */
     match(input, meta = {}) {
       for (const { type, condition, result } of this.cases) {
         let matched = false;
@@ -512,7 +520,7 @@
             break;
           case 'substring':
             if (typeof input === 'string') {
-              matched = condition.some(sub => input.includes(sub));
+              matched = condition.some((/** @type {string} */sub) => input.includes(sub));
             }
             break;
           case 'regex':
@@ -532,7 +540,7 @@
           case 'predicate':
             try {
               matched = condition(input, meta);
-            } catch (e) {
+            } catch (/** @type {any} */e) {
               console.error(`selectCase predicate error: ${e.message}`);
             }
             break;
@@ -541,7 +549,7 @@
       }
       return typeof this.defaultResult === 'function' ? this.defaultResult(input, meta) : this.defaultResult;
     }
-
+    /** 验证类型一致性 @param {any} value - 要验证的值 @throws {TypeError} 当类型不一致时抛出 */
     #validateType(value) {
       if (this.allowMixedTypes) return;
       const valueType = typeof value;
@@ -615,27 +623,27 @@
       delimiter = ' ',
       preserveAcronyms = true
     } = options;
-    const splitWords = (s) => {
+    const splitWords = (/** @type {string}*/s) => {
       if (s.includes(delimiter)) return s.split(delimiter);
       return s.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2').split(' ');
     };
-    const isUpperCase = (s) => s === s.toUpperCase();
-    const words = splitWords(str).filter(word => word.length > 0);
+    const isUpperCase = (/** @type {string}*/s) => s === s.toUpperCase();
+    const words = splitWords(str).filter((/** @type {string} */word) => word.length > 0);
     if (words.length === 0) return '';
     switch (mode) {
       case 'upper': return str.toUpperCase();
       case 'lower': return str.toLowerCase();
-      case 'capitalize': return words.map((word, i) => i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word).join(' ');
-      case 'title': return words.map(word => preserveAcronyms && isUpperCase(word) ? word : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-      case 'camel': return words.map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1)).join('');
-      case 'pascal': return words.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
-      case 'snake': return words.map(word => word.toLowerCase()).join('_');
-      case 'kebab': return words.map(word => word.toLowerCase()).join('-');
-      case 'constant': return words.map(word => word.toUpperCase()).join('_');
+      case 'capitalize': return words.map((/** @type {string} */word,/** @type {number} */i) => i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word).join(' ');
+      case 'title': return words.map((/** @type {string} */word) => preserveAcronyms && isUpperCase(word) ? word : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+      case 'camel': return words.map((/** @type {string} */word,/** @type {number} */i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1)).join('');
+      case 'pascal': return words.map((/** @type {string} */word) => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+      case 'snake': return words.map((/** @type {string} */word) => word.toLowerCase()).join('_');
+      case 'kebab': return words.map((/** @type {string} */word) => word.toLowerCase()).join('-');
+      case 'constant': return words.map((/** @type {string} */word) => word.toUpperCase()).join('_');
       default: return str;
     }
   }
-
+  /** @type {any} */
   const tools = {
     clone: Object.freeze(clone),
     merge: Object.freeze(merge),
@@ -649,5 +657,5 @@
   };
   const toolNames = ['clone', 'merge', 'equal', 'contains', 'SelectCase','random','either','loadImage','convert'];
   toolNames.forEach(name => { if (!window.hasOwnProperty(name)) Object.defineProperty(window, name, { value: tools[name], enumerable: true}); });
-  maplebirch.once(':tool-init', (data) => Object.assign(data, tools));
+  maplebirch.once(':tool-init', (/** @type {any} */data) => Object.assign(data, tools));
 })();

@@ -38,6 +38,8 @@
     "data/maplebirchWeather.js",
     "scriptEarly/maplebirch-modload.js",
     "scriptEarly/Utils/maplebirchUtils.js",
+    "scriptEarly/Utils/maplebirchTimeEvents.js",
+    "scriptEarly/Utils/maplebirchStateEvents.js",
     "scriptEarly/Utils/maplebirchFrameworks.js",
     "scriptEarly/Utils/maplebirchNPC-model.js",
     "scriptEarly/modules/maplebirchTimeState.js"
