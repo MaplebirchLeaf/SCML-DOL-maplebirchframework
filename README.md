@@ -1792,6 +1792,17 @@ maplebirchFrameworks.addStats({
   - 'concat': 在数组末尾添加新元素
   - 'merge': 递归合并对应索引的元素
 ```
+ + 如果想添加原版没有的 效果和图层，直接使用 **`maplebirch.once(':weather', () => {});`** 即可
+```
+maplebirch.once(':weather', () => {
+ Weather.Renderer.Effects.add({
+  // 你要添加的逻辑
+ });
+ Weather.Renderer.Layers.add({
+  // 你要添加的逻辑
+ });
+});
+```
  #### 天气渲染修改示例
 ```
 @example
