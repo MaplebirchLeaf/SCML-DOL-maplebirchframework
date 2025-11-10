@@ -61,6 +61,9 @@
     - [NPC侧绘](#NPC侧绘)
         - [NPC侧绘说明](#NPC侧绘说明)
         - [NPC侧绘的addonPlugin注册](#NPC侧绘的addonPlugin注册)
+    - [气象管理](#气象管理)
+        - [天气渲染修改](#天气渲染修改)
+        - [天气渲染修改示例](#天气渲染修改示例)
 - [致谢](#致谢)
 - [未实现的功能构想](#未实现的功能构想)
 
@@ -89,6 +92,7 @@
 | 添加地点 | `maplebirchFrameworks.addLocation` / `simplebirchFrameworks.addLocation` | `maplebirch.tool.other.configureLocation` |
 | 添加NPC | `maplebirchFrameworks.addNPC` / `simplebirchFrameworks.addNPC` | `maplebirch.npc.add` |
 | 添加NPC状态 | `maplebirchFrameworks.addStats` / `simplebirchFrameworks.addStats` | `maplebirch.npc.addStats` |
+| 气象管理 | `maplebirchFrameworks.modifyWeather` / `simplebirchFrameworks.modifyWeather` | `maplebirch.state.modifyWeather` |
 
 <details>
 <summary>点击查看现已实现的功能</summary>
@@ -112,6 +116,7 @@
 | 商店注册 | 编写在游戏内添加商店 |
 | NPC注册 | 为游戏内添加NPC​ |
 | NPC侧绘 | 为游戏内添加NPC​的侧边栏立绘 |
+| 气象管理 | 修改游戏内的气象相关功能 |
 </details>
 
 ## 安装与依赖方式说明
@@ -134,13 +139,13 @@
 </details>
 
 
-+ 第二种依赖申明(利用模组加载器的钩子): 这种方法可以让依赖框架的模组在框架之前加载。 
+- 第二种依赖申明(利用模组加载器的钩子): 这种方法可以让依赖框架的模组在框架之前加载。 
 <details>
   <summary>点击查看图片</summary>
   <img width="1848" height="1192" alt="image" src="https://github.com/user-attachments/assets/dd8aca44-0619-4f1f-bec5-8d1f2f30f5f4" />
 </details>
 
-+ 第三种自助 `addonPlugin` 声明依赖只要用到了其中的功能框架就能检测，**详情**看对应区块说明
+- 第三种自助 `addonPlugin` 声明依赖只要用到了其中的功能框架就能检测，**详情**看对应区块说明 **(如果支持，推荐使用第三种声明方式)**。
 
 ```
 "addonPlugin": [
@@ -724,22 +729,21 @@ play() 方法选项:
 @param {Object} [options={}] - 克隆选项
 @param {boolean} [options.deep=true] - 是否深克隆（默认true）
 @param {boolean} [options.preservePrototype=true] - 是否保留原型链（默认true）
-@param {WeakMap} [map=new WeakMap()] - 内部WeakMap(处理循环引用，用户通常无需传递)
+@param {WeakMap<object,any>} [map=new WeakMap()] - 内部WeakMap(处理循环引用，用户通常无需传递)
 @returns {any} 克隆后的对象
-
 @example
 // 深克隆对象
 const obj = { a: 1, b: { c: 2 } };
 const cloned = clone(obj);
 obj.b.c = 3; // 不影响克隆对象
 console.log(cloned.b.c); // 2
-
 @example
 // 浅克隆数组
 const arr = [1, [2, 3]];
 const shallowCopy = clone(arr, { deep: false });
 arr[1][0] = 99; // 影响克隆数组
 console.log(shallowCopy[1][0]); // 99
+   */
 ```
  + **`equal`** 函数
 ```
@@ -752,83 +756,84 @@ console.log(shallowCopy[1][0]); // 99
 @param {any} a - 第一个比较值
 @param {any} b - 第二个比较值
 @returns {boolean} 是否相等
-
 @example
 // 比较日期对象
 equal(new Date(2023, 0, 1), new Date(2023, 0, 1)); // true
-
 @example
 // 比较嵌套对象
 equal({ a: [1, { b: 2 }] }, { a: [1, { b: 2 }] }); // true
-
 @example
 // 比较正则表达式
 equal(/abc/i, /abc/i); // true
 ```
  + **`merge`** 函数
 ```
-- 基本类型：直接覆盖
-- 对象：递归合并
-- 数组：根据arrayBehaviour选项处理：
-   - "replace"：替换整个数组（默认）
-   - "concat"：连接两个数组
-   - "merge"：递归合并对应索引的元素
+- 基本类型（string、number、boolean、function等）：直接覆盖目标值
+- 对象：递归合并所有可枚举属性
+- 数组：根据 arrayBehaviour 选项处理：
+  - 'replace'：用源数组替换目标数组（默认）
+  - 'concat'：将源数组连接到目标数组末尾
+  - 'merge'：递归合并对应索引位置的数组元素
 @param {Object} target - 目标对象（将被修改）
 @param {...Object} sources - 要合并的源对象
-@param {Object} [options={}] - 合并选项
-@param {string} [options.arrayBehaviour="replace"] - 数组合并策略("replace", "concat", "merge")
-@param {Function} [options.filterFn] - 属性过滤函数(key, value, depth) => boolean
-@returns {Object} 合并后的对象（即修改后的target）
-
+@param {Object} [options] - 合并选项
+@param {string} [options.arrayBehaviour='replace'] - 数组合并策略
+@param {Function} [options.filterFn] - 属性过滤函数
+@returns {Object} 合并后的目标对象
 @example
-// 合并数组
-const target = { arr: [1, 2] };
-merge(target, { arr: [3, 4] }, { arrayBehaviour: "concat" });
+// 基本合并
+const target = { a: 1, b: { c: 2 } };
+merge(target, { a: 3, b: { d: 4 } });
+// 结果: { a: 3, b: { c: 2, d: 4 } }
+@example
+// 数组合并 - 替换策略
+merge({ arr: [1, 2] }, { arr: [3, 4] });
+// 结果: { arr: [3, 4] }
+@example
+// 数组合并 - 连接策略
+merge({ arr: [1, 2] }, { arr: [3, 4] }, { arrayBehaviour: 'concat' });
 // 结果: { arr: [1, 2, 3, 4] }
-
 @example
-// 递归合并对象
-const target = { a: { b: 1, c: 2 } };
-merge(target, { a: { c: 3, d: 4 } });
-// 结果: { a: { b: 1, c: 3, d: 4 } }
-
+// 数组合并 - 合并策略
+const target = { arr: [{ a: 1 }, { b: 2 }] };
+merge(target, { arr: [{ c: 3 }, { d: 4 }] }, { arrayBehaviour: 'merge' });
+// 结果: { arr: [{ a: 1, c: 3 }, { b: 2, d: 4 }] }
 @example
 // 使用属性过滤
-merge({}, { public: "info", secret: "data" }, {
-  filterFn: (key) => key !== "secret"
+merge({}, { public: 'info', secret: 'data' }, {
+  filterFn: (key) => key !== 'secret'
 });
-// 结果: { public: "info" }
+// 结果: { public: 'info' }
+@example
+// 合并多个源对象
+merge({ a: 1 }, { b: 2 }, { c: 3 });
+// 结果: { a: 1, b: 2, c: 3 }
 ```
  + **`contains`** 函数
 ```
  - 'any': 包含任意一个元素即返回true（默认）
  - 'all': 必须包含所有元素才返回true
  - 'none': 不包含任何元素才返回true
-@param {Array} arr - 目标数组
-@param {any|Array} value - 要查找的值或值数组
+@param {Array<number|string>} arr - 目标数组
+@param {any|Array<number|string>} value - 要查找的值或值数组
 @param {Object} [options={}] - 配置选项
 @param {string} [options.mode='any'] - 匹配模式('any', 'all', 'none')
 @param {boolean} [options.caseSensitive=true] - 字符串是否区分大小写
 @param {Function} [options.comparator] - 自定义比较函数(item, value) => boolean
 @param {boolean} [options.deepEqual=false] - 是否使用深度相等比较
 @returns {boolean} 检查结果
-
 @example
 // 检查单个元素
 contains([1, 2, 3], 2); // true
-
 @example
 // 检查多个元素(all模式)
 contains([1, 2, 3], [1, 2], { mode: 'all' }); // true
-
 @example
 // 检查多个元素(none模式)
 contains([1, 2, 3], [4, 5], { mode: 'none' }); // true
-
 @example
 // 不区分大小写检查
 contains(['a', 'B'], 'b', { caseSensitive: false }); // true
-
 @example
 // 深度对象检查
 contains([{ a: 1 }], { a: 1 }, { deepEqual: true }); // true
@@ -844,19 +849,15 @@ contains([{ a: 1 }], { a: 1 }, { deepEqual: true }); // true
 @param {number} [max] - 最大值
 @param {boolean} [float=false] - 是否生成浮点数（默认false）
 @returns {number} 随机数
-
 @example
 // 生成0-1之间的随机浮点数
 random(); // 0.756
-
 @example
 // 生成10-20之间的整数
 random(10, 20); // 15
-
 @example
 // 生成5-10之间的浮点数
 random(5, 10, true); // 7.231
-
 @example
 // 使用配置对象
 random({ min: 5, max: 10, float: true }); // 7.231
@@ -865,25 +866,21 @@ random({ min: 5, max: 10, float: true }); // 7.231
 ```
  - either([item1, item2, ...], options)
  - either(item1, item2, ..., options)
-@param {Array|any} itemsOrA - 选项数组或第一个选项
+@param {Array<number|string>|any} itemsOrA - 选项数组或第一个选项
 @param {...any} rest - 其他选项或配置对象
 @param {Object} [options] - 配置选项
 @param {number[]} [options.weights] - 选项权重数组（长度必须与选项一致）
 @param {boolean} [options.allowNull=false] - 是否允许返回null（默认false）
 @returns {any} 随机选择的选项（可能为null）
-
 @example
 // 简单随机选择
 either(['a', 'b', 'c']); // 'b'
-
 @example
 // 加权随机选择
 either(['a', 'b'], { weights: [0.8, 0.2] }); // 80%概率选'a'
-
 @example
 // 允许返回空值
 either(['a', 'b'], { allowNull: true }); // 33%概率返回null
-
 @example
 // 直接传递选项
 either('cat', 'dog', { weights: [0.3, 0.7] });
@@ -1190,7 +1187,9 @@ maplebirchFrameworks.addText('hint_links', t => {
 | `SchoolSubjectsBox`     | 学科显示区域             |
 | `SchoolMarksText`       | 成绩显示区域             |
 | `WeaponBox`             | 武器显示区域             |
+| `ReputationModify`      | 声誉显示修改区           |
 | `Reputation`            | 声誉显示区域             |
+| `FameModify`            | 知名度显示修改区         |
 | `Fame`                  | 知名度显示区域           |
 | `StatusSocial`          | 自定义社交状态区域       |
 | `NPCinit`               | 原版NPC初遇初始化区域    |
@@ -1746,7 +1745,7 @@ maplebirchFrameworks.addStats({
   ]
 }
 ```
-#### NPC侧绘
+### NPC侧绘
  #### NPC侧绘说明
 + 在模组设置中可以开启已命名npc的侧边栏立绘，需要自行导入相应的图片
 + 画布模式尚未完成，它将会是以pc模型为制作的立绘
@@ -1773,7 +1772,67 @@ maplebirchFrameworks.addStats({
     ]
   }
 ```
-### 致谢
+### 气象管理
+ #### 天气渲染修改
+ + 修改指定的天气效果 **`addEffect(effectName, patch, arrayBehaviour = "replace")`**
+```
+- effectName: 效果名称（如'colorOverlay'、'locationImage'等）
+- patch: 要应用的修改内容对象
+- arrayBehaviour: 数组合并策略
+  - 'replace': 替换整个数组（默认）
+  - 'concat': 在数组末尾添加新元素
+  - 'merge': 递归合并对应索引的元素
+```
+ + 修改指定的天气图层 **`addLayer(layerName, patch, arrayBehaviour = "replace") `**
+```
+- layerName: 层名称（如'sun'、'bannerSky'、'clouds'等）
+- patch: 要应用的修改内容对象
+- arrayBehaviour: 数组合并策略
+  - 'replace': 替换整个数组（默认）
+  - 'concat': 在数组末尾添加新元素
+  - 'merge': 递归合并对应索引的元素
+```
+ #### 天气渲染修改示例
+```
+@example
+// 修改颜色覆盖效果 - 添加日食支持
+modifyWeather.addEffect('colorOverlay', {
+  draw() {
+    const nightColor = this.bloodMoon ? this.color.bloodMoon : ColourUtils.interpolateColor(this.color.nightDark, this.color.nightBright, this.moonFactor);
+    let mixFactor = this.sunFactor;
+    if (this.solarEclipse && this.sunFactor > 0) mixFactor = Math.min(this.sunFactor0.05, 0.05);
+    const color = ColourUtils.interpolateTripleColor(nightColor, this.color.dawnDusk, this.color.day, mixFactor);
+    this.canvas.ctx.fillStyle = color;
+    this.canvas.fillRect();
+  }
+}, 'replace');
+@example
+// 修改太阳层 - 添加日食条件
+modifyWeather.addLayer('sun', {
+  effects: [{
+    drawCondition() {
+      return !Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.5 && !this.renderInstance.skyDisabled;
+    }
+  }]
+}, 'merge');
+@example
+// 添加日食效果到太阳层
+modifyWeather.addLayer('sun', {
+  effects: [
+    {
+      effect: "skyOrbital",
+      drawCondition() {
+        return Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.5 && !this.renderInstance.skyDisabled && Weather.solarEclipseStage === 'pre';
+      },
+      params: { images: { orbital: 'img/misc/sky/solar-eclipse-0.png' } },
+      bindings: {
+        position() { return this.renderInstance.orbitals.sun.position; }
+      }
+    }
+  ]
+}, 'concat');
+```
+## 致谢
 在此，我想向所有支持、帮助过这个项目的朋友们表达最诚挚的感谢：  
 - 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 开发的Modloader系统，为模组开发提供了基础支持。
 - 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 、[Number_Sir](https://github.com/NumberSir) 开发的模组编写助手工具，提升了开发效率。
@@ -1781,13 +1840,6 @@ maplebirchFrameworks.addStats({
 - 感谢 [苯环](https://github.com/Nephthelana) 、[零环](https://github.com/ZeroRing233) 、 [丧心](https://github.com/MissedHeart) 给予的技术指导。
 - 感谢 污度孤儿中国模组制作群 提供的交流环境和新手引导。
 
-### 未实现的功能构想
+## 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
-
-
-
-
-
-
-
