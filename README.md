@@ -307,7 +307,7 @@ maplebirch.register('aiSystem', {
 ```
  ### 状态事件
    #### 状态事件的注册方式
-   - 使用 `maplebirchFrameworks.addStateEvent` 、 `simpleFrameworks.addStateEvent` 和 `maplebirch.state.regStateEvent` 任选其一注册时间事件
+   - 使用 `maplebirchFrameworks.addStateEvent` 、 `simpleFrameworks.addStateEvent` 和 `maplebirch.state.regStateEvent` 任选其一注册状态事件
 ```
 maplebirchFrameworks.addStateEvent(
   type,       // 事件类型 (字符串)
@@ -1925,3 +1925,4 @@ modifyWeather.addLayer('sun', {
 ## 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
