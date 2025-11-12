@@ -1673,7 +1673,7 @@ maplebirchFrameworks.addStats({
 @param {string} config.name - 套装唯一标识（必需）
 @param {string} [config.type="custom"] - 套装类型
 @param {string} [config.gender="n"] - 适用性别 (m-男性, f-女性, n-中性)
-@param {number} [config.outfit=0] - outfit类型 (0-普通, 1-特殊)
+@param {number} [config.outfit=0] - outfit类型 (0-普通, 1-特殊连体衣物)
 @param {string|Object} config.upper - 上身衣物配置（可简写为字符串或详细对象）
 @param {string} [upper.name] - 上身衣物名称（必需）
 @param {number} [upper.integrity_max=100] - 上身衣物耐久度
@@ -1698,18 +1698,6 @@ maplebirchFrameworks.addStats({
 ```
  - 使用示例
 ```
-@example
-// 简写配置 - 只提供衣物名称
-maplebirchFrameworks.addNPCClothes({
-    name: "casualOutfit",
-    type: "casual",
-    upper: "t-shirt",      // 字符串简写
-    lower: "jeans",        // 字符串简写
-    desc: "休闲装"
-});
-
-@example  
-// 详细配置 - 完整定义衣物属性
 maplebirchFrameworks.addNPCClothes({
     name: "formalSet",
     type: "formal",
@@ -1937,4 +1925,5 @@ modifyWeather.addLayer('sun', {
 ## 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
