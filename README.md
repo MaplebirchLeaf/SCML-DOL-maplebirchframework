@@ -55,6 +55,7 @@
     - [NPC注册](#NPC注册)
         - [NPC的基本数据](#NPC的基本数据)
         - [添加自定义状态](#添加自定义状态)
+        - [添加NPC服装库数据](#添加NPC服装库数据)
         - [NPC的关系文本](#NPC的关系文本)
         - [NPC属性详解](#NPC属性详解)
         - [NPC的addonPlugin注册](#NPC的addonPlugin注册)
@@ -92,6 +93,7 @@
 | 添加地点 | `maplebirchFrameworks.addLocation` / `simplebirchFrameworks.addLocation` | `maplebirch.tool.other.configureLocation` |
 | 添加NPC | `maplebirchFrameworks.addNPC` / `simplebirchFrameworks.addNPC` | `maplebirch.npc.add` |
 | 添加NPC状态 | `maplebirchFrameworks.addStats` / `simplebirchFrameworks.addStats` | `maplebirch.npc.addStats` |
+| 添加NPC服装数据 | `maplebirchFrameworks.addNPCClothes` / `simplebirchFrameworks.addNPCClothes` | `maplebirch.npc.addClothes` |
 | 气象管理 | `maplebirchFrameworks.modifyWeather` / `simplebirchFrameworks.modifyWeather` | `maplebirch.state.modifyWeather` |
 
 <details>
@@ -1662,6 +1664,87 @@ maplebirchFrameworks.addStats({
   }
 });
 ```
+ #### 添加NPC服装库数据
+- **`setup.npcClothesSets`** 方便扩充原版的NPC服装库数据
+```
+添加NPC服装套装
+@param {...Object} configs - 套装配置对象或配置对象数组
+配置对象详细说明：
+@param {string} config.name - 套装唯一标识（必需）
+@param {string} [config.type="custom"] - 套装类型
+@param {string} [config.gender="n"] - 适用性别 (m-男性, f-女性, n-中性)
+@param {number} [config.outfit=0] - outfit类型 (0-普通, 1-特殊)
+@param {string|Object} config.upper - 上身衣物配置（可简写为字符串或详细对象）
+@param {string} [upper.name] - 上身衣物名称（必需）
+@param {number} [upper.integrity_max=100] - 上身衣物耐久度
+@param {string} [upper.word="a"] - 冠词类型 (a-用"a", n-不用冠词)
+@param {string} [upper.action="lift"] - 脱衣动作，必须为以下值之一：
+  - "lift"     -> 游戏中显示"掀开"
+  - "pull"     -> 游戏中显示"扯开"
+  - "unbutton" -> 游戏中显示"解开"  
+  - "unzip"    -> 游戏中显示"解开"
+  - "aside"    -> 游戏中显示"拉开"
+  - "open"     -> 游戏中显示"打开"
+  - "undo"     -> 游戏中显示"松开"
+  - "unwrap"   -> 游戏中显示"打开"
+@param {string} [upper.desc] - 上身衣物描述
+@param {string|Object} config.lower - 下身衣物配置（可简写为字符串或详细对象）
+@param {string} [lower.name] - 下身衣物名称（必需）
+@param {number} [lower.integrity_max=100] - 下身衣物耐久度
+@param {string} [lower.word="n"] - 冠词类型 (a-用"a", n-不用冠词)
+@param {string} [lower.action="pull"] - 脱衣动作（同上身衣物action限制）
+@param {string} [lower.desc] - 下身衣物描述
+@param {string} [config.desc] - 套装描述，如未提供则自动生成
+```
+ - 使用示例
+```
+@example
+// 简写配置 - 只提供衣物名称
+maplebirchFrameworks.addNPCClothes({
+    name: "casualOutfit",
+    type: "casual",
+    upper: "t-shirt",      // 字符串简写
+    lower: "jeans",        // 字符串简写
+    desc: "休闲装"
+});
+
+@example  
+// 详细配置 - 完整定义衣物属性
+maplebirchFrameworks.addNPCClothes({
+    name: "formalSet",
+    type: "formal",
+    gender: "m",
+    outfit: 1,
+    upper: {
+        name: "dress_shirt",
+        integrity_max: 120,     // 自定义耐久度
+        word: "a",
+        action: "unbutton",     // 必须使用有效action值
+        desc: "正装衬衫"
+    },
+    lower: {
+        name: "trousers", 
+        integrity_max: 110,
+        action: "unzip"         // 必须使用有效action值
+    },
+    desc: "商务正装"
+});
+
+@example
+// 批量添加多个套装
+maplebirchFrameworks.addNPCClothes(
+    {name: "sportSet", type: "sport", upper: "jersey", lower: "shorts"},
+    {name: "swimSet", type: "swim", upper: "bikini_top", lower: "bikini_bottoms"}
+);
+
+@example
+// 使用数组批量添加
+const outfits = [
+    {name: "workSet", type: "work", upper: "uniform", lower: "pants"},
+    {name: "partySet", type: "party", upper: "dress", lower: "heels"}
+];
+maplebirchFrameworks.addNPCClothes(outfits);
+```
  #### NPC的关系文本
 - 在sugarcube中填写你的NPC的关系文本 **`<<widget '(你的npc名字)relationshiptext'>>`**
 ```
@@ -1854,3 +1937,4 @@ modifyWeather.addLayer('sun', {
 ## 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
