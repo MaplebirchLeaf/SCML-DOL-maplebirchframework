@@ -10,6 +10,7 @@
 'Maplebirch Frameworks Mod List': 框架已加载模组
 'Current Mods Language Setting': 当前模组语言设定
 'Dependence': 依赖
+'Mods Contents': 模组内容
 'Mods Settings': 模组设置
 'Mods Cheats': 模组作弊
 'Mods Statistics': 模组统计
@@ -50,9 +51,23 @@
 'canvas': 画布
 'graphic': 图形
 'selection': 选择
-'celestial phenomenons': 天象
+'celestial phenomenons settings': 天象设置
 'solar eclipse': 日蚀
-'settings': 设置
+'Set': 设置
+'hidden': 隐藏
+'default': 默认
+'layer': 图层
+'adjustments': 调整
+'type': 种类
+'points': 点数
+
+'transformation': 转化
+'Prioritise headwear over horns': 置犄角于头饰后
+'Prioritise horns over headwear': 置犄角于头饰前
+'Push tail back': 置尾巴于背后
+'Move tail forward': 置尾巴于前面
+'Push wings behind': 置翅膀于后
+'Move wings forward': 置翅膀于前
 
 'View All': 查看全部
 'View Headgear': 查看外衣(头套)
@@ -94,6 +109,7 @@
 'hunter': 猎人
 'shopkeeper': 商店店主
 'doctor': 医生
+'silver fox': 银狐
 'pious': 敬虔者
 'nun': 修女
 'monk': 修士
@@ -114,6 +130,7 @@
 'photographer': 摄影师
 'mayor': 市长
 'farmer': 农场主
+'high elk': 高麋鹿
 'scarred': 疤面
 'farmhand': 农工
 'terror': 恐怖者

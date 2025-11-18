@@ -40,6 +40,10 @@
       return this.passage;
     }
 
+    get modifyWeather() {
+      return maplebirch.addonPlugin.modifyWeather;
+    }
+
     /** @param {string} type @param {string} eventId @param {any} options */
     regTimeEvent(type, eventId, options) {
       this.TimeManager.register(type, eventId, options);
@@ -51,7 +55,7 @@
     }
 
     timeTravel(options = {}) {
-      this.TimeManager.timeTravel(options = {});
+      this.TimeManager.timeTravel(options);
     }
 
     get TimeEvents() {

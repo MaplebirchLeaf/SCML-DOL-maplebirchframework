@@ -6,7 +6,7 @@
   }
 
   const maplebirch = window.maplebirch;
-  const currentVersion = '1.0.1';
+  const currentVersion = '1.0.2';
 
   class variablesModule {
     static check() {
@@ -83,14 +83,15 @@
       inventory:  variablesModule.inventory,
       combat:     variablesModule.combat,
       player:     variablesModule.player,
-      npc:        {},
+      npc:            {},
+      transformation: {},
     };
     
     constructor() {
       this.version = currentVersion;
-      this.tool = null;
-      this.migrationSystem = null;
-      this.log = null;
+      this.tool = maplebirch.tool;
+      this.log = this.tool.createLog('var');
+      if (!this.migrationSystem) this.migrationSystem = this.tool.migration.create();;
     }
 
     #mapProcessing() {
@@ -106,12 +107,8 @@
     }
 
     preInit() { 
-      this.tool = maplebirch.tool;
-      this.log = this.tool.createLog('var');
       maplebirch.once(':passageinit', () => variablesModule.check());
       maplebirch.once(':finally', () => variablesModule.check());
-      if (this.migrationSystem) return;
-      this.migrationSystem = this.tool.migration.create();
     }
 
     Init() {

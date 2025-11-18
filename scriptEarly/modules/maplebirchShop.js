@@ -31,8 +31,8 @@
     };
 
     constructor() {
-      this.tool = null;
-      this.log = null;
+      this.tool = maplebirch.tool;
+      this.log = this.tool.createLog('shop');
       this.widgets = [];
       this.passages = [];
       this.shopText = {};
@@ -294,8 +294,7 @@
     }
 
     preInit() {
-      this.tool = maplebirch.tool;
-      this.log = this.tool.createLog('shop');
+
     }
   }
 

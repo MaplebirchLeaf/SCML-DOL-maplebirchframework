@@ -1,8 +1,10 @@
+// @ts-check
+/// <reference path='../maplebirch.d.ts' />
 (() => {
   'use strict';
   const maplebirch = window.maplebirch;
 
-  const specialWidget = [
+  const overlayWidgets = [
     `<<widget "maplebirchReplace">>
       <<set _key to _args[0]>>
       <<if !_key>><<exit>><</if>>
@@ -22,6 +24,9 @@
       <<if maplebirch.tool.widget.Macro.has(_titleKey)>><<replace #customOverlayTitle>><<= '<<'+_titleKey+'>>'>><</replace>><</if>>
       <<replace #customOverlayContent>><<= '<<'+_key+'>>'>><</replace>>
     <</widget>>`,
+  ];
+
+  const audioWidgets = [
     `<<widget 'maplebirch-playback'>>
       <div class="settingsToggleItemWide">
         <details class="maplebirch-playback">
@@ -200,6 +205,9 @@
         }
       }>>
     <</widget>>`,
+  ];
+
+  const characterWidgets = [
     `<<widget 'maplebirch-npc-model'>>
       <div id="img-npc">
         <<selectmodel "npcmodel" "sidebar">>
@@ -209,7 +217,139 @@
           <<rendermodel 'mainCanvas'>>
         <</if>>
       </div>
-    <</widget>>`
+    <</widget>>`,
+    `<<widget 'maplebirchTransformationMirror'>>
+      <<set _modTransforms = []>>
+      <<if V.maplebirch?.transformation>><<for _modName range Object.keys(V.maplebirch.transformation)>><<if V.maplebirch.transformation[_modName].level > 0>><<set _modTransforms.push(_modName)>><</if>><</for>><</if>>
+      <<if _modTransforms.length>>
+        <<for _modName range _modTransforms>>
+          <<capture _modName>>
+            <<set _config to maplebirch.char.transformation.config[_modName]>>
+            <div class='settingsToggleItemWide'>
+              <<if _config.icon>><<icon _config.icon>><</if>>
+              <span class='gold bold'><<= maplebirch.t('Mods')+'：'+maplebirch.t(_modName)>></span>
+              <<if $transformationParts[_modName]>><<for _partName, $_partValue range $transformationParts[_modName]>><<capture _partName, $_partValue>>
+                <<if $_partValue isnot 'disabled'>>
+                  <<set _varPath to '$transformationParts.'+_modName+'.'+_partName>>
+                  <div class='tf-part-item'><<= maplebirch.t(String(_partName))>>：<<langlistbox _varPath autoselect>><<option '隐藏' 'hidden'>><<option '默认' 'default'>><</langlistbox>></div>
+                <</if>>
+              <</capture>><</for>><</if>>
+            </div>
+          <</capture>>
+        <</for>>
+      <</if>>
+      <<if !_modTransforms.every(transform => V.transformationParts[transform]?.horns is 'disabled') && ['demon', 'cow'].every(transform => T[transform].horns is 'disabled') || 
+        !_modTransforms.every(transform => V.transformationParts[transform]?.tail is 'disabled') && ['demon', 'cat', 'cow', 'wolf', 'bird', 'fox'].every(transform => T[transform].tail is 'disabled') || 
+        !_modTransforms.every(transform => V.transformationParts[transform]?.wings is 'disabled') && ['angel', 'fallen', 'demon', 'bird'].every(transform => T[transform].wings is 'disabled')>>
+        <div class='settingsToggleItemWide no-numberify'>
+          <span class='gold bold'><<= maplebirch.tool.convert(maplebirch.t('layer',true)+maplebirch.t('adjustments'),'title')>>：</span>
+          <br><div class='no-numberify'>
+          <<if !_modTransforms.every(transform => V.transformationParts[transform]?.horns is 'disabled')>>
+            <<set _front_text to $hornslayer is 'front' ? 'Prioritise headwear over horns' : 'Prioritise horns over headwear'>>
+            <<set _front_value to $hornslayer is 'front' ? 'back' : 'front'>>
+            <<langlink _front_text>><<run State.setVar('$hornslayer', _front_value)>><<run Engine.show()>><<updatesidebarimg true>><</langlink>><br>
+          <</if>>
+          <<if !_modTransforms.every(transform => V.transformationParts[transform]?.tail is 'disabled')>>
+            <<set _tail_text = $taillayer === 'front' ? 'Push tail back' : 'Move tail forward'>>
+            <<set _tail_value = $taillayer === 'front' ? 'back' : 'front'>>
+            <<langlink _tail_text>><<run State.setVar('$taillayer', _tail_value)>><<run Engine.show()>><<updatesidebarimg true>><</langlink>><br>
+          <</if>>
+          <<if !_modTransforms.every(transform => V.transformationParts[transform]?.wings is 'disabled')>>
+            <<set _wings_text = $wingslayer === 'front' ? 'Push wings behind' : 'Move wings forward'>>
+            <<set _wings_value = $wingslayer === 'front' ? 'back' : 'front'>>
+            <<langlink _wings_text>><<run State.setVar('$wingslayer', _wings_value)>><<run Engine.show()>><<updatesidebarimg true>><</langlink>><br>
+          <</if>>
+        </div>
+        <<script>>
+        jQuery('.passage').on('change', 'select.macro-langlistbox', function (e) { Wikifier.wikifyEval('<<updatesidebarimg true>>'); });
+      <</script>>
+      <</if>>
+    <</widget>>`,
+  ];
+
+  const modHintWidgets = [
+    `<<widget 'maplebirchModHint'>>
+      <<if !$maplebirch.hintlocation>><<set $maplebirch.hintlocation to 'ModHint'>><</if>>
+      <<switch $maplebirch.hintlocation>>
+        <<case 'ModHint'>><<maplebirchModHintContent>>
+        <<case 'Content'>><<maplebirchContent>>
+        <<case 'Panel'>><<maplebirchPanel>>
+        <<default>><<maplebirchModHintContent>>
+      <</switch>>
+    <</widget>>`,
+    `<<widget 'titleMaplebirchModHint'>>
+      <<if !$maplebirch.hintlocation>><<set $maplebirch.hintlocation to 'ModHint'>><</if>>
+      <<switch $maplebirch.hintlocation>>
+        <<case 'ModHint'>><<setupTabs 0>>
+        <<case 'Content'>><<setupTabs 1>>
+        <<case 'Panel'>><<setupTabs 2>>
+        <<default>><<setupTabs 0>>
+      <</switch>>
+      <div id='overlayTabs' class='tab'>
+        <<closeButtonMobile>>
+        <<langbutton '模组介绍'>>
+          <<toggleTab>><<set $maplebirch.hintlocation to 'ModHint'>>
+          <<replace #customOverlayContent>><<maplebirchModHint>><</replace>>
+        <</langbutton>>
+        <<langbutton '模组内容'>>
+          <<toggleTab>><<set $maplebirch.hintlocation to 'Content'>>
+          <<replace #customOverlayContent>><<maplebirchModHint>><</replace>>
+        <</langbutton>>
+        <<langbutton '角色面板'>>
+          <<toggleTab>><<set $maplebirch.hintlocation to 'Panel'>>
+          <<replace #customOverlayContent>><<maplebirchModHint>><</replace>>
+          <<run maplebirch.trigger('characterRender')>>
+        <</langbutton>>
+      </div>
+      <<closeButton>>
+    <</widget>>`,
+    `<<widget 'maplebirchModHintMobile'>>
+      <<if $options.maplebirch?.modHint is 'mobile' && $options.sidebarStats isnot 'disabled'>>
+        <input type='button' class='saveMenuButton maplebirchModHintMobile' value='' onclick='maplebirch.tool.modhint.hintClicked()'>
+      <</if>>
+    <</widget>>`,
+    `<<widget 'maplebirchModHintDesktop'>>
+      <<if $options.maplebirch?.modHint is 'desktop'>>
+        <<langbutton '秋枫白桦' 'upper'>>
+          <<maplebirchReplace 'maplebirchModHint' 'title'>>
+          <<run maplebirch.trigger('characterRender')>>
+        <</langbutton>>
+      <</if>>
+    <</widget>>`,
+    `<<widget 'maplebirchModHintContent'>>
+      <span class='searchButtons'>
+        <<textbox '_maplebirchModHintTextbox' ''>>
+        <<langbutton '搜索'>><<run maplebirch.tool.modhint.searchButtonClicked()>><</langbutton>>
+        <<langbutton '清除'>><<run maplebirch.tool.modhint.clearButtonClicked()>><</langbutton>>
+      </span>
+      <div id='maplebirchModHintContent'><<= setup.maplebirch.hint.play>></div>
+    <</widget>>`,
+    `<<widget 'maplebirchPanel'>>
+      <div class='maplebirch-inventory-panel'>
+        <!-- 状态区域（现在在左侧） -->
+        <div class='maplebirch-status-section'>
+          <h2>角色状态</h2>
+          <div class='maplebirch-status-content'>
+            <!-- 角色容器（包含角色图片和覆盖层） -->
+            <div id='maplebirch-character-container'>
+              <div id='maplebirch-character'></div>
+              <div id='maplebirch-character-overlay'></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <</widget>>`,
+    `<<widget 'maplebirchContent'>>
+      <div class='settingsHeader options'><span class='gold'><<= maplebirch.autoTranslate('秋枫白桦拓展')>></span></div>
+      <<= setup.maplebirch.content.play>>
+    <</widget>>`,
+  ];
+
+  const specialWidget = [
+    ...overlayWidgets,
+    ...audioWidgets,
+    ...characterWidgets,
+    ...modHintWidgets,
   ];
 
   const defaultData = {
@@ -227,8 +367,10 @@
         <div class="settingsToggleItem">
           <span class="gold"><<= maplebirch.t("Current Mods Language Setting")>>:</span>
           <<set _selectedLang to maplebirch.lang.language>>
-          <<set _langOptions = { [maplebirch.t('English')]: "EN", [maplebirch.t('Chinese')]: "CN", }>>
-          <<listbox "_selectedLang" autoselect>><<optionsfrom _langOptions>><</listbox>>
+          <<langlistbox "_selectedLang" autoselect>>
+            <<option 'English' 'EN'>>
+            <<option 'Chinese' 'CN'>>
+          <</langlistbox>>
         </div>
         <div class="settingsToggleItem">
           <label><<checkbox "$options.maplebirch.debug" false true autocheck>><<= maplebirch.t('DEBUG')+maplebirch.t('Mode')>></label>
@@ -236,12 +378,11 @@
         <div class="settingsToggleItem">
           <span class="gold"><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('sidebar',true)+maplebirch.t('position',true)+maplebirch.t('selection'),'capitalize')>>：</span>
           <span class="tooltip-anchor linkBlue" tooltip="<span class='teal'><<lanSwitch 'Update next time the interface is opened' '在下次打开界面时更新'>></span>">(?)</span><br>
-          <<set _modHintLocation = {
-            [maplebirch.t('mobile client')]: "mobile",
-            [maplebirch.t('desktop client')]: "desktop",
-            [maplebirch.t('disable')]: "disable"
-          }>>
-          <<listbox "$options.maplebirch.modHint" autoselect>><<optionsfrom _modHintLocation>><</listbox>>
+          <<langlistbox "$options.maplebirch.modHint" autoselect>>
+            <<option 'mobile client' 'mobile'>>
+            <<option 'desktop client' 'desktop'>>
+            <<option 'disable' 'disable'>>
+          <</langlistbox>>
         </div>
         <div class="settingsToggleItem">
           <<set _npcsidebarName = {}>>
@@ -260,7 +401,7 @@
           <</if>>
         </div>
         <div class="settingsToggleItem">
-          <span class="gold"><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('celestial phenomenons',true)+maplebirch.t('settings'),'capitalize')>>：</span><br>
+          <span class="gold"><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('celestial phenomenons settings'),'capitalize')>>：</span><br>
           <label><<checkbox "$options.maplebirch.solarEclipse" false true autocheck>><<= maplebirch.t('solar eclipse')>></label>
           <span class="tooltip-anchor linkBlue" tooltip="<span class='teal'><<lanSwitch 'When enabled, a solar eclipse will occur in the specified month.' '启用后将在指定月份出现日蚀'>></span>">(?)</span>
         </div>
@@ -303,7 +444,45 @@
             </details>
           </div>
         <</if>>
-      </div><hr>`,
+      </div><hr>
+      <div class='settingsGrid'>
+        <div class='settingsHeader options'><<= maplebirch.tool.convert(maplebirch.t('Mods',true)+maplebirch.t('transformation'),'title')>></div>
+        <div class='settingsToggleItem'>
+          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('Mods',true)+maplebirch.t('transformation',true)+maplebirch.t('type'),'title')>></span><br>
+          <<for _modName range Object.keys(V.maplebirch?.transformation)>>
+            <<capture _modName>>
+            <<set _config = maplebirch.char.transformation.config[_modName]>>
+              <<if _config.icon>><<icon _config.icon>><</if>>
+              <<= maplebirch.t(_modName)>>：
+              <<langlink 'Set'>>
+                <<clearDivineTransformations>><<clearAnimalTransformations>>
+                <<= \`<<\${_modName}Transform>>\`>><<updatesidebarimg>>
+                <</langlink>> | 
+              <<langlink 'Clear'>>
+                <<clearDivineTransformations>><<clearAnimalTransformations>>
+                <<= \`<<\${_modName}Transform 99>>\`>><<updatesidebarimg>>
+              <</langlink>>
+            <</capture>>
+            <br>
+          <</for>>
+        </div>
+        <div class='settingsToggleItem'>
+          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('Mods',true)+maplebirch.t('transformation',true)+maplebirch.t('points'),'title')>></span><br>
+          <<for _modName range Object.keys(V.maplebirch?.transformation || {})>>
+            <<capture _modName>>
+              <<set _config to maplebirch.char.transformation.config[_modName]>>
+              <<set _title to _config.icon ? \`<<icon _config.icon>> \${maplebirch.t(_modName)}\` : \`\${maplebirch.t(_modName)}\`>>
+              <<set _value = V.maplebirch.transformation[_modName].build || 0>>
+              <<numberStepper _title _value {
+                callback: (value) => { V.maplebirch.transformation[_modName].build = value; Wikifier.wikifyEval("<<transformationAlteration>><<updatesidebarimg>>"); },
+                max: _config.build || 100, 
+                percentage: false, 
+                colorArr: ["--teal", "--purple"]
+              }>>
+            <</capture>>
+          <</for>>
+        </div>
+      </div>`,
     NPCinit : `<<run maplebirch.npc._vanillaNPCInit(_nam)>>`,
     NPCspawn : `<<run maplebirch.npc.NPCSpawn(_nam, _npcno)>>`
   };
@@ -333,20 +512,22 @@
       { src: '\t\t</div>\n\t</div>', applybefore: '\t\t\t<<maplebirchWeaponBox>>\n\t\t' }
     ],
     overlayReplace: [
-      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleSaves">>', applybefore : '\t<<langbutton "Mods Settings">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>\n\t\t<</langbutton>>\n\t' },
-      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleOptions">>', applybefore : '\t<<langbutton "Mods">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #cheatsShown>><<maplebirchCheats>><</replace>>\n\t\t\t<<run $("#customOverlayContent").scrollTop(0);>>\n\t\t<</langbutton>>\n\t' },
-      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleFeats">>', applybefore : '\t<<langbutton "Mods Statistics">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchStatistics>><</replace>>\n\t\t<</langbutton>>\n\t' }
+      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleSaves">>', applybefore: '\t<<langbutton "Mods Settings">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>\n\t\t<</langbutton>>\n\t' },
+      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleOptions">>', applybefore: '\t<<langbutton "Mods">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #cheatsShown>><<maplebirchCheats>><</replace>>\n\t\t\t<<run $("#customOverlayContent").scrollTop(0);>>\n\t\t<</langbutton>>\n\t' },
+      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleFeats">>', applybefore: '\t<<langbutton "Mods Statistics">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchStatistics>><</replace>>\n\t\t<</langbutton>>\n\t' }
     ],
     'Options Overlay': [
-      { src: '<</widget>>\n\n<<widget "setFont">>', applybefore : '\t<<maplebirchInformation>>\n' }
+      { src: '<</widget>>\n\n<<widget "setFont">>', applybefore: '\t<<maplebirchInformation>>\n' }
     ],
     npcNamed: [
-      { src: '<</widget>>\n\n<<widget "npcNamedUpdate">>', applybefore : '\t<<run maplebirch.npc.injectModNPCs()>>\n' }
+      { src: '<</widget>>\n\n<<widget "npcNamedUpdate">>', applybefore: '\t<<run maplebirch.npc.injectModNPCs()>>\n' }
     ],
     Social: [
-      { src: 'T.importantNPCs = T.importantNpcOrder', applybefore : 'maplebirch.npc.vanillaNPCConfig(T.npcConfig);\n\t\t\t\t' },
-      { src: '<<relation-box-wolves>>', applyafter : '\n\n\t\t<<maplebirchReputation>>' },
-      { src: '<<relation-box-simple _overallFameBoxConfig>>', applyafter : '\n\n\t\t\t<<maplebirchFame>>' },
+      { src: 'T.importantNPCs = T.importantNpcOrder', applybefore: 'maplebirch.npc.vanillaNPCConfig(T.npcConfig);\n\t\t\t\t' },
+      { src: '<</silently>>\n\t\t\t<<relation-box-simple _policeBoxConfig>>', applybefore: '\t<<maplebirchReputationModify>>\n\t\t\t' },
+      { src: '<<relation-box-wolves>>', applyafter: '\n\n\t\t<<maplebirchReputation>>' },
+      { src: '<</silently>>\n\n\t\t\t<<relation-box-simple _sexFameBoxConfig>>', applybefore: '\t<<maplebirchFameModify>>\n\t\t\t' },
+      { src: '<<relation-box-simple _overallFameBoxConfig>>', applyafter: '\n\n\t\t\t<<maplebirchFame>>' },
       { src: '\t</div>\n\t<br>', applybefore: '\t<<maplebirchStatusSocial>>\n\t' }
     ],
     'Widgets Named Npcs': [
@@ -372,10 +553,17 @@
     ],
     'Widgets Journal': [
       { src: '<br>\n<</widget>>', applybefore: '<br><hr>\n\t<<maplebirchJournal>>\n' }
+    ],
+    'Transformation Widgets': [
+      { src: '<</widget>>\n\n<<widget "transform">>', applybefore: '\t<<run maplebirch.char.transformation.vanillaTransformation()>>\n' },
+    ],
+    'Widgets Mirror': [
+      { src: '<</if>>\n\t\t<<if ![', to: '<</if>>\n\t\t<<maplebirchTransformationMirror>>\n\t\t<<if ![' },
+      { src: '<<else>><<tficon "angel">>', to: '<<else>><<= maplebirch.char.transformation.icon>>' },
     ]
   };
 
-  maplebirch.once(':framework-init', (data) => {
+  maplebirch.once(':framework-init', (/** @type {any} */ data) => {
     Object.assign(data, {
       specialWidget,
       default: defaultData,

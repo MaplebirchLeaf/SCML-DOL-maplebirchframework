@@ -9,8 +9,9 @@
 
   class CharacterManager {
     constructor() {
-      this.tool = null;
-      this.log = null;
+      this.tool = maplebirch.tool;
+      this.log = this.tool.createLog('char');
+      maplebirch.trigger(':char-init', this);
     }
 
     /* 渲染角色到容器 */
@@ -148,12 +149,16 @@
     }
 
     preInit() {
-      this.tool = maplebirch.tool;
-      this.log = this.tool.createLog('char');
+
     }
 
     Init() {
       maplebirch.on('characterRender', async () => await maplebirch.char.render());
+      this.transformation.inject();
+    }
+
+    loadInit() {
+      this.transformation.inject();
     }
   }
 

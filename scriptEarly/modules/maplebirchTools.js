@@ -28,6 +28,7 @@
     hintClicked() {
       if (window.$ && window.$.wiki) {
         $.wiki('<<maplebirchReplace "maplebirchModHint" "title">>');
+        maplebirch.trigger('characterRender');
       } else {
         const overlay = document.getElementById("maplebirchModHint");
         if (overlay) overlay.style.display = "block";

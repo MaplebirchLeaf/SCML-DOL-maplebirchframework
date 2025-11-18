@@ -24,6 +24,21 @@
     }
   }*/
 
+  async function modifyEffect() {
+    const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
+    const SCdata = oldSCdata.cloneSC2DataInfo();
+    const effectJavascriptPath = 'effect.js';
+    const file = SCdata.scriptFileItems.getByNameWithOrWithoutPath(effectJavascriptPath);
+    const regex = /break;\n\t{4}default:/;
+    if (regex.test(file.content)) {
+      file.content = file.content.replace(
+        regex,
+        'break;\n\t{4}default:\n\t\t\t\t\tif (maplebirch.char.transformation.message(messageKey, { element: element, sWikifier: sWikifier, fragment: fragment, wikifier: wikifier })) { break; }'
+      );
+    }
+    addonReplacePatcher.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);
+  }
+
   async function modifyOptionsDateFormat() {
     const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
     const SCdata = oldSCdata.cloneSC2DataInfo();
@@ -71,7 +86,7 @@
   }
 
   class MaplebirchFrameworkAddon {
-    /** @param {maplebirch} core @param {modSC2DataManager} gSC2DataManager @param {modUtils} gModUtils */
+    /** @param {MaplebirchCore} core @param {modSC2DataManager} gSC2DataManager @param {modUtils} gModUtils */
     constructor(core, gSC2DataManager, gModUtils) {
       this.core = core;
       this.gSC2DataManager = gSC2DataManager;
@@ -105,6 +120,7 @@
 
     async #vanillaDataReplace() {
       this.core.log('开始执行正则替换', 'DEBUG');
+      try { await modifyEffect(); } catch (e) { this.core.log('modifyEffect 出错', 'ERROR'); }
       try { await modifyOptionsDateFormat(); } catch (e) { this.core.log('modifyOptionsDateFormat 出错', 'ERROR'); }
       try { await modifyJournalTime(); } catch (e) { this.core.log('modifyJournalTime 出错', 'ERROR'); }
       try { await joinNPCSidebar(); } catch (e) { this.core.log('joinNPCSidebar 出错', 'ERROR'); }
@@ -117,7 +133,7 @@
       return pluginConfig || {};
     }
 
-    /** @param {string} addonName @param {{ name?: string; bootJson: { addonPlugin: any[]; }; }} mod @param {any} modZip */
+    /** @param {string} addonName @param {{ name: string; bootJson: { addonPlugin: any[]; }; }} mod @param {any} modZip */
     async registerMod(addonName, mod, modZip) {
       this.info.set(mod.name, {
         addonName: addonName,
@@ -228,7 +244,7 @@
       }
     }
 
-    /** @param {string} modName 模块名称 @param {string|object} zone 目标区域 @param {string|Object<string, {widget: string,exclude: string[], match: RegExp, passage: string[]}>} widget 部件配置 */
+    /** @param {string} modName 模块名称 @param {string} zone 目标区域 @param {string|Object<string, {widget: string,exclude: string[], match: RegExp, passage: string[]}>} widget 部件配置 */
     #addWidgetWithConditions(modName, zone, widget) {
       if (typeof widget === 'string') {
         this.core.log(`为Mod ${modName}添加部件到区域: ${zone} (${widget})`, 'DEBUG');
@@ -296,7 +312,7 @@
           }
           config.forEach(npcConfig => {
             if (!npcConfig || typeof npcConfig !== 'object') return;
-            if (npcConfig.data) this.core.npc.add(npcConfig.data);
+            if (npcConfig.data) this.core.npc.add(npcConfig.data, npcConfig?.config ?? {}, npcConfig?.translations ?? {});
             if (npcConfig.state) this.core.npc.addStats(npcConfig.state);
           });
         }

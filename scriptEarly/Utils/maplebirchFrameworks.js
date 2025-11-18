@@ -675,7 +675,10 @@
         SchoolSubjectsBox       : [], // 学科
         SchoolMarksText         : [], // 成绩
         WeaponBox               : [], // 武器
+
+        ReputationModify        : [], // 声誉显示修改区
         Reputation              : [], // 声誉
+        FameModify              : [], // 知名度显示修改区
         Fame                    : [], // 知名度
         StatusSocial            : [], // 自定义社交状态
 
@@ -983,7 +986,11 @@
     #applyContentPatches(passage, title, patchSets) {
       if (!patchSets || !patchSets[title]) return passage;
       let source = String(passage.content);
-      for (const set of patchSets[title]) source = this.#matchAndApply(set, source);
+      for (const set of patchSets[title]) {
+        const before = source;
+        source = this.#matchAndApply(set, source);
+        if (source === before) this.log(`段落 "${title}" 替换未生效`, 'ERROR');
+      }
       passage.content = source;
       return passage;
     }

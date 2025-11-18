@@ -19,9 +19,61 @@
 
     constructor() {
       this.lang = maplebirch.lang;
-      this.tool = null;
-      this.log = null;
+      this.tool = maplebirch.tool;
+      this.log = this.tool.createLog('widget');
       this.updateTimer = null;
+    }
+
+    #languageWidgetManager() {
+      setup.maplebirch.language = {
+        managers: {
+          language: new Map(),
+          langbutton: new Map(),
+          langlink: new Map(),
+          langlistbox: new Map(),
+        },
+        init() {
+          if (this.initialized) return;
+          Object.keys(this.managers).forEach(macroType => {
+            maplebirch.on(':languageChange', () => {
+              this.managers[macroType].forEach(updater => {
+                try { updater(); }
+                catch (e) { maplebirch.log(`Language update error for ${macroType}:`, 'ERROR', e); }
+              });
+            });
+          });
+          maplebirch.once(':passagestart', () => Object.values(this.managers).forEach(manager => manager.clear()));
+          this.initialized = true;
+        },
+        add(macroType, id, updater) {
+          if (!this.managers[macroType]) this.managers[macroType] = new Map();
+          this.managers[macroType].set(id, updater);
+          this.init();
+        },
+        remove(macroType, id) {
+          if (this.managers[macroType]) this.managers[macroType].delete(id);
+        }
+      };
+    }
+
+    _language() {
+      const $container = jQuery('<div style="display: contents;"></div>');
+      const uniqueId = `language-${Date.now()}-${Math.random().toString(36)}`;
+      const render = () => {
+        const lang = maplebirch.Language;
+        const content = this.payload.find(p => p.name === 'option' && p.args[0]?.toUpperCase() === lang.toUpperCase())?.contents || '';
+        $container.empty();
+        if (content) {
+          const fragment = document.createDocumentFragment();
+          new Wikifier(fragment, content);
+          $container.append(fragment);
+          Links.generate();
+        }
+      };
+      render();
+      $(this.output).append($container);
+      setup.maplebirch.language.add('language', uniqueId, render);
+      $container.on('remove', () => setup.maplebirch.language.remove('language', uniqueId));
     }
 
     _languageButton() {
@@ -32,12 +84,12 @@
         let translationKey = '';
         let convertMode = null;
         let $image = null;
+
         if (typeof arg === 'string') {
           translationKey = arg;
           convertMode = this.args.length > 1 ? this.args[1] : null;
           buttonText = processHandling.getTranslation(translationKey, maplebirch);
-        }
-        else if (typeof arg === 'object') {
+        } else if (typeof arg === 'object') {
           if (arg.isImage) {
             $image = jQuery(document.createElement('img')).attr('src', arg.source);
             if (arg.passage) $image.attr('data-passage', arg.passage);
@@ -52,14 +104,14 @@
           } else {
             return this.error('<<langbutton>> 不支持的参数对象类型');
           }
-        }
-        else {
+        } else {
           return this.error('<<langbutton>> 参数必须是字符串、函数或对象');
         }
 
         if (convertMode && buttonText) buttonText = maplebirch.tool.convert(buttonText, convertMode);
 
         const $button = jQuery(document.createElement('button')).addClass('macro-button link-internal').attr('data-translation-key', translationKey);
+        const uniqueId = `${Date.now()}-${Math.random().toString(36)}`;
 
         if ($image) { $button.append($image).addClass('link-image'); }
         else { $button.append(document.createTextNode(buttonText)); }
@@ -74,7 +126,18 @@
         }, this.createShadowWrapper(
           payloadContent ? () => { Wikifier.wikifyEval(payloadContent, macroThis.passageObj); } : null
         ));
+
+        const updateButtonText = () => {
+          if ($image) return;
+          const newText = processHandling.getTranslation(translationKey, maplebirch);
+          let finalText = newText;
+          if (convertMode) finalText = maplebirch.tool.convert(newText, convertMode);
+          $button.empty().append(document.createTextNode(finalText));
+        };
+
         $button.appendTo(this.output);
+        setup.maplebirch.language.add('langbutton', uniqueId, updateButtonText);
+        $button.on('remove', () => setup.maplebirch.language.remove('langbutton', uniqueId));
       } catch (e) {
         console.error('<<langbutton>> 宏处理错误', e);
         return this.error(`<<langbutton>> 执行错误: ${e.message}`);
@@ -91,14 +154,15 @@
         let passageName = null;
         let convertMode = null;
         let $image = null;
+        T.link = true;
+        const uniqueId = `${Date.now()}-${Math.random().toString(36)}`;
 
         if (typeof arg === 'string') {
           translationKey = arg;
           passageName = this.args.length > 1 ? this.args[1] : null;
           convertMode = this.args.length > 2 ? this.args[2] : null;
           linkText = processHandling.getTranslation(translationKey, maplebirch);
-        }
-        else if (typeof arg === 'object') {
+        } else if (typeof arg === 'object') {
           if (arg.isImage) {
             $image = jQuery(document.createElement('img')).attr('src', arg.source);
 
@@ -109,23 +173,19 @@
             passageName = arg.link;
             translationKey = `image:${arg.source}`;
             convertMode = this.args.length > 1 ? this.args[1] : null;
-          }
-          else if (arg.link) {
+          } else if (arg.link) {
             translationKey = arg.text;
             passageName = arg.link;
             convertMode = this.args.length > 1 ? this.args[1] : null;
             linkText = processHandling.getTranslation(translationKey, maplebirch);
-          }
-          else {
+          } else {
             return this.error('<<langlink>> 不支持的参数对象类型');
           }
-        }
-        else {
+        } else {
           return this.error('<<langlink>> 参数必须是字符串、函数或链接对象');
         }
 
-        if (convertMode && linkText) linkText = maplebirch.tool.convert(linkText, convertMode);
-
+        const $container = jQuery(document.createElement('span'));
         const $link = jQuery(document.createElement('a')).addClass('macro-link link-internal').attr('data-translation-key', translationKey);
 
         if ($image) { $link.append($image).addClass('link-image'); }
@@ -140,6 +200,7 @@
           }
         }
 
+        if (convertMode) $link.attr('data-convert-mode', convertMode);
         const payloadContent = this.payload[0]?.contents?.trim() || '';
         const macroThis = this;
 
@@ -151,11 +212,111 @@
           payloadContent ? () => { Wikifier.wikifyEval(payloadContent, macroThis.passageObj); } : null,
           passageName != null ? () => maplebirch.SugarCube.Engine.play(passageName) : null
         ));
-        $link.appendTo(this.output);
 
+        const updateLinkText = () => {
+          if ($image) return;
+          const newText = processHandling.getTranslation(translationKey, maplebirch);
+          let finalText = newText;
+          if (convertMode) finalText = maplebirch.tool.convert(newText, convertMode);
+          $link.empty().append(document.createTextNode(finalText));
+        };
+
+        if (!$image && convertMode && linkText) {
+          linkText = maplebirch.tool.convert(linkText, convertMode);
+          $link.empty().append(document.createTextNode(linkText));
+        }
+
+        $container.append($link);
+        $container.appendTo(this.output);
+        setup.maplebirch.language.add('langlink', uniqueId, updateLinkText);
+        $container.on('remove', () => setup.maplebirch.language.remove('langlink', uniqueId));
       } catch (e) {
         console.error('<<langlink>> 宏处理错误', e);
         return this.error(`<<langlink>> 执行错误: ${e.message}`);
+      }
+    }
+
+    _langlistbox() {
+      try {
+        if (!this.args || this.args.length === 0) return this.error('<<langlistbox>> 需要至少一个参数：变量名');
+        const varName = String(this.args[0]).trim();
+        if (!varName || (varName[0] !== '$' && varName[0] !== '_')) return this.error(`变量名 "${varName}" 缺少sigil（$ 或 _）`);
+        const varId = maplebirch.SugarCube.Util.slugify(varName);
+        const config = { autoselect: false };
+        for (let i = 1; i < this.args.length; ++i) {
+          const arg = this.args[i];
+          if (arg === 'autoselect') config.autoselect = true;
+        }
+
+        const options = [];
+        let selectedIdx = -1;
+        const uniqueId = `${Date.now()}-${Math.random().toString(36)}`;
+        for (let i = 1; i < this.payload.length; ++i) {
+          const payload = this.payload[i];
+
+          if (payload.name === 'option') {
+            if (payload.args.length === 0) return this.error('<<option>> 需要参数');
+            const label = String(payload.args[0]);
+            const value = payload.args.length > 1 ? payload.args[1] : label;
+            const isSelected = payload.args.includes('selected');
+            options.push({ label, value });
+            if (isSelected) {
+              if (config.autoselect) return this.error('不能同时指定 autoselect 和 selected');
+              if (selectedIdx !== -1) return this.error('只能有一个选中选项');
+              selectedIdx = options.length - 1;
+            }
+          } else if (payload.name === 'optionsfrom') {
+            if (!payload.args.full) return this.error('<<optionsfrom>> 需要表达式');
+            let result;
+            try {
+              const exp = payload.args.full;
+              result = Scripting.evalJavaScript(exp[0] === '{' ? `(${exp})` : exp);
+            } catch (ex) {
+              return this.error(`表达式错误: ${ex.message}`);
+            }
+            if (typeof result !== 'object' || result === null) return this.error('表达式必须返回对象或数组');
+            const entries = result instanceof Map ? Array.from(result.entries()) : result instanceof Set ? Array.from(result).map(v => [v, v]) : Object.entries(result);
+            entries.forEach(([key, val]) => { options.push({ label: String(key), value: val }); });
+          }
+        }
+
+        if (options.length === 0) return this.error('没有指定选项');
+        if (selectedIdx === -1) {
+          selectedIdx = config.autoselect ? options.findIndex(opt => maplebirch.SugarCube.Util.sameValueZero(opt.value, State.getVar(varName))) : 0;
+          if (selectedIdx === -1) selectedIdx = 0;
+        }
+
+        const $select = jQuery(document.createElement('select'))
+          .attr({
+            id: `langlistbox-${varId}-${uniqueId}`,
+            name: `langlistbox-${varId}`,
+            tabindex: 0
+          })
+          .addClass('macro-langlistbox')
+          .on('change.macros', this.createShadowWrapper(function () { State.setVar(varName, options[Number(this.value)].value); }));
+        options.forEach((opt, i) => {
+          jQuery(document.createElement('option'))
+            .val(i)
+            .text(processHandling.getTranslation(opt.label, maplebirch) || opt.label)
+            .attr('data-translation-key', opt.label)
+            .prop('selected', i === selectedIdx)
+            .appendTo($select);
+        });
+
+        $select.appendTo(this.output);
+        State.setVar(varName, options[selectedIdx].value);
+        const updateTexts = () => {
+          $select.find('option').each(function () {
+            const $opt = $(this);
+            const newText = processHandling.getTranslation($opt.attr('data-translation-key'), maplebirch) || $opt.attr('data-translation-key');
+            $opt.text(newText);
+          });
+        };
+        setup.maplebirch.language.add('langlistbox', uniqueId, updateTexts);
+        $select.on('remove', () => setup.maplebirch.language.remove('langlistbox', uniqueId));
+      } catch (e) {
+        console.error('<<langlistbox>> 错误', e);
+        return this.error(`<<langlistbox>> 错误: ${e.message}`);
       }
     }
 
@@ -234,7 +395,8 @@
     }
 
     _showModVersions() {
-      const html = `<div id="modversions">Maplebirch Framework v${maplebirch.constructor.meta.version}|${maplebirch.t('Dependence')}:${maplebirch.modList.length}</div>`;
+      const html = `<div id="modversions">Maplebirch Framework v${maplebirch.constructor.meta.version} | 
+      ${maplebirch.autoTranslate('Dependence')}: ${maplebirch.modList.length}</div>`;
       return html;
     }
 
@@ -328,12 +490,41 @@
       wItem.find('input').prop('disabled', wDisabled).prop('checked', sandbox.window);
     }
 
+    // 更新后记得删
+    #compatibleModI18N() {
+      if (modUtils.getMod('ModI18N')) {
+        setup.NPC_CN_NAME = function (args) {
+          if (setup.NPCNameList.indexOf(args) == -1) {
+            return args;
+          } else if (typeof V.NPCName[V.NPCNameList.indexOf(args)].pronoun == 'undefined') {
+            return args;
+          } else if (maplebirch.lang.translations.has(args)) {
+            return maplebirch.autoTranslate(args);
+          } else {
+            return setup.NPCNameList_cn_name[args][0];
+          }
+        }
+      }
+    }
+
     preInit() {
-      this.tool = maplebirch.tool;
-      this.log = this.tool.createLog('widget');
-      this.tool.framework.onInit(() => setup.maplebirch = {});
+      this.tool.framework.onInit(() => {
+        setup.maplebirch = {};
+        this.#languageWidgetManager();
+        setup.maplebirch.hint = (() => {
+          const hint = [];
+          function push(...args) { args.forEach(item => { if (!hint.includes(item)) hint.push(item); }); }
+          return { push, get play() { return hint.map(item => `${item}`).join(''); } };
+        })();
+        setup.maplebirch.content = (() => {
+          const content = [];
+          function push(...args) { args.forEach(item => { if (!content.includes(item)) content.push(item); }); }
+          return { push, get play() { return content.map(item => `${item}`).join(''); } };
+        })();
+      });
       this.tool.framework.addTo('HintMobile', 'maplebirchModHintMobile');
       this.tool.framework.addTo('MenuBig', 'maplebirchModHintDesktop');
+      
       this.tool.other.configureLocation('lake_ruin', {
         condition: () => Weather.bloodMoon && !Weather.isSnow
       }, { layer: 'base', element: 'bloodmoon' });
@@ -343,8 +534,10 @@
       }, { layer: 'base', element: 'bloodmoon_snow' });
 
       maplebirch.once(':definewidget', () => {
+        this.tool.widget.defineMacro('language', this._language, ['option'], false, false);
         this.tool.widget.defineMacro('langbutton', this._languageButton, null, false, true);
         this.tool.widget.defineMacro('langlink', this._languageLink, null, false, true);
+        this.tool.widget.defineMacro('langlistbox', this._langlistbox, ['option', 'optionsfrom'], ['optionsfrom'], true);
         this.tool.widget.defineMacro('radiobuttonsfrom', this._radiobuttonsfrom);
         this.tool.widget.defineMacro('maplebirchTextOutput', this.tool.text.makeMacroHandler());
         this.tool.widget.defineMacroS('maplebirchFrameworkVersions', this._showModVersions);
@@ -386,6 +579,7 @@
 
     Init() {
       Dynamic.task = (fn, name) => this._fixDynamicTask(fn, name);
+      this.#compatibleModI18N();
     }
 
     postInit() {

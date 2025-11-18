@@ -19,14 +19,12 @@
    * @param {boolean} [options.preservePrototype=true] - 是否保留原型链（默认true）
    * @param {WeakMap<object,any>} [map=new WeakMap()] - 内部WeakMap(处理循环引用，用户通常无需传递)
    * @returns {any} 克隆后的对象
-   * 
    * @example
    * // 深克隆对象
    * const obj = { a: 1, b: { c: 2 } };
    * const cloned = clone(obj);
    * obj.b.c = 3; // 不影响克隆对象
    * console.log(cloned.b.c); // 2
-   * 
    * @example
    * // 浅克隆数组
    * const arr = [1, [2, 3]];
@@ -92,15 +90,12 @@
    * @param {any} a - 第一个比较值
    * @param {any} b - 第二个比较值
    * @returns {boolean} 是否相等
-   * 
    * @example
    * // 比较日期对象
    * equal(new Date(2023, 0, 1), new Date(2023, 0, 1)); // true
-   * 
    * @example
    * // 比较嵌套对象
    * equal({ a: [1, { b: 2 }] }, { a: [1, { b: 2 }] }); // true
-   * 
    * @example
    * // 比较正则表达式
    * equal(/abc/i, /abc/i); // true
@@ -130,67 +125,86 @@
   }
 
   /**
-   * - 基本类型：直接覆盖
-   * - 对象：递归合并
-   * - 数组：根据arrayBehaviour选项处理：
-   *    - "replace"：替换整个数组（默认）
-   *    - "concat"：连接两个数组
-   *    - "merge"：递归合并对应索引的元素
+   * - 基本类型（string、number、boolean、function等）：直接覆盖目标值
+   * - 对象：递归合并所有可枚举属性
+   * - 数组：根据 arrayBehaviour 选项处理：
+   *   - 'replace'：用源数组替换目标数组（默认）
+   *   - 'concat'：将源数组连接到目标数组末尾
+   *   - 'merge'：递归合并对应索引位置的数组元素
    * @param {Object} target - 目标对象（将被修改）
    * @param {...Object} sources - 要合并的源对象
-   * @param {Object} [options={}] - 合并选项
-   * @param {string} [options.arrayBehaviour="replace"] - 数组合并策略("replace", "concat", "merge")
-   * @param {Function} [options.filterFn] - 属性过滤函数(key, value, depth) => boolean
-   * @returns {Object} 合并后的对象（即修改后的target）
-   * 
+   * @param {Object} [options] - 合并选项
+   * @param {string} [options.arrayBehaviour='replace'] - 数组合并策略
+   * @param {Function} [options.filterFn] - 属性过滤函数
+   * @returns {Object} 合并后的目标对象
    * @example
-   * // 合并数组
-   * const target = { arr: [1, 2] };
-   * merge(target, { arr: [3, 4] }, { arrayBehaviour: "concat" });
+   * // 基本合并
+   * const target = { a: 1, b: { c: 2 } };
+   * merge(target, { a: 3, b: { d: 4 } });
+   * // 结果: { a: 3, b: { c: 2, d: 4 } }
+   * @example
+   * // 数组合并 - 替换策略
+   * merge({ arr: [1, 2] }, { arr: [3, 4] });
+   * // 结果: { arr: [3, 4] }
+   * @example
+   * // 数组合并 - 连接策略
+   * merge({ arr: [1, 2] }, { arr: [3, 4] }, { arrayBehaviour: 'concat' });
    * // 结果: { arr: [1, 2, 3, 4] }
-   * 
    * @example
-   * // 递归合并对象
-   * const target = { a: { b: 1, c: 2 } };
-   * merge(target, { a: { c: 3, d: 4 } });
-   * // 结果: { a: { b: 1, c: 3, d: 4 } }
-   * 
+   * // 数组合并 - 合并策略
+   * const target = { arr: [{ a: 1 }, { b: 2 }] };
+   * merge(target, { arr: [{ c: 3 }, { d: 4 }] }, { arrayBehaviour: 'merge' });
+   * // 结果: { arr: [{ a: 1, c: 3 }, { b: 2, d: 4 }] }
    * @example
    * // 使用属性过滤
-   * merge({}, { public: "info", secret: "data" }, {
-   *   filterFn: (key) => key !== "secret"
+   * merge({}, { public: 'info', secret: 'data' }, {
+   *   filterFn: (key) => key !== 'secret'
    * });
-   * // 结果: { public: "info" }
+   * // 结果: { public: 'info' }
+   * @example
+   * // 合并多个源对象
+   * merge({ a: 1 }, { b: 2 }, { c: 3 });
+   * // 结果: { a: 1, b: 2, c: 3 }
    */
   function merge(target, ...sources) {
+    if (sources.length === 0) return target;
     /** @type {Object<any,{arrayBehaviour:string,filterFn:any}>} */
-    const options = typeof sources[sources.length - 1] === "object" && !Array.isArray(sources[sources.length - 1]) ? sources.pop() : {};
-    const { arrayBehaviour = "replace", filterFn = null } = options;
+    let options = {};
+    const lastSource = sources[sources.length - 1];
+    if (sources.length > 1 && typeof lastSource === 'object' && !Array.isArray(lastSource) && lastSource !== null) options = sources.pop();
+    const { arrayBehaviour = 'replace', filterFn = null } = options;
     /** @param {any} target @param {any} source */
     const mergeRecursive = (target, source, depth = 1) => {
-      if (source === null || typeof source !== 'object') return source;
+      if (source === null || typeof source !== 'object' || typeof source === 'function') return source;
       for (const key in source) {
         if (filterFn && !filterFn(key, source[key], depth)) continue;
         const sourceValue = source[key];
         const targetValue = target[key];
-        if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
+        if (typeof sourceValue === 'function') {
+          target[key] = sourceValue;
+        } else if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
           switch (arrayBehaviour) {
-            case "concat":
+            case 'concat':
               target[key] = [...targetValue, ...sourceValue];
               break;
-            case "merge":
-              target[key] = targetValue.map((item, i) => i < sourceValue.length ? mergeRecursive(item, sourceValue[i], depth + 1) : item);
+            case 'merge':
+              const maxLength = Math.max(targetValue.length, sourceValue.length);
+              target[key] = Array.from({ length: maxLength }, (_, i) => {
+                if (i < targetValue.length && i < sourceValue.length) { return mergeRecursive(targetValue[i], sourceValue[i], depth + 1); }
+                else if (i < targetValue.length) { return targetValue[i]; }
+                else { return sourceValue[i]; }
+              });
               break;
             default:
               target[key] = [...sourceValue];
           }
-        } else if (typeof sourceValue === 'object' && sourceValue !== null && typeof targetValue === 'object' && targetValue !== null) {
+        } else if (typeof sourceValue === 'object' && sourceValue !== null &&
+          typeof targetValue === 'object' && targetValue !== null) {
           target[key] = mergeRecursive(targetValue, sourceValue, depth + 1);
         } else {
           target[key] = sourceValue;
         }
       }
-      
       return target;
     };
     for (const source of sources) target = mergeRecursive(target, source);
@@ -209,23 +223,18 @@
    * @param {Function} [options.comparator] - 自定义比较函数(item, value) => boolean
    * @param {boolean} [options.deepEqual=false] - 是否使用深度相等比较
    * @returns {boolean} 检查结果
-   * 
    * @example
    * // 检查单个元素
    * contains([1, 2, 3], 2); // true
-   * 
    * @example
    * // 检查多个元素(all模式)
    * contains([1, 2, 3], [1, 2], { mode: 'all' }); // true
-   * 
    * @example
    * // 检查多个元素(none模式)
    * contains([1, 2, 3], [4, 5], { mode: 'none' }); // true
-   * 
    * @example
    * // 不区分大小写检查
    * contains(['a', 'B'], 'b', { caseSensitive: false }); // true
-   * 
    * @example
    * // 深度对象检查
    * contains([{ a: 1 }], { a: 1 }, { deepEqual: true }); // true
@@ -266,19 +275,15 @@
    * @param {number} [max] - 最大值
    * @param {boolean} [float=false] - 是否生成浮点数（默认false）
    * @returns {number} 随机数
-   * 
    * @example
    * // 生成0-1之间的随机浮点数
    * random(); // 0.756
-   * 
    * @example
    * // 生成10-20之间的整数
    * random(10, 20); // 15
-   * 
    * @example
    * // 生成5-10之间的浮点数
    * random(5, 10, true); // 7.231
-   * 
    * @example
    * // 使用配置对象
    * random({ min: 5, max: 10, float: true }); // 7.231
@@ -307,19 +312,15 @@
    * @param {number[]} [options.weights] - 选项权重数组（长度必须与选项一致）
    * @param {boolean} [options.allowNull=false] - 是否允许返回null（默认false）
    * @returns {any} 随机选择的选项（可能为null）
-   * 
    * @example
    * // 简单随机选择
    * either(['a', 'b', 'c']); // 'b'
-   * 
    * @example
    * // 加权随机选择
    * either(['a', 'b'], { weights: [0.8, 0.2] }); // 80%概率选'a'
-   * 
    * @example
    * // 允许返回空值
    * either(['a', 'b'], { allowNull: true }); // 33%概率返回null
-   * 
    * @example
    * // 直接传递选项
    * either('cat', 'dog', { weights: [0.3, 0.7] });

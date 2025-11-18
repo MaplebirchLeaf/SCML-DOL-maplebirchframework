@@ -25,21 +25,24 @@
   };
 
   const methodPaths = {
-    addLanguage: 'lang.importAllLanguages',       // 导入语言
-    addTimeEvent: 'state.regTimeEvent',           // 添加时间事件
+    addLanguage:   'lang.importAllLanguages',     // 导入语言
+    addTimeEvent:  'state.regTimeEvent',          // 添加时间事件
     addStateEvent: 'state.regStateEvent',         // 添加状态事件
-    timeTravel: 'state.timeTravel',               // 时间旅行
-    addAudio: 'audio.importAllAudio',             // 导入音频
-    getPlayer: 'audio.getPlayer',                 // 获取播放器
-    migration: 'tool.migration.create',           // 创建迁移
-    getRand: 'tool.rand.get',                     // 获取随机值
-    addText: 'tool.text.reg',                     // 注册文本片段
-    addto: 'tool.framework.addTo',                // 添加到区域
-    onInit: 'tool.framework.onInit',              // 初始化回调
-    addTraits: 'tool.other.addTraits',            // 添加特质
-    addLocation: 'tool.other.configureLocation',  // 配置位置
-    addNPC: 'npc.add',                            // 添加NPC
-    addStats: 'npc.addStats',                     // 添加状态 
+    timeTravel:    'state.timeTravel',            // 时间旅行
+    addAudio:      'audio.importAllAudio',        // 导入音频
+    getPlayer:     'audio.getPlayer',             // 获取播放器
+    migration:     'tool.migration.create',       // 创建迁移
+    getRand:       'tool.rand.get',               // 获取随机值
+    addText:       'tool.text.reg',               // 注册文本片段
+    addto:         'tool.framework.addTo',        // 添加到区域
+    onInit:        'tool.framework.onInit',       // 初始化回调
+    addTraits:     'tool.other.addTraits',        // 添加特质
+    addLocation:   'tool.other.configureLocation',// 配置位置
+    addNPC:        'npc.add',                     // 添加NPC
+    addStats:      'npc.addStats',                // 添加状态
+    addNPCClothes: 'npc.addClothes',              // 添加服装
+    modifyWeather: 'addonPlugin.modifyWeather',   // 气象修改
+    addTransform:  'char.transformation.add',     // 添加转化
   };
 
   const createFrameworkProxy = () => new Proxy({}, {

@@ -2,10 +2,10 @@
 /// <reference path='../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  const frameworkVersion = '2.5.0';
-  const lastUpdate = '2025.10.29';
+  const frameworkVersion = '2.5.3';
+  const lastUpdate = '2025.11.10';
   const lastModifiedBy = '楓樺葉';
-  const DEBUGMODE = true;
+  const DEBUGMODE = false;
 
   const ModuleState = {
     PENDING: 0,
@@ -113,8 +113,7 @@
     }
 
     #detectLanguage() {
-      // @ts-ignore
-      const lang = navigator.language || navigator.userLanguage || 'en';
+      const lang = navigator.language || 'en';
       return lang.includes('zh') ? 'CN' : 'EN';
     }
     /** 初始化翻译数据库 @returns {Promise<void>} */
@@ -773,6 +772,25 @@
         return false;
       }
       const moduleDependencies = [...(module.dependencies || []), ...dependencies];
+      if (this.core.meta.earlyMount?.includes(name)) {
+        const unmetEarlyDeps = moduleDependencies.filter(dep => this.core.meta.earlyMount?.includes(dep) && !(/** @type {any} */(this.core)[dep]));
+        if (unmetEarlyDeps.length > 0) {
+          this.core.logger.log(`[${name}] 模块等待依赖挂载: [${unmetEarlyDeps.join(', ')}]`, 'DEBUG');
+          const checkDeps = () => {
+            const stillUnmet = unmetEarlyDeps.filter(dep => !(/** @type {any} */(this.core)[dep]));
+            if (stillUnmet.length === 0) {
+              /** @type {any} */(this.core)[name] = module;
+              this.core.logger.log(`[${name}] 模块已在依赖满足后挂载 (earlyMount)`, 'DEBUG');
+            } else {
+              setTimeout(checkDeps, 10);
+            }
+          };
+          setTimeout(checkDeps, 0);
+        } else {
+          /** @type {any} */(this.core)[name] = module;
+          this.core.logger.log(`[${name}] 模块已在注册时挂载 (earlyMount)`, 'DEBUG');
+        }
+      }
       const allDependencies = new Set();
       /** 递归收集依赖 @param {string} depName 依赖名称 @param {Set<string>} [visited] 已访问的依赖集合 */
       const collectDependencies = (depName, visited = new Set()) => {
@@ -790,23 +808,29 @@
         allDependencies.add(dep);
         collectDependencies(dep);
       });
+
       if (this.#detectCircularDependency(name, [...allDependencies])) {
         this.core.logger.log(`模块 ${name} 注册失败: 存在循环依赖`, 'ERROR');
         return false;
       }
+
       reg.modules.set(name, module);
       reg.states.set(name, ModuleState.PENDING);
       reg.dependencies.set(name, new Set(moduleDependencies));
       reg.allDependencies.set(name, allDependencies);
+
       if (!reg.dependents.has(name)) reg.dependents.set(name, new Set());
       moduleDependencies.forEach(dep => {
         if (!reg.dependents.has(dep)) reg.dependents.set(dep, new Set());
         reg.dependents.get(dep).add(name);
       });
+
       this.core.logger.log(`注册模块: ${name}, 依赖: [${moduleDependencies.join(', ')}]`, 'DEBUG');
       this.core.logger.log(`传递依赖: [${[...allDependencies].join(', ')}]`, 'DEBUG');
+
       this.initPhase.registeredModuleCount++;
       this.#checkModuleRegistration();
+
       if (reg.waitingQueue.has(name)) {
         const waitingModules = [...reg.waitingQueue.get(name)];
         reg.waitingQueue.delete(name);
@@ -814,6 +838,7 @@
           if (reg.states.get(moduleName) === ModuleState.PENDING) setTimeout(() => this.#initModule(moduleName), 0);
         });
       }
+
       return true;
     }
     /** 设置预期模块数量 @param {number} count 预期模块数量 */
@@ -998,7 +1023,7 @@
           if (result instanceof Promise) await result;
         }
         if (isPreInit) {
-          if (this.core.meta.coreModules?.includes(moduleName))  /** @type {any} */(this.core)[moduleName] = module;
+          if (this.core.meta.coreModules?.includes(moduleName) && !this.core.meta.earlyMount?.includes(moduleName)) /** @type {any} */(this.core)[moduleName] = module;
           this.preInitialized.add(moduleName);
         } else {
           reg.states.set(moduleName, ModuleState.MOUNTED);
@@ -1102,6 +1127,7 @@
       this.meta = {
         state: ModuleState.PENDING,
         coreModules: ['state', 'audio', 'tool', 'var', 'npc', 'char', 'shop'],
+        earlyMount: ['state', 'tool'],
         initializedAt: new Date().toLocaleString(),
       };
       /** @type {string[]} */
@@ -1110,8 +1136,6 @@
       this.lang = new LanguageManager(this);
       this.events = new EventEmitter(this);
       this.modules = new ModuleManager(this);
-      this.modLoader = null;
-      this.modUtils = null;
       this.onLoad = false;
     }
     /** @param {string} msg @param {any[]} objs */
@@ -1212,6 +1236,7 @@
     }
   }
 
+  // @ts-ignore
   window.maplebirch = new MaplebirchCore();
   const maplebirch = window.maplebirch;
 

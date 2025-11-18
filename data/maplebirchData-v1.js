@@ -32,4 +32,11 @@
     if (data.npcList) utils.remove(data, 'npcList');
     data.version = '1.0.1';
   });
+
+  // v1.0.2版本数据更新
+  migrationSystem.add('1.0.1', '1.0.2', (data, utils) => {
+    if (!data.transformation) data.transformation = {};
+    if (!data.hintlocation) data.hintlocation = 'maplebirchModHint';
+    data.version = '1.0.2';
+  });
 })();

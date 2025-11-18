@@ -1,20 +1,182 @@
+// @ts-check
+/// <reference path='../maplebirch.d.ts' />
 (() => {
   'use strict';
   const maplebirch = window.maplebirch;
 
   class modifyWeather {
+    /** @param {any} modSC2DataManager @param {any} addonReplacePatcher */
     constructor(modSC2DataManager, addonReplacePatcher) {
       this.modSC2DataManager = modSC2DataManager;
       this.addonReplacePatcher = addonReplacePatcher;
-      this.#bannerSkyFunction;
-      this.#bannerSunGlowFunction;
-      this.#skyFunction;
-      this.#sunFunction;
-      this.#sunGlowFunction;
-      maplebirch.once(':definewidget', () => this.initWeather());
+      this.layerModifications = new Map();
+      this.effectModifications = new Map();
+      this.weathertrigger = false;
+      maplebirch.once(':definewidget', () => {
+        this.#modifyDescriptions();
+        this.#modifyProperty();
+      });
     }
 
-    initWeather() {
+    /** @param {string} effectName @param {object} patch */
+    addEffect(effectName, patch, arrayBehaviour = 'replace') {
+      if (!this.effectModifications.has(effectName)) this.effectModifications.set(effectName, []);
+      this.effectModifications.get(effectName).push({ patch, arrayBehaviour });
+      return this;
+    }
+
+    /** @param {string} layerName @param {object} patch */
+    addLayer(layerName, patch, arrayBehaviour = 'replace') {
+      if (!this.layerModifications.has(layerName)) this.layerModifications.set(layerName, []);
+      this.layerModifications.get(layerName).push({ patch, arrayBehaviour });
+      return this;
+    }
+
+    /** @param {{ name: any; }} params */
+    trigger(params) {
+      const layerName = params.name;
+      if (!this.weathertrigger) { maplebirch.trigger(':weather'); this.weathertrigger = true; }
+      if (this.layerModifications.has(layerName)) {
+        const modifications = this.layerModifications.get(layerName);
+        for (const { patch, arrayBehaviour } of modifications) {
+          const options = { arrayBehaviour };
+          merge(params, patch, options);
+        }
+        this.layerModifications.delete(layerName);
+        maplebirch.log(`[weather] 处理层 ${layerName}: 应用了 ${modifications.length} 个修改`, 'DEBUG');
+      }
+      if (this.effectModifications.size > 0) {
+        for (const [effectName, modifications] of this.effectModifications) {
+          const effect = Weather.Renderer.Effects.effects.get(effectName);
+          if (effect) {
+            for (const { patch, arrayBehaviour } of modifications) {
+              const options = { arrayBehaviour };
+              merge(effect, patch, options);
+            }
+            maplebirch.log(`[weather] 修改效果 ${effectName}: 应用了 ${modifications.length} 个修改`, 'DEBUG');
+          }
+        }
+        this.effectModifications.clear();
+      }
+      return params;
+    }
+
+    #modifyRender() {
+      this.addEffect('colorOverlay', {
+        /** @this {any} */draw() {
+          const nightColor = this.bloodMoon ? this.color.bloodMoon : ColourUtils.interpolateColor(this.color.nightDark, this.color.nightBright, this.moonFactor);
+          let mixFactor = this.sunFactor;
+          if (this.solarEclipse && this.sunFactor > 0) mixFactor = Math.min(this.sunFactor * 0.05, 0.05);
+          const color = ColourUtils.interpolateTripleColor(nightColor, this.color.dawnDusk, this.color.day, mixFactor);
+          this.canvas.ctx.fillStyle = color;
+          this.canvas.fillRect();
+        }
+      }, 'replace');
+      const eclipseEffect = { effects: [{}, { params: { color: { solarEclipse: '#1a1508d9' } }, bindings: { solarEclipse() { return Weather.solarEclipse; } } }] };
+
+      this.addEffect('locationImage', eclipseEffect, 'merge');
+
+      this.addEffect('locationReflective', eclipseEffect, 'merge');
+
+      this.addLayer('sun', {
+        effects: [{
+          /** @this {any} */drawCondition() { return !Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.5 && !this.renderInstance.skyDisabled; }
+        }]
+      }, 'merge');
+
+      const sunEclipseEffects = (() => {
+        const stages = ['pre', 'total', 'post'];
+        return stages.map((stage, i) => ({
+          effect: 'skyOrbital',
+          /** @this {any} */drawCondition() { return Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.5 && !this.renderInstance.skyDisabled && Weather.solarEclipseStage === stage; },
+          params: { images: { orbital: `img/misc/sky/solar-eclipse-${i}.png` } },
+          bindings: {
+            /** @this {any} */position() { return this.renderInstance.orbitals.sun.position; } 
+          }
+        }));
+      })();
+      this.addLayer('sun', { effects: sunEclipseEffects }, 'concat');
+      const getSkyColors = function () {
+        const phase = Weather.solarEclipsePhase;
+        const dayColors = { colorMin: { close: '#14145200', far: '#00001c00' }, colorMed: { close: '#d47d12', far: '#6c6d94' }, colorMax: { close: '#d4d7ff', far: '#4692d4' } };
+        const eclipseColors = { colorMin: { close: '#2d1f0000', far: '#1a120000' }, colorMed: { close: '#2d1f00', far: '#1a1200' }, colorMax: { close: '#2d1f00', far: '#1a1200' } };
+        let transitionFactor = phase < 0.3 ? phase / 0.3 : phase > 0.7 ? (1 - phase) / 0.3 : 1;
+        return {
+          colorMin: { close: ColourUtils.interpolateColor(dayColors.colorMin.close, eclipseColors.colorMin.close, transitionFactor), far: ColourUtils.interpolateColor(dayColors.colorMin.far, eclipseColors.colorMin.far, transitionFactor) },
+          colorMed: { close: ColourUtils.interpolateColor(dayColors.colorMed.close, eclipseColors.colorMed.close, transitionFactor), far: ColourUtils.interpolateColor(dayColors.colorMed.far, eclipseColors.colorMed.far, transitionFactor) },
+          colorMax: { close: ColourUtils.interpolateColor(dayColors.colorMax.close, eclipseColors.colorMax.close, transitionFactor), far: ColourUtils.interpolateColor(dayColors.colorMax.far, eclipseColors.colorMax.far, transitionFactor) }
+        };
+      };
+
+      const skyGradientEffect = {
+        effect: 'skyGradiant',
+        /** @this {any} */drawCondition() { return Weather.solarEclipse && !this.renderInstance.skyDisabled; },
+        params: { radius: 384 },
+        bindings: { color: getSkyColors,
+          /** @this {any} */position() { return this.renderInstance.orbitals.sun.position; },
+          /** @this {any} */factor() { return this.renderInstance.orbitals.sun.factor; }
+        }
+      };
+      ['bannerSky', 'sky'].forEach(layer => {
+        this.addLayer(layer, { effects: [{}, {}, {
+          /** @this {any} */drawCondition() { return !Weather.solarEclipse && !this.renderInstance.skyDisabled; } 
+        }] }, 'merge');
+        this.addLayer(layer, { effects: [skyGradientEffect] }, 'concat');
+      });
+
+      const glowConfigs = [
+        { layer: 'bannerSunGlow', radius: 100, diameter: 28,
+          /** @this {any} */factor: function () { return this.renderInstance.orbitals.sun.factor; } 
+        },
+        { layer: 'sunGlow', radius: 82, diameter: 24,
+          factor: function () { return Math.max(0.3, (1 - Math.abs(Weather.solarEclipsePhase - 0.5) * 2)); }
+        }
+      ];
+
+      glowConfigs.forEach(config => {
+        this.addLayer(config.layer, {
+          effects: [{
+            /** @this {any} */drawCondition() { return !Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.7 && !Weather.isOvercast && !this.renderInstance.skyDisabled; }
+          }]
+        }, 'merge');
+        this.addLayer(config.layer, {
+          effects: [{
+            effect: 'outerRadialGlow',
+            /** @this {any} */drawCondition() { return Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.7 && !Weather.isOvercast && !this.renderInstance.skyDisabled; },
+            params: { outerRadius: config.radius, colorInside: { dark: '#f0e5d944', med: '#f0e5d944', bright: '#f0e5d944' }, colorOutside: { dark: '#2d1f0000', med: '#2d1f0000', bright: '#2d1f0000' }, cutCenter: false, diameter: config.diameter },
+            bindings: {
+              /** @this {any} */position() { return this.renderInstance.orbitals.sun.position; }, factor: config.factor
+            }
+          }]
+        }, 'concat');
+      });
+
+      ['bannerStarField', 'starField'].forEach(layer => {
+        this.addLayer(layer, {
+          effects: [{
+            /** @this {any} */drawCondition() { return (this.renderInstance.orbitals.sun.factor < 0.75 || Weather.solarEclipse) && !this.renderInstance.skyDisabled; }
+          }]
+        }, 'merge');
+      });
+
+      const colorLayers = [
+        { name: 'bannerClouds', color: '#5d4f20aa', count: 2 },
+        { name: 'bannerOvercastClouds', color: '#5d4f20aa', count: 2 },
+        { name: 'bannerCirrusClouds', color: '#5d4f20aa', count: 2 },
+        { name: 'bannerPrecipitation', color: '#2a1a4aaa', count: 5 },
+        { name: 'clouds', color: '#5d4f20aa', count: 2 },
+        { name: 'overcastClouds', color: '#5d4f20aa', count: 2 },
+        { name: 'cirrusClouds', color: '#5d4f20aa', count: 2 },
+        { name: 'precipitation', color: '#2a1a4aaa', count: 5 },
+        { name: 'fog', color: '#3d2e10cc', count: 2 }
+      ];
+      colorLayers.forEach(({ name, color, count }) => {
+        const effects = Array(count).fill({}).map((_, i) => i === count - 1 ? { params: { color: { solarEclipse: color } }, bindings: { solarEclipse() { return Weather.solarEclipse; } } } : {});
+        this.addLayer(name, { effects }, 'merge');
+      });
+    }
+
+    #modifyDescriptions() {
       const descriptions = {
         clear: {
           solarEclipse: () => {
@@ -131,598 +293,46 @@
           }
         }
       };
+      // @ts-ignore
       Object.keys(descriptions).forEach(weatherType => { if (setup.WeatherDescriptions.type[weatherType]) Object.assign(setup.WeatherDescriptions.type[weatherType], descriptions[weatherType]); });
+    }
+
+    #modifyProperty() {
       Object.defineProperty(Weather, 'skyState', {
         get: function () {
-          if (Weather.solarEclipse) return "solarEclipse";
-          if (Weather.bloodMoon) return "bloodMoon";
-          return this.dayState;; 
-        }, 
+          if (Weather.solarEclipse) return 'solarEclipse';
+          if (Weather.bloodMoon) return 'bloodMoon';
+          return this.dayState;;
+        },
       });
       Object.defineProperty(Weather, 'solarEclipse', { get: function () { maplebirch.var.constructor.check(); return maplebirch.state.solarEclipse.solarEclipse; }, });
       Object.defineProperty(Weather, 'solarEclipsePhase', { get: function () { maplebirch.var.constructor.check(); return maplebirch.state.solarEclipse.solarEclipsePhase; }, });
       Object.defineProperty(Weather, 'solarEclipseStage', { get: function () { maplebirch.var.constructor.check(); return maplebirch.state.solarEclipse.solarEclipseStage; }, });
     }
 
-    #bannerSkyFunction = 
-`Weather.Renderer.Layers.add({
-  name: "bannerSky",
-  zIndex: 0,
-  effects: [
-    {
-      /* Night sky */
-      effect: "skyGradiant",
-      drawCondition() {
-        return !Weather.bloodMoon && !this.renderInstance.skyDisabled;
-      },
-      params: {
-        radius: 256,
-      },
-      bindings: {
-        color() {
-          // Make it brighter when moon is lit
-          const colorCloseMin = ColourUtils.interpolateColor("#00001c00", "#1c1c6100", this.renderInstance.moonBrightnessFactor);
-          const colorClose = ColourUtils.interpolateColor("#00001c", "#1c1c61", this.renderInstance.moonBrightnessFactor);
-          return {
-            colorMin: { close: colorCloseMin, far: "#00001c00" },
-            colorMed: { close: colorClose, far: "#00001c" },
-            colorMax: { close: colorClose, far: "#00001c" },
-          };
-        },
-        position() {
-          return this.renderInstance.orbitals.moon.position;
-        },
-        factor() {
-          return this.renderInstance.orbitals.moon.factor;
-        },
-      },
-    },
-    {
-      /* Blood sky */
-      effect: "skyGradiant",
-      drawCondition() {
-        return Weather.bloodMoon && !this.renderInstance.skyDisabled;
-      },
-      params: {
-        color: {
-          colorMin: { close: "#4d000000", far: "#21070700" },
-          colorMed: { close: "#4d0000", far: "#210707" },
-          colorMax: { close: "#4d0000", far: "#210707" },
-        },
-        radius: 256,
-      },
-      bindings: {
-        position() {
-          return this.renderInstance.orbitals.bloodMoon.position;
-        },
-        factor() {
-          return this.renderInstance.orbitals.bloodMoon.factor;
-        },
-      },
-    },
-    {
-      /* Day sky */
-      effect: "skyGradiant",
-      drawCondition() {
-        return !Weather.solarEclipse && !this.renderInstance.skyDisabled;
-      },
-      params: {
-        color: {
-          colorMin: { close: "#14145200", far: "#00001c00" },
-          colorMed: { close: "#d47d12", far: "#6c6d94" },
-          colorMax: { close: "#d4d7ff", far: "#4692d4" },
-        },
-        radius: 384,
-      },
-      bindings: {
-        position() {
-          return this.renderInstance.orbitals.sun.position;
-        },
-        factor() {
-          return this.renderInstance.orbitals.sun.factor;
-        },
-      },
-    },
-    {
-      /* Eclipse sky */
-      effect: "skyGradiant",
-      drawCondition() {
-        return Weather.solarEclipse && !this.renderInstance.skyDisabled;
-      },
-      params: {
-        radius: 384,
-      },
-      bindings: {
-        color() {
-          const phase = Weather.solarEclipsePhase;
-          const dayColors = {
-            colorMin: { close: "#14145200", far: "#00001c00" },
-            colorMed: { close: "#d47d12", far: "#6c6d94" },
-            colorMax: { close: "#d4d7ff", far: "#4692d4" },
-          };
-          const eclipseColors = {
-            colorMin: { close: "#2d1f0000", far: "#1a120000" },
-            colorMed: { close: "#2d1f00", far: "#1a1200" },
-            colorMax: { close: "#2d1f00", far: "#1a1200" },
-          };
-          let transitionFactor;
-          if (phase < 0.3) {
-            transitionFactor = phase / 0.3;
-          } else if (phase > 0.7) {
-            transitionFactor = (1 - phase) / 0.3;
-          } else {
-            transitionFactor = 1;
-          }
-          return {
-            colorMin: {
-              close: ColourUtils.interpolateColor(dayColors.colorMin.close, eclipseColors.colorMin.close, transitionFactor),
-              far: ColourUtils.interpolateColor(dayColors.colorMin.far, eclipseColors.colorMin.far, transitionFactor)
-            },
-            colorMed: {
-              close: ColourUtils.interpolateColor(dayColors.colorMed.close, eclipseColors.colorMed.close, transitionFactor),
-              far: ColourUtils.interpolateColor(dayColors.colorMed.far, eclipseColors.colorMed.far, transitionFactor)
-            },
-            colorMax: {
-              close: ColourUtils.interpolateColor(dayColors.colorMax.close, eclipseColors.colorMax.close, transitionFactor),
-              far: ColourUtils.interpolateColor(dayColors.colorMax.far, eclipseColors.colorMax.far, transitionFactor)
-            }
-          };
-        },
-        position() {
-          return this.renderInstance.orbitals.sun.position;
-        },
-        factor() {
-          return this.renderInstance.orbitals.sun.factor;
-        },
-      },
-    },
-  ],
-});`;
-
-    #bannerSunGlowFunction = 
-`Weather.Renderer.Layers.add({
-	name: "bannerSunGlow",
-	zIndex: 12,
-	effects: [
-		{
-			effect: "outerRadialGlow",
-			drawCondition() {
-				return !Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.7 && !Weather.isOvercast && !this.renderInstance.skyDisabled;
-			},
-			params: {
-				outerRadius: 82, // The radius of the outer glow
-				colorInside: { dark: "#fd634d00", med: "#faff8710", bright: "#fbffdb70" },
-				colorOutside: { dark: "#fd634d00", med: "#faff8700", bright: "#fbffdb00" },
-				cutCenter: false,
-				diameter: 32,
-			},
-			bindings: {
-				position() {
-					return this.renderInstance.orbitals.sun.position;
-				},
-				factor() {
-					return this.renderInstance.orbitals.sun.factor;
-				},
-			},
-		},
-		{
-			effect: "outerRadialGlow",
-			drawCondition() {
-				return Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.7 && !Weather.isOvercast && !this.renderInstance.skyDisabled;
-			},
-			params: {
-				outerRadius: 100,
-				colorInside: {
-					dark: "#f0e5d944",
-					med: "#f0e5d944",
-					bright: "#f0e5d944"
-				},
-				colorOutside: {
-					dark: "#2d1f0000",
-					med: "#2d1f0000",
-					bright: "#2d1f0000"
-				},
-				cutCenter: false,
-				diameter: 28,
-			},
-			bindings: {
-				position() {
-					return this.renderInstance.orbitals.sun.position;
-				},
-				factor() {
-					return this.renderInstance.orbitals.sun.factor;
-				},
-			},
-		},
-	],
-});`;
-    #skyFunction = 
-`Weather.Renderer.Layers.add({
-	name: "sky",
-	zIndex: 0,
-	effects: [
-		{
-			/* Night sky */
-			effect: "skyGradiant",
-			drawCondition() {
-				return !Weather.bloodMoon && !this.renderInstance.skyDisabled;
-			},
-			params: {
-				radius: 82,
-			},
-			bindings: {
-				color() {
-					// Make it brighter when moon is lit
-					const colorCloseMin = ColourUtils.interpolateColor("#00001c00", "#1c1c6100", this.renderInstance.moonBrightnessFactor);
-					const colorClose = ColourUtils.interpolateColor("#00001c", "#1c1c61", this.renderInstance.moonBrightnessFactor);
-					return {
-						colorMin: { close: colorCloseMin, far: "#00001c00" },
-						colorMed: { close: colorClose, far: "#00001c" },
-						colorMax: { close: colorClose, far: "#00001c" },
-					};
-				},
-				position() {
-					return this.renderInstance.orbitals.moon.position;
-				},
-				factor() {
-					return this.renderInstance.orbitals.moon.factor;
-				},
-			},
-		},
-		{
-			/* Blood sky */
-			effect: "skyGradiant",
-			drawCondition() {
-				return Weather.bloodMoon && !this.renderInstance.skyDisabled;
-			},
-			params: {
-				color: {
-					colorMin: { close: "#4d000000", far: "#21070700" },
-					colorMed: { close: "#4d0000", far: "#210707" },
-					colorMax: { close: "#4d0000", far: "#210707" },
-				},
-				radius: 82,
-			},
-			bindings: {
-				position() {
-					return this.renderInstance.orbitals.bloodMoon.position;
-				},
-				factor() {
-					return this.renderInstance.orbitals.bloodMoon.factor;
-				},
-			},
-		},
-		{
-			/* Day sky */
-			effect: "skyGradiant",
-			drawCondition() {
-				return !Weather.solarEclipse && !this.renderInstance.skyDisabled;
-			},
-			params: {
-				color: {
-					colorMin: { close: "#14145200", far: "#00001c00" },
-					colorMed: { close: "#d47d12", far: "#6c6d94" },
-					colorMax: { close: "#d4d7ff", far: "#4692d4" },
-				},
-				radius: 384,
-			},
-			bindings: {
-				position() {
-					return this.renderInstance.orbitals.sun.position;
-				},
-				factor() {
-					return this.renderInstance.orbitals.sun.factor;
-				},
-			},
-		},
-		{
-			/* Eclipse sky */
-			effect: "skyGradiant",
-			drawCondition() {
-				return Weather.solarEclipse && !this.renderInstance.skyDisabled;
-			},
-			params: {
-				radius: 384,
-			},
-			bindings: {
-				color() {
-					const phase = Weather.solarEclipsePhase;
-					const dayColors = {
-						colorMin: { close: "#14145200", far: "#00001c00" },
-						colorMed: { close: "#d47d12", far: "#6c6d94" },
-						colorMax: { close: "#d4d7ff", far: "#4692d4" },
-					};
-					const eclipseColors = {
-						colorMin: { close: "#2d1f0000", far: "#1a120000" },
-						colorMed: { close: "#2d1f00", far: "#1a1200" },
-						colorMax: { close: "#2d1f00", far: "#1a1200" },
-					};
-					let transitionFactor;
-					if (phase < 0.3) {
-						transitionFactor = phase / 0.3;
-					} else if (phase > 0.7) {
-						transitionFactor = (1 - phase) / 0.3;
-					} else {
-						transitionFactor = 1;
-					}
-					return {
-						colorMin: {
-							close: ColourUtils.interpolateColor(dayColors.colorMin.close, eclipseColors.colorMin.close, transitionFactor),
-							far: ColourUtils.interpolateColor(dayColors.colorMin.far, eclipseColors.colorMin.far, transitionFactor)
-						},
-						colorMed: {
-							close: ColourUtils.interpolateColor(dayColors.colorMed.close, eclipseColors.colorMed.close, transitionFactor),
-							far: ColourUtils.interpolateColor(dayColors.colorMed.far, eclipseColors.colorMed.far, transitionFactor)
-						},
-						colorMax: {
-							close: ColourUtils.interpolateColor(dayColors.colorMax.close, eclipseColors.colorMax.close, transitionFactor),
-							far: ColourUtils.interpolateColor(dayColors.colorMax.far, eclipseColors.colorMax.far, transitionFactor)
-						}
-					};
-				},
-				position() {
-					return this.renderInstance.orbitals.sun.position;
-				},
-				factor() {
-					return this.renderInstance.orbitals.sun.factor;
-				},
-			},
-		},
-		{
-			/* Tentacle sky */
-			effect: "gradiantGlow",
-			drawCondition() {
-				return V.location === "tentworld";
-			},
-			params: {
-				fadeStartY: 192,
-				color: {
-					glow: "#300c36",
-					dark: "#631582",
-				},
-			},
-		},
-	],
-});`;
-
-    #sunFunction = 
-`Weather.Renderer.Layers.add({
-	name: "sun",
-	zIndex: 2,
-	blur: {
-		max: 5,
-		factor: () => normalise(Weather.overcast, 1, 0.1),
-	},
-	effects: [
-		{
-			effect: "skyOrbital",
-			drawCondition() {
-				return !Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.5 && !this.renderInstance.skyDisabled;
-			},
-			params: {
-				images: { orbital: "img/misc/sky/sun.png" },
-			},
-			bindings: {
-				position() {
-					return this.renderInstance.orbitals.sun.position;
-				},
-			},
-		},
-    ...(function() {
-			const baseCondition = function() {
-				return Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.5 && !this.renderInstance.skyDisabled;
-			};
-			return [
-				{
-					effect: "skyOrbital",
-					drawCondition() {
-						return baseCondition.call(this) && Weather.solarEclipseStage === 'pre';
-					},
-					params: { images: { orbital: 'img/misc/sky/solar-eclipse-0.png' } },
-					bindings: {
-						position() { return this.renderInstance.orbitals.sun.position; }
-					},
-				},
-				{
-					effect: "skyOrbital", 
-					drawCondition() {
-						return baseCondition.call(this) && Weather.solarEclipseStage === 'total';
-					},
-					params: { images: { orbital: 'img/misc/sky/solar-eclipse-1.png' } },
-					bindings: {
-						position() { return this.renderInstance.orbitals.sun.position; }
-					},
-				},
-				{
-					effect: "skyOrbital",
-					drawCondition() {
-						return baseCondition.call(this) && Weather.solarEclipseStage === 'post';
-					},
-					params: { images: { orbital: 'img/misc/sky/solar-eclipse-2.png' } },
-					bindings: {
-						position() { return this.renderInstance.orbitals.sun.position; }
-					},
-				}
-			];
-		})(),
-		{
-			effect: "outerRadialGlow",
-			drawCondition() {
-				return this.renderInstance.orbitals.sun.factor > -0.5 && !this.renderInstance.skyDisabled;
-			},
-			params: {
-				outerRadius: 24, // The radius of the outer glow
-				colorInside: { dark: "#f07218ee", med: "#f07218ee", bright: "#f2fad766" },
-				colorOutside: { dark: "#f0721800", med: "#f0721800", bright: "#f2fad700" },
-			},
-			bindings: {
-				position() {
-					return this.renderInstance.orbitals.sun.position;
-				},
-				factor() {
-					return this.renderInstance.orbitals.sun.factor;
-				},
-				diameter() {
-					// Reference this layer and above effect image
-					return this.renderInstance.layers.get("sun").effects[0].images.orbital.width;
-				},
-			},
-		},
-	],
-});`;
-
-    #sunGlowFunction = 
-`Weather.Renderer.Layers.add({
-	name: "sunGlow",
-	zIndex: 12,
-	effects: [
-		{
-			effect: "outerRadialGlow",
-			drawCondition() {
-				return !Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.7 && !Weather.isOvercast && !this.renderInstance.skyDisabled;
-			},
-			params: {
-				outerRadius: 64, // The radius of the outer glow
-				colorInside: { dark: "#fd634d00", med: "#faff8710", bright: "#fbffdb55" },
-				colorOutside: { dark: "#fd634d00", med: "#faff8700", bright: "#fbffdb00" },
-				cutCenter: false,
-				diameter: 28,
-			},
-			bindings: {
-				position() {
-					return this.renderInstance.orbitals.sun.position;
-				},
-				factor() {
-					return this.renderInstance.orbitals.sun.factor;
-				},
-			},
-		},
-		{
-			effect: "outerRadialGlow",
-			drawCondition() {
-				return Weather.solarEclipse && this.renderInstance.orbitals.sun.factor > -0.7 && !Weather.isOvercast && !this.renderInstance.skyDisabled;
-			},
-			params: {
-				outerRadius: 82,
-				colorInside: {
-					dark: "#f0e5d944",
-					med: "#f0e5d944",
-					bright: "#f0e5d944"
-				},
-				colorOutside: {
-					dark: "#2d1f0000",
-					med: "#2d1f0000",
-					bright: "#2d1f0000"
-				},
-				cutCenter: false,
-				diameter: 24,
-			},
-			bindings: {
-				position() {
-					return this.renderInstance.orbitals.sun.position;
-				},
-				factor() {
-					return Math.max(0.3, (1 - Math.abs(Weather.solarEclipsePhase - 0.5) * 2));
-				},
-			},
-		},
-	],
-});`;
-
     async modifyWeatherJavaScript() {
       const oldSCdata = this.modSC2DataManager.getSC2DataInfoAfterPatch();
       const SCdata = oldSCdata.cloneSC2DataInfo();
-      const filePaths = [
-        'effects-generic.js',
-        'effects-location.js', 
-        'banner-canvas-layers.js',
-        'layer-clouds.js',
-        'layer-fog.js',
-        'layer-precipitation.js',
-        'layer-sky.js',
-        'layer-starfield.js',
-        'layer-sun.js'
-      ];
-      const getFile = (path) => {
-        const file = SCdata.scriptFileItems.getByNameWithOrWithoutPath(path);
-        if (!file) { maplebirch.log(`找不到文件: ${path}`, 'ERROR'); return null; }
-        return file;
-      };
-      const files = {};
-      for (const path of filePaths) { files[path] = getFile(path); if (!files[path]) return; }
-      const regex_a = /return Weather\.bloodMoon;\s*\},/g;
-      const result_a = 'return Weather.bloodMoon;\n\t\t\t\t},\n\t\t\t\tsolarEclipse() {\n\t\t\t\t\treturn Weather.solarEclipse;\n\t\t\t\t},';
-      const regex_b = /bloodMoon:\s*"#380101e5",/g;
-      const result_b = 'bloodMoon: "#380101e5",\n\t\t\t\t\tsolarEclipse: "#5d4f20aa",';
-      const regex_c = /bloodMoon:\s*"#c70000cc",/g;
-      const result_c = 'bloodMoon: "#c70000cc",\n\t\t\t\t\tsolarEclipse: "#2a1a4aaa",';
-
-      const regex1 = /const\s+color\s*=\s*ColourUtils\.interpolateTripleColor\(([^)]*)\);/;
-      const regex2_1 = /bloodMoon: "#380101bf",/g;
-      const regex3_1 = /Weather\.Renderer\.Layers\.add\(\{\s*name: "bannerSky",\s*zIndex: 0,\s*effects: \[([\s\S]*?)\]\s*,\s*\}\);/;
-      const regex3_2 = /this\.renderInstance\.orbitals\.sun\.factor\s*<\s*0\.75/;
-      const regex3_3 = /Weather\.Renderer\.Layers\.add\(\{\s*name:\s*"bannerSunGlow",[\s\S]*?\}\);/;
-      const regex5 = /bloodMoon:\s*"#4a0505ee",/g;
-      const regex7 = /Weather\.Renderer\.Layers\.add\(\{\s*name: "sky",\s*zIndex: 0,\s*effects: \[([\s\S]*?)\]\s*,\s*\}\);/;
-      const regex8 = /this\.renderInstance\.orbitals\.sun\.factor\s*<\s*0\.75/;
-      const regex9_1 = /Weather\.Renderer\.Layers\.add\(\{\s*name:\s*"sun",[\s\S]*?\}\);/;
-      const regex9_2 = /Weather\.Renderer\.Layers\.add\(\{\s*name:\s*"sunGlow",[\s\S]*?\}\);/;
-
+      const weatherJavascriptPath = '00-layer-manager.js';
+      const file = SCdata.scriptFileItems.getByNameWithOrWithoutPath(weatherJavascriptPath);
       try {
-        // effects-generic.js
-        const file1 = files['effects-generic.js'];
-        if (regex1.test(file1.content)) file1.content = file1.content.replace(regex1, 'let mixFactor = this.sunFactor;\n\t\tif (this.solarEclipse && this.sunFactor > 0) mixFactor = Math.min(this.sunFactor * 0.05, 0.05);\n\t\tconst color = ColourUtils.interpolateTripleColor(nightColor, this.color.dawnDusk, this.color.day, mixFactor);');
-
-        // effects-location.js
-        const file2 = files['effects-location.js'];
-        if (regex2_1.test(file2.content)) file2.content = file2.content.replace(regex2_1,'bloodMoon: "#380101bf",\n\t\t\t\t\tsolarEclipse: "#1a1508d9",');
-        if (regex_a.test(file2.content)) file2.content = file2.content.replace(regex_a, result_a);
-
-        // banner-canvas-layers.js
-        const file3 = files['banner-canvas-layers.js'];
-        if (regex3_1.test(file3.content)) file3.content = file3.content.replace(regex3_1, this.#bannerSkyFunction);
-        if (regex3_2.test(file3.content)) file3.content = file3.content.replace(regex3_2, '(Weather.solarEclipse || this.renderInstance.orbitals.sun.factor < 0.75)');
-        if (regex3_3.test(file3.content)) file3.content = file3.content.replace(regex3_3, this.#bannerSunGlowFunction);
-        if (regex_a.test(file3.content)) file3.content = file3.content.replace(regex_a, result_a);
-        if (regex_b.test(file3.content)) file3.content = file3.content.replace(regex_b, result_b);
-        if (regex_c.test(file3.content)) file3.content = file3.content.replace(regex_c, result_c);
-
-        // layer-clouds.js
-        const file4 = files['layer-clouds.js'];
-        if (regex_a.test(file4.content)) file4.content = file4.content.replace(regex_a, result_a);
-        if (regex_b.test(file4.content)) file4.content = file4.content.replace(regex_b, result_b);
-
-        // layer-fog.js
-        const file5 = files['layer-fog.js'];
-        if (regex5.test(file5.content)) file5.content = file5.content.replace(regex5,'bloodMoon: "#4a0505ee",\n\t\t\t\t\tsolarEclipse: "#3d2e10cc",');
-        if (regex_a.test(file5.content)) file5.content = file5.content.replace(regex_a, result_a);
-
-        // layer-precipitation.js
-        const file6 = files['layer-precipitation.js'];
-        if (regex_a.test(file6.content)) file6.content = file6.content.replace(regex_a, result_a);
-        if (regex_c.test(file6.content)) file6.content = file6.content.replace(regex_c, result_c);
-
-        // layer-sky.js
-        const file7 = files['layer-sky.js'];
-        if (regex7.test(file7.content)) file7.content = file7.content.replace(regex7, this.#skyFunction);
-
-        // layer-starfield.js
-        const file8 = files['layer-starfield.js'];
-        if (regex8.test(file8.content)) file8.content = file8.content.replace(regex8, '(Weather.solarEclipse || this.renderInstance.orbitals.sun.factor < 0.75)');
-
-        // layer-sun.js
-        const file9 = files['layer-sun.js'];
-        if (regex9_1.test(file9.content)) file9.content = file9.content.replace(regex9_1, this.#sunFunction);
-        if (regex9_2.test(file9.content)) file9.content = file9.content.replace(regex9_2, this.#sunGlowFunction);
-
-        this.addonReplacePatcher.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata); 
-      } catch (error) {
+        const regex = /const\s+layer\s*=\s*new\s+Weather\.Renderer\.Layer\(([^)]+)\);/;
+        if (regex.test(file.content)) {
+          file.content = file.content.replace(
+            regex,
+            'maplebirch.state.modifyWeather.trigger(params);\n\t\tconst layer = new Weather.Renderer.Layer(params.name, params.blur, params.zIndex, params.animation);'
+          );
+        }
+        this.addonReplacePatcher.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);
+        this.#modifyRender();
+      } catch (/** @type {any} */error) {
         maplebirch.log(`处理天气JavaScript时发生错误: ${error.message}`, 'ERROR');
       }
     }
   }
 
   class EclipseSystem {
+    /** @param {{ regTimeEvent: (arg0: string, arg1: string, arg2: { action: () => void; cond: () => any; exact: boolean; }) => void; }} state @param {{ constructor: { proto: { rand: new (arg0: any) => any; }; }; createLog: (arg0: string) => (...data: any[]) => void; }} manger */
     constructor(state, manger) {
       this.random = new manger.constructor.proto.rand(manger.createLog('eclipse'));
       this.log = manger.createLog('eclipse') || console.log;
@@ -731,7 +341,9 @@
         day: 15,
       };
       this.time = 10;
+      /** @type {any[]} */
       this.stored = [];
+      /** @type {any|null} */
       this.cache = {
         eclipse: null,
         dateKey: null,
@@ -755,6 +367,7 @@
       });
       if (this.stored.length < count) {
         const newEclipses = this.#futureEclipses(count - this.stored.length);
+        // @ts-ignore
         this.stored = [...this.stored, ...newEclipses].sort((a, b) => new DateTime(a.year, a.month, a.day) - new DateTime(b.year, b.month, b.day)).slice(0, count);
       }
       this.cache.eclipse = null;
@@ -787,6 +400,7 @@
       return eclipses;
     }
 
+    /** @param {{ year: number; month: number; day: number; }} date */
     #startTime(date) {
       const dateSeed = date.year * 10000 + date.month * 100 + date.day;
       if (dateSeed !== null && dateSeed !== undefined) this.random.Seed = dateSeed;
@@ -846,18 +460,20 @@
     }
 
     get solarEclipsePhase() {
+      // @ts-ignore
       return this.solarEclipse ? this.isEclipse().phase : false;
     }
 
     get solarEclipseStage() {
+      // @ts-ignore
       return this.solarEclipse ? this.isEclipse().stage : false;
     }
   }
 
-  maplebirch.once(':beforePatch', (data) => {
+  maplebirch.once(':beforePatch', (/** @type {{ gSC2DataManager: any; addonReplacePatcher: any; }} */data) => {
     Object.assign(data, {
       modifyWeather: new modifyWeather(data.gSC2DataManager, data.addonReplacePatcher)
     });
   });
-  maplebirch.once(':state-init', (data) => Object.assign(data.constructor, { solarEclipse: Object.freeze(EclipseSystem) }));
+  maplebirch.once(':state-init', (/** @type {{ constructor: any; }} */data) => Object.assign(data.constructor, { solarEclipse: Object.freeze(EclipseSystem) }));
 })();

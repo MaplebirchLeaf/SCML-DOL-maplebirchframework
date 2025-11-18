@@ -5,7 +5,7 @@
     "cn": "秋枫白桦"
   },
   "alias": ["Simple Frameworks"], 
-  "version": "2.5.0",
+  "version": "2.5.3",
   "imgFileList": [
     "img/misc/sky/solar-eclipse-0.png",
     "img/misc/sky/solar-eclipse-1.png",
@@ -19,12 +19,10 @@
     "game/03-JavaScript/maplebirchDefineMacros.js"
   ],
   "scriptFileList_preload":[
-    "data/maplebirchData-v1.js",
-    "game/03-JavaScript/maplebirchSFcompatible.js"
+    "data/maplebirchData-v1.js"
   ],
   "scriptFileList_earlyload": [
     "scriptEarly/modules/maplebirchAudio.js",
-    "scriptEarly/modules/maplebirchTools.js",
     "scriptEarly/modules/maplebirchShop.js",
     "scriptEarly/modules/maplebirchVariables.js",
     "scriptEarly/modules/maplebirchHandling.js",
@@ -34,19 +32,22 @@
   ],
   "scriptFileList_inject_early": [
     "scriptEarly/maplebirch-core.js",
+    "scriptEarly/Utils/maplebirchUtils.js",
     "data/frameworkData.js",
     "data/maplebirchWeather.js",
     "scriptEarly/maplebirch-modload.js",
-    "scriptEarly/Utils/maplebirchUtils.js",
     "scriptEarly/Utils/maplebirchTimeEvents.js",
     "scriptEarly/Utils/maplebirchStateEvents.js",
     "scriptEarly/Utils/maplebirchFrameworks.js",
+    "scriptEarly/Utils/maplebirchNPC-clothes.js",
     "scriptEarly/Utils/maplebirchNPC-model.js",
-    "scriptEarly/modules/maplebirchTimeState.js"
+    "scriptEarly/Utils/maplebirchTransformation.js",
+    "scriptEarly/modules/maplebirchTimeState.js",
+    "scriptEarly/modules/maplebirchTools.js",
+    "game/03-JavaScript/maplebirchSFcompatible.js"
   ],
   "tweeFileList": [
-    "game/base-system/maplebirchIntroduction.twee",
-    "game/base-system/maplebirchWidgets.twee"
+
   ],
   "additionDir": [
     

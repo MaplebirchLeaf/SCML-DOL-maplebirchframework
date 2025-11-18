@@ -22,13 +22,13 @@
     static baseNamedNPC = {
       penis : 0         , // 阴茎
       vagina: 0         , // 阴道
-      gender: "none"    , // 性别
+      gender: 'none'    , // 性别
       description: 0    , // 描述
       title: 0          , // 头衔
       insecurity: 0     , // 不安感
-      pronoun: "none"   , // 代词
+      pronoun: 'none'   , // 代词
       penissize: 0      , // 阴茎尺寸
-      penisdesc: "none" , // 阴茎描述
+      penisdesc: 'none' , // 阴茎描述
       bottomsize: 0     , // 臀部尺寸
       ballssize: 0      , // 睾丸尺寸
       breastsize: 0     , // 胸部尺寸
@@ -39,20 +39,20 @@
       adult: 0          , // 是否成人人
       init: 0           , // 是否遇见
       intro: 0          , // 介绍
-      type: "none"      , // 种族
+      type: 'none'      , // 种族
       trust: 0          , // 自信
       love: 0           , // 好感
       dom: 0            , // 支配
       lust: 0           , // 性欲
       rage: 0           , // 阶段
-      state: ""         , // 状态
+      state: ''         , // 状态
       trauma: 0         , // 创伤
       eyeColour: 0      , // 眼睛颜色
       hairColour: 0     , // 头发颜色
       chastity: {
-        penis: ""       , // 阴茎童贞
-        vagina: ""      , // 阴道童贞
-        anus: ""        , // 肛门童贞
+        penis: ''       , // 阴茎童贞
+        vagina: ''      , // 阴道童贞
+        anus: ''        , // 肛门童贞
       },
       virginity: NPCcreator.virginityTypes,   // 贞洁
     }
@@ -67,24 +67,24 @@
     // 性别代词映射表
     static pronounsMap = {
       m: {
-        CN: { he: "他", his: "他的", hers: "他的", him: "他", himself: "他自己", man: "男人", boy: "男孩", men: "男人们" },
-        EN: { he: "he", his: "his", hers: "his", him: "him", himself: "himself", man: "man", boy: "boy", men: "men" }
+        CN: { he: '他', his: '他的', hers: '他的', him: '他', himself: '他自己', man: '男人', boy: '男孩', men: '男人们' },
+        EN: { he: 'he', his: 'his', hers: 'his', him: 'him', himself: 'himself', man: 'man', boy: 'boy', men: 'men' }
       },
       f: {
-        CN: { he: "她", his: "她的", hers: "她的", him: "她", himself: "她自己", man: "女人", boy: "女孩", men: "女人们" },
-        EN: { he: "she", his: "her", hers: "hers", him: "her", himself: "herself", man: "woman", boy: "girl", men: "women" }
+        CN: { he: '她', his: '她的', hers: '她的', him: '她', himself: '她自己', man: '女人', boy: '女孩', men: '女人们' },
+        EN: { he: 'she', his: 'her', hers: 'hers', him: 'her', himself: 'herself', man: 'woman', boy: 'girl', men: 'women' }
       },
       i: {
-        CN: { he: "它", his: "它的", hers: "它的", him: "它", himself: "它自己", man: "那个东西", boy: "小家伙", men: "它们" },
-        EN: { he: "it", his: "its", hers: "its", him: "it", himself: "itself", man: "thing", boy: "little one", men: "them" }
+        CN: { he: '它', his: '它的', hers: '它的', him: '它', himself: '它自己', man: '那个东西', boy: '小家伙', men: '它们' },
+        EN: { he: 'it', his: 'its', hers: 'its', him: 'it', himself: 'itself', man: 'thing', boy: 'little one', men: 'them' }
       },
       n: {
-        CN: { he: "她", his: "她的", hers: "她的", him: "她", himself: "她自己", man: "人", boy: "孩子", men: "人们" },
-        EN: { he: "they", his: "their", hers: "theirs", him: "them", himself: "themself", man: "person", boy: "kid", men: "people" }
+        CN: { he: '她', his: '她的', hers: '她的', him: '她', himself: '她自己', man: '人', boy: '孩子', men: '人们' },
+        EN: { he: 'they', his: 'their', hers: 'theirs', him: 'them', himself: 'themself', man: 'person', boy: 'kid', men: 'people' }
       },
       t: {
-        CN: { he: "他们", his: "他们的", hers: "他们的", him: "他们", himself: "他们自己", man: "人", boy: "孩子们", men: "大家" },
-        EN: { he: "they", his: "their", hers: "theirs", him: "them", himself: "themselves", man: "people", boy: "kids", men: "everyone" }
+        CN: { he: '他们', his: '他们的', hers: '他们的', him: '他们', himself: '他们自己', man: '人', boy: '孩子们', men: '大家' },
+        EN: { he: 'they', his: 'their', hers: 'theirs', him: 'them', himself: 'themselves', man: 'people', boy: 'kids', men: 'everyone' }
       }
     };
 
@@ -94,8 +94,8 @@
      * @param {Object} npcData - NPC数据对象
      * @param {string} npcData.nam - NPC唯一名称（必需）
      * @param {string} [npcData.title] - NPC的称号
-     * @param {string} [npcData.gender="f"] - 性别 (m/f/h)
-     * @param {string} [npcData.type="human"] - 种族类型
+     * @param {string} [npcData.gender='f'] - 性别 (m/f/h)
+     * @param {string} [npcData.type='human'] - 种族类型
      * @param {Object} [config] - NPC配置选项
      * @param {string[]} [config.loveAlias] - NPC的好感别称数组 [CN, EN]
      * @param {boolean} [config.important=false] - 是否重要NPC（显示在状态栏）
@@ -114,21 +114,18 @@
         manager.log(`NPC ${npcName} 已存在于mod数据中`, 'ERROR');
         return false;
       }
-       if (config && typeof config === 'object' && Object.keys(config).length === 0) config.love = { maxValue: 50 };
+      if (config && typeof config === 'object' && Object.keys(config).length === 0) config.love = { maxValue: 50 };
       const newNPC = manager.tool.clone(NPCcreator.baseNamedNPC);
-      for (const statName in manager.customStats) {
-        if (manager.customStats.hasOwnProperty(statName)) {
-          if (npcData[statName] === undefined) newNPC[statName] = 0;
-        }
-      }
+      for (const statName in manager.customStats) if (manager.customStats.hasOwnProperty(statName)) if (npcData[statName] === undefined) newNPC[statName] = 0;
       
       Object.assign(newNPC, npcData);
+      if (!newNPC.gender) newNPC.gender = manager.tool.either(['m', 'f', 'h', 'n'], { weights: [0.47, 0.47, 0.05, 0.01] });
       if (!newNPC.description) newNPC.description = npcName;
-      if (!newNPC.title) newNPC.title = "none";
-      if (!newNPC.chastity) newNPC.chastity = {penis: "", vagina: "", anus: ""};
+      if (!newNPC.title) newNPC.title = 'none';
+      if (!newNPC.chastity) newNPC.chastity = {penis: '', vagina: '', anus: ''};
       if (!newNPC.insecurity) newNPC.insecurity = NPCcreator.insecurity[Math.floor(Math.random() * NPCcreator.insecurity.length)];
       if (!newNPC.adult && !newNPC.teen) Math.random() < 0.5 ? newNPC.adult = 1 : newNPC.teen = 1;
-      if (!newNPC.type) newNPC.type = "human";
+      if (!newNPC.type) newNPC.type = 'human';
       if (!newNPC.purity) newNPC.purity = 0;
       if (!newNPC.corruption) newNPC.corruption = 0;
       if (!newNPC.eyeColour) newNPC.eyeColour = NPCcreator.eyeColor[Math.floor(Math.random() * NPCcreator.eyeColor.length)];
@@ -136,13 +133,7 @@
       NPCcreator.#setPronouns(manager, newNPC);
       NPCcreator.#applyVanillaPregnancySystem(manager, newNPC, npcName);
       if (typeof config === 'object') manager.npcConfigData[npcName] = manager.tool.clone(config);
-      if (typeof translationsData === 'object') {
-        for (const key in translationsData) {
-          if (translationsData.hasOwnProperty(key)) {
-            manager.lang.translations.set(key, translationsData[key]);
-          }
-        }
-      }
+      if (typeof translationsData === 'object') for (const key in translationsData) if (translationsData.hasOwnProperty(key)) manager.lang.translations.set(key, translationsData[key]);
       manager.data[npcName] = newNPC;
       manager.log(`成功注入NPC: ${npcName}`, 'DEBUG')
       return true;
@@ -155,19 +146,51 @@
     }
 
     static #setPronouns(manager, npc) {
-      if (npc.pronoun && npc.pronoun !== "none") return npc;
+      if (npc.pronoun && npc.pronoun !== 'none') return npc;
       const random = manager.tool.rand;
-      let pronoun = npc.gender || "f";
-      if (pronoun === 'h') pronoun = 'n';
-      npc.pronoun = pronoun;
-      if (!npc.pronouns) npc.pronouns = NPCcreator.#generatePronouns(pronoun);
-      if (!npc.penis) npc.penis = pronoun === "m" || pronoun === "h" ? 'clothed' : 'none';
-      if (!npc.penissize) npc.penissize = pronoun === "m" || pronoun === "h" ? random.get({ min: 1, max: 3 }) : 0;
-      if (!npc.penisdesc) npc.penisdesc = pronoun === "m" || pronoun === "h" ? 'penis' : 'none';
-      if (!npc.vagina) npc.vagina = pronoun === "f" || pronoun === "h" ? 'clothed' : 'none';
-      if (!npc.breastsize) npc.breastsize = pronoun === "f" || pronoun === "h" ? random.get({ min: 1, max: 3 }) : 0;
+      const gender = npc.gender || 'f';
+      npc.pronoun = gender;
+      if (!npc.pronouns) npc.pronouns = NPCcreator.#generatePronouns(gender);
+      switch (gender) {
+        case 'm':
+          if (!npc.penis) npc.penis = 'clothed';
+          if (npc.penissize === undefined) npc.penissize = random.get({ min: 1, max: 3 });
+          if (!npc.penisdesc) npc.penisdesc = 'penis';
+          if (!npc.vagina) npc.vagina = 'none';
+          if (npc.breastsize === undefined) npc.breastsize = 0;
+          break;
+        case 'f':
+          if (!npc.penis) npc.penis = 'none';
+          if (npc.penissize === undefined) npc.penissize = 0;
+          if (!npc.penisdesc) npc.penisdesc = 'none';
+          if (!npc.vagina) npc.vagina = 'clothed';
+          if (npc.breastsize === undefined) npc.breastsize = random.get({ min: 1, max: 3 });
+          break;
+        case 'h':
+          if (!npc.penis) npc.penis = 'clothed';
+          if (npc.penissize === undefined) npc.penissize = random.get({ min: 1, max: 3 });
+          if (!npc.penisdesc) npc.penisdesc = 'penis';
+          if (!npc.vagina) npc.vagina = 'clothed';
+          if (npc.breastsize === undefined) npc.breastsize = random.get({ min: 1, max: 3 });
+          break;
+        case 'n':
+        default:
+          if (!npc.penis) npc.penis = 'none';
+          if (npc.penissize === undefined) npc.penissize = 0;
+          if (!npc.penisdesc) npc.penisdesc = 'none';
+          if (!npc.vagina) npc.vagina = 'none';
+          if (npc.breastsize === undefined) npc.breastsize = 0;
+          break;
+      }
       if (!npc.outfits || !Array.isArray(npc.outfits)) npc.outfits = [];
-      const defaultOutfit = pronoun === "m" ? 'maleDefault' : pronoun === "f" ? 'femaleDefault' : 'femaleDefault'; // 还没有无性服饰 'neutralDefault' 暂时用 femaleDefault
+      let defaultOutfit = 'femaleDefault';
+      switch (gender) {
+        case 'm': defaultOutfit = 'maleDefault'; break;
+        case 'f': defaultOutfit = 'femaleDefault'; break;
+        case 'h': defaultOutfit = 'hermDefault'; break;
+        case 'n': defaultOutfit = 'neutralDefault'; break;
+        default: defaultOutfit = 'femaleDefault'; break;
+      }
       if (!npc.outfits.includes(defaultOutfit)) npc.outfits.push(defaultOutfit);
       return npc;
     }
@@ -184,7 +207,7 @@
       const incompletePregnancyDisable = V.incompletePregnancyDisable;
       
       const shouldInitialize = !isInfertile && typeEnabled && 
-      ((incompletePregnancyDisable === "f" && pregnancyEnabledUndefined && 
+      ((incompletePregnancyDisable === 'f' && pregnancyEnabledUndefined && 
       !setup.pregnancy.ignoresIncompleteCheck.includes(name)) || (canBePregnant && 
       pregnancyEnabledUndefined));
       
@@ -206,7 +229,7 @@
         pregnancy.potentialFathers = []; // 潜在父亲列表
         pregnancy.nonCycleRng = [random.get({ min: 0, max: 3 }), random.get({ min: 0, max: 3 })];  // 非周期随机因子
         pregnancy.pills = null; // 药物使用情况
-      } else if (isInfertile || (!canBePregnant && incompletePregnancyDisable !== "f")) {
+      } else if (isInfertile || (!canBePregnant && incompletePregnancyDisable !== 'f')) {
         npc.pregnancy = {};
       }
       if (!npc.pregnancyAvoidance || V.objectVersion?.pregnancyAvoidance === undefined) npc.pregnancyAvoidance = 100;
@@ -373,8 +396,22 @@
       });
     }
 
+    static outfitProperties(npcName) {
+      const name = npcName.toLowerCase();
+      Object.defineProperty(V.maplebirch.npc[name], 'outfits', {
+        get: () => {
+          const npc = V.NPCName.find(n => n.nam === npcName);
+          return npc ? (npc.outfits || []) : [];
+        },
+        set: (val) => {
+          const npcIndex = V.NPCName.findIndex(n => n.nam === npcName);
+          if (npcIndex !== -1) V.NPCName[npcIndex].outfits = Array.isArray(val) ? val : [];
+        }
+      });
+    }
+
     static npcList(manager, maxValue) {
-      const maxNPC = (typeof maxValue === "number") ? maxValue : 7;
+      const maxNPC = (typeof maxValue === 'number') ? maxValue : 7;
       const NPCList = [];
       const existingNPCs = V.maplebirch.combat.npcList || [];
       for (let idx = 0; idx < maxNPC; ++idx) {
@@ -383,7 +420,7 @@
           const npc = NPCList[idx];
           Object.assign(npc, existingNPCs[idx]);
           npc.index = idx;
-          if (!npc.type) npc.type = "human";
+          if (!npc.type) npc.type = 'human';
         }
       }
       V.maplebirch.combat.npcList = manager.tool.clone(NPCList);
@@ -402,6 +439,7 @@
         if (!V.maplebirch.npc[name].location) V.maplebirch.npc[name].location = '';
         if (phase === 'postInit') {
           NPCUtils.bodyDataProperties(npcName);
+          NPCUtils.outfitProperties(npcName);
           NPCUtils.npcSeenProperty(name);
         }
       });
@@ -414,17 +452,17 @@
     static NPCUtils = NPCUtils;
     // 基本一般NPC数据
     static baseNPC = {
-      "chastity": { penis: "", vagina: "", anus: "" },
-      "location": {},
-      "skills": {},
-      "pronouns": {},
-      "traits": []
+      'chastity': { penis: '', vagina: '', anus: '' },
+      'location': {},
+      'skills': {},
+      'pronouns': {},
+      'traits': []
     }
 
     constructor() {
       this.lang = maplebirch.lang;
-      this.tool = null;
-      this.log = null;
+      this.tool = maplebirch.tool;
+      this.log = this.tool.createLog('npc');
       this.data = {};
       this.pregnancy = {
         // 不孕
@@ -455,7 +493,7 @@
      * @param {Object} statsObject[statName] - 状态配置
      * @param {number} statsObject[statName].min - 状态最小值
      * @param {number} statsObject[statName].max - 状态最大值
-     * @param {number|string} [statsObject[statName].position="secondLast"] - 在状态列表中的位置(数字索引/"first"/"last"/"secondLast")
+     * @param {number|string} [statsObject[statName].position='secondLast'] - 在状态列表中的位置(数字索引/'first'/'last'/'secondLast')
      */
     addStats(statsObject) {
       if (!statsObject || typeof statsObject !== 'object') return;
@@ -466,6 +504,70 @@
           this.customStats[statName] = this.customStats[statName] ? this.#mergeConfigs(this.customStats[statName], clonedConfig) : clonedConfig;
         }
       }
+    }
+
+    /**
+     * 添加NPC服装套装
+     * @param {...Object} configs - 套装配置对象或配置对象数组
+     * 配置对象详细说明：
+     * @param {string} config.name - 套装唯一标识（必需）
+     * @param {string} [config.type='custom'] - 套装类型
+     * @param {string} [config.gender='n'] - 适用性别 (m-男性, f-女性, n-中性)
+     * @param {number} [config.outfit=0] - outfit类型 (0-普通, 1-特殊)
+     * @param {string|Object} config.upper - 上身衣物配置（可简写为字符串或详细对象）
+     * @param {string} [upper.name] - 上身衣物名称（必需）
+     * @param {number} [upper.integrity_max=100] - 上身衣物耐久度
+     * @param {string} [upper.word='a'] - 冠词类型 (a-用'a', n-不用冠词)
+     * @param {string} [upper.action='lift'] - 脱衣动作，必须为以下值之一：
+     *   - 'lift'     -> 游戏中显示'掀开'
+     *   - 'pull'     -> 游戏中显示'扯开'
+     *   - 'unbutton' -> 游戏中显示'解开'
+     *   - 'unzip'    -> 游戏中显示'解开'
+     *   - 'aside'    -> 游戏中显示'拉开'
+     *   - 'open'     -> 游戏中显示'打开'
+     *   - 'undo'     -> 游戏中显示'松开'
+     *   - 'unwrap'   -> 游戏中显示'打开'
+     * @param {string} [upper.desc] - 上身衣物描述
+     * @param {string|Object} config.lower - 下身衣物配置（可简写为字符串或详细对象）
+     * @param {string} [lower.name] - 下身衣物名称（必需）
+     * @param {number} [lower.integrity_max=100] - 下身衣物耐久度
+     * @param {string} [lower.word='n'] - 冠词类型 (a-用'a', n-不用冠词)
+     * @param {string} [lower.action='pull'] - 脱衣动作（同上身衣物action限制）
+     * @param {string} [lower.desc] - 下身衣物描述
+     * @param {string} [config.desc] - 套装描述，如未提供则自动生成
+     */
+    addClothes(...configs) {
+      if (!setup.npcClothesSets || configs.length === 0) return;
+      const npcClothes = Array.isArray(configs[0]) ? configs[0] : configs;
+      npcClothes.forEach(config => {
+        const { name, type = 'custom', gender = 'n', outfit = 0, upper, lower, desc } = config;
+        if (!name) return;
+        if (setup.npcClothesSets.some(set => set.name === name)) { this.log(`服装套装 ${name} 已存在，跳过添加`, 'WARN'); return; }
+        const upperConfig = typeof upper === 'string' ? { name: upper } : upper;
+        const lowerConfig = typeof lower === 'string' ? { name: lower } : lower;
+        if (!upperConfig.name || !lowerConfig.name) { this.log('衣物配置缺少name属性', 'ERROR'); return; }
+        const newClothes = {
+          name, type, gender, outfit,
+          clothes: {
+            upper: {
+              name: upperConfig.name,
+              integrity_max: upperConfig.integrity_max !== undefined ? upperConfig.integrity_max : 100,
+              word: upperConfig.word || 'a',
+              action: upperConfig.action || 'lift',
+              desc: upperConfig.desc || upperConfig.name
+            },
+            lower: {
+              name: lowerConfig.name,
+              integrity_max: lowerConfig.integrity_max !== undefined ? lowerConfig.integrity_max : 100,
+              word: lowerConfig.word || 'n',
+              action: lowerConfig.action || 'lift',
+              desc: lowerConfig.desc || lowerConfig.name
+            }
+          },
+          desc: desc || `${upperConfig.name}和${lowerConfig.name}`
+        };
+        setup.npcClothesSets.push(newClothes);
+      });
     }
 
     injectModNPCs() {
@@ -480,7 +582,7 @@
 
     #mergeConfigs(base, mod) {
       const filterFn = (key, value, depth) => {return Object.prototype.hasOwnProperty.call(mod, key);}
-      return maplebirch.tool.merge(base, mod, {arrayBehaviour: "replace", filterFn});
+      return maplebirch.tool.merge(base, mod, {arrayBehaviour: 'replace', filterFn});
     }
 
     vanillaNPCConfig(npcConfig) {
@@ -549,8 +651,6 @@
     }
 
     preInit() {
-      this.tool = maplebirch.tool;
-      this.log = this.tool.createLog('npc');
       maplebirch.once(':passagestart',() => {
         if (this.tool.contains(['Start', 'Downgrade Waiting Room'], [maplebirch.state.passage.title], { mode: 'any' })) return;
         this.injectModNPCs();
@@ -559,6 +659,7 @@
 
     Init() {
       NPCUtils.setupNpcData(this, 'init');
+      this.Clothes.init();
     }
 
     loadInit() {

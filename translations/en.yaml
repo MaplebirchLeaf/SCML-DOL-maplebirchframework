@@ -10,6 +10,7 @@
 'Maplebirch Frameworks Mod List': Maplebirch Frameworks Mod List
 'Current Mods Language Setting': Current Mods Language Setting
 'Dependence': Dependence
+'Mods Contents': Mods Contents
 'Mods Settings': Mods Settings
 'Mods Cheats': Mods Cheats
 'Mods Statistics': Mods Statistics
@@ -50,9 +51,23 @@
 'canvas': canvas
 'graphic': graphic
 'selection': selection
-'celestial phenomenons': celestial phenomenons
+'celestial phenomenons settings': celestial phenomenons settings
 'solar eclipse': solar eclipse
-'settings': settings
+'Set': Set
+'hidden': hidden
+'default': default
+'layer': layer
+'adjustments': adjustments
+'type': type
+'points': points
+
+'transformation': transformation
+'Prioritise headwear over horns': Prioritise headwear over horns
+'Prioritise horns over headwear': Prioritise horns over headwear
+'Push tail back': Push tail back
+'Move tail forward': Move tail forward
+'Push wings behind': Push wings behind
+'Move wings forward': Move wings forward
 
 'View All': View All
 'View Headgear': View Headgear
@@ -94,6 +109,7 @@
 'hunter': hunter
 'shopkeeper': shopkeeper
 'doctor': doctor
+'silver fox': silver fox
 'pious': pious
 'nun': nun
 'monk': monk
@@ -114,6 +130,7 @@
 'photographer': photographer
 'mayor': mayor
 'farmer': farmer
+'high elk': high elk
 'scarred': scarred
 'farmhand': farmhand
 'terror': terror
