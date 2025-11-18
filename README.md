@@ -65,6 +65,7 @@
     - [气象管理](#气象管理)
         - [天气渲染修改](#天气渲染修改)
         - [天气渲染修改示例](#天气渲染修改示例)
+    - [转化管理](#转化管理)
 - [致谢](#致谢)
 - [未实现的功能构想](#未实现的功能构想)
 
@@ -95,6 +96,7 @@
 | 添加NPC状态 | `maplebirchFrameworks.addStats` / `simplebirchFrameworks.addStats` | `maplebirch.npc.addStats` |
 | 添加NPC服装数据 | `maplebirchFrameworks.addNPCClothes` / `simplebirchFrameworks.addNPCClothes` | `maplebirch.npc.addClothes` |
 | 气象管理 | `maplebirchFrameworks.modifyWeather` / `simplebirchFrameworks.modifyWeather` | `maplebirch.state.modifyWeather` |
+| 添加转化 | `maplebirchFrameworks.addTransform` / `simplebirchFrameworks.addTransform` | `maplebirch.char.transformation.add` |
 
 <details>
 <summary>点击查看现已实现的功能</summary>
@@ -119,6 +121,7 @@
 | NPC注册 | 为游戏内添加NPC​ |
 | NPC侧绘 | 为游戏内添加NPC​的侧边栏立绘 |
 | 气象管理 | 修改游戏内的气象相关功能 |
+| 转化管理 | 为游戏内添加新转化 |
 </details>
 
 ## 安装与依赖方式说明
@@ -1023,6 +1026,21 @@ colorSelector.match('yellow'); // '#FFFFFF'
 <<set $colors = ["红", "蓝", "绿"]>>
 <<radiobuttonsfrom "selectedColor" $colors>>
 ```
+ + **`<<language>>`** 的说明，在框架设置中切换语言时，刷新宏里语言并会执行对应的**Wikifier语法**。
+```
+:: TEST
+<<language>>
+<<option 'CN'>>
+  <<set $chineseOnly to true>>
+  这段内容只会在中文环境下显示和执行
+<<option 'EN'>>
+  <<set $englishOnly to true>>
+  This content only shows and executes in English environment
+<</language>>
+在初始为中文时，进入passage段落会显示 '这段内容只会在中文环境下显示和执行'，并且$chineseOnly会变为true。
+切换成英文时，当前passage段落会转换成 'This content only shows and executes in English environment'，并且$englishOnly会变为true。
+所以警惕在其中使用累加累减语法。
+```
  ### 变量迁徙
   #### 变量迁徙使用示例
 ```
@@ -1914,6 +1932,123 @@ modifyWeather.addLayer('sun', {
   ]
 }, 'concat');
 ```
+### 转化管理
+ #### 转化的添加
+- 使用 **`maplebirchFramework.addTransform`** 或 **`maplebirch.char.transformation.add`** 来注册
+```
+添加新的变形配置
+@param {string} name - 转化名称（唯一标识符）
+@param {string} type - 转化类型：'physical'（动物转化）或 'special'（神圣）或新增类型
+@param {Object} options - 转化配置选项
+@param {number} [options.build=100] - 转化的最大点数
+@param {number} [options.level=6] - 转化的最大等级
+@param {string} [options.icon] - 转化图标文件路径
+@param {Array.<string>} [options.physical] - 转化特征数组（如 ['wings', 'horns']）
+@param {string} [options.widget] - 转化宏，如原版的<<angelTransform>>
+@param {Function} [options.condition] - 动物转化条件判断函数，即为true时，其它动物转化点数增加时不抑制减少当前转化
+@param {Object} [options.message_up] - 升级消息配置
+@param {Object.<number, (string|Object)>} options.message_up - 等级到消息的映射
+@param {Object} [options.message_down] - 降级消息配置  
+@param {Object.<number, (string|Object)>} options.message_down - 等级到消息的映射
+@param {Function} [options.preprocess] - 侧边栏画布预处理函数
+@param {Function} [options.defaultOptions] - 侧边栏画布默认选项函数
+@param {Object} [options.layers] - 侧边栏画布图层配置
+@param {Object} [options.translations] - 多语言翻译注入
+@param {Object.<string, Object>} options.translations
+maplebirchFramework.addTransform(name, type, options);
+```
+- 添加示例
+```
+maplebirch.char.transformation.add('dragon', 'physical', {
+    build: 100,
+    level: 6,
+    icon: 'tf_bird.png',
+    physical: ['wings'],
+    widget: 'dragonTransform',
+    preprocess: (options) => {
+      options.dragon_wings_layer = V.wingslayer;
+      options.dragon_wing = V.transformationParts?.dragon?.wings;
+    },
+    layers: {
+      dragon_wings: {
+        animation: 'idle',
+        filters: ['hair'],
+        src: 'img/transformations/bird/wings-idle/default-angel.png',
+        showfn(options) {
+          return options.show_tf && options.dragon_wing === 'default' && !options.hideAll;
+        },
+        zfn(options) {
+          if (options.dragon_wings_layer === 'back') return 'over_head_back';
+          return 'backhair';
+        },
+      },
+    },
+    message_up: {
+      '1': {
+        CN: '你感觉到体内有一股炽热的力量在涌动。',
+        EN: 'You feel a fiery power surging within you.'
+      },
+      '2': {
+        CN: '你的皮肤开始浮现出细微的鳞片纹理。',
+        EN: 'Fine scale patterns begin to appear on your skin.'
+      },
+      '3': {
+        CN: '龙族的力量在你体内进一步觉醒。',
+        EN: 'The power of the dragon further awakens within you.'
+      },
+      '4': {
+        CN: '龙角从你的额头生长出来。',
+        EN: 'Draconic horns begin to grow from your forehead.'
+      },
+      '5': {
+        CN: '你能够感受到远古龙族的智慧。',
+        EN: 'You can feel the wisdom of ancient dragons.'
+      },
+      '6': {
+        CN: '一对巨大的龙翼从你的背部展开！',
+        EN: 'A pair of massive dragon wings unfold from your back!'
+      }
+    },
+    message_down: {
+      '5': {
+        CN: '你的龙翼开始萎缩。',
+        EN: 'Your dragon wings begin to wither.'
+      },
+      '4': {
+        CN: '龙角逐渐消退。',
+        EN: 'Your horns gradually recede.'
+      },
+      '3': {
+        CN: '龙族力量开始减弱。',
+        EN: 'Your draconic power begins to wane.'
+      },
+      '2': {
+        CN: '鳞片逐渐从你的皮肤上褪去。',
+        EN: 'Scales gradually fade from your skin.'
+      },
+      '1': {
+        CN: '体内的龙族力量已完全沉寂。',
+        EN: 'The draconic power within you has completely subsided.'
+      },
+      '0': {
+        CN: '龙族变形已完全消失。',
+        EN: 'The dragon transformation has completely vanished.'
+      }
+    },
+    translations: {
+      'dragon': {
+        CN: '龙',
+        EN: 'Dragon'
+      },
+      'wings': {
+        CN: '龙翼',
+        EN: 'Dragon Wings'
+      }
+    }
+  });
+```
+- 除此之外记得写转化宏，如 **`<<dragonTransform>>`**
+- 转化等级为变量 **点数：`V.maplebirch.transformation[name].build`**、**等级：`V.maplebirch.transformation[name].level`** ，如`V.maplebirch.transformation.dragon.build、V.maplebirch.transformation.dragon.level
 ## 致谢
 在此，我想向所有支持、帮助过这个项目的朋友们表达最诚挚的感谢：  
 - 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 开发的Modloader系统，为模组开发提供了基础支持。
@@ -1925,4 +2060,3 @@ modifyWeather.addLayer('sun', {
 ## 未实现的功能构想
 
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
-
