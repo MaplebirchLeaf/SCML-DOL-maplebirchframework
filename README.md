@@ -2049,7 +2049,7 @@ maplebirch.char.transformation.add('dragon', 'physical', {
   });
 ```
 - 除此之外记得写转化宏，如 **`<<dragonTransform>>`**
-- 转化等级为变量 **点数：`V.maplebirch.transformation[name].build`**、**等级：`V.maplebirch.transformation[name].level`** ，如`V.maplebirch.transformation.dragon.build、V.maplebirch.transformation.dragon.level
+- 转化等级为变量 **点数：`V.maplebirch.transformation[name].build`**、**等级：`V.maplebirch.transformation[name].level`** ，如 **`V.maplebirch.transformation.dragon.build、V.maplebirch.transformation.dragon.level`**
 ## 致谢
 在此，我想向所有支持、帮助过这个项目的朋友们表达最诚挚的感谢：  
 - 感谢 [Lyoko-Jeremie](https://github.com/Lyoko-Jeremie) 开发的Modloader系统，为模组开发提供了基础支持。
