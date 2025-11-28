@@ -37,6 +37,7 @@
         - [工具集](#工具集)
     - [随机数生成](#随机数生成)
     - [文本片段](#文本片段)
+        - [文本替换](#文本替换)
         - [注册文本](#注册文本)
         - [输出文本](#输出文本)
     - [作弊控制台](#作弊控制台)
@@ -722,6 +723,17 @@ play() 方法选项:
  ### 框架的实用工具
  + 可在 **非 `scriptFileList_inject_early` 时机** 使用如下逻辑，或 **确保可以使用的情况下** 使用。
  #### 一般实用工具
+ + **`lanSwitch`** 函数，根据当前语言输出内容
+```
+参数格式：
+1. 对象格式：{ EN: '英文内容', CN: '中文内容', ... }
+2. 两个独立参数：<<lanSwitch '英文内容' '中文内容'>>
+3. 数组格式：<<lanSwitch ['英文内容', '中文内容']>>
+使用示例：
+lanSwitch({ EN: 'Hello', CN: '你好' });
+lanSwitch('Hello' '你好');
+lanSwitch(['Hello', '你好']);
+```
  + **`clone`** 函数
 ```
  - Date对象：创建新实例
@@ -998,7 +1010,10 @@ colorSelector.match('yellow'); // '#FFFFFF'
  #### Sugarcube宏
  + **`<<lanSwitch>>`** 简易双语的使用
 ```
-  <<lanSwitch 'language' '语言'>> 会在中文时输出语言，英文时输出language 在模组设置中选择。
+<<lanSwitch { EN: 'Hello', CN: '你好' }>>
+<<lanSwitch 'Hello' '你好'>>
+<<lanSwitch ['Hello', '你好']>>
+<<lanSwitch 'language' '语言'>> 会在中文时输出语言，英文时输出language 在模组设置中选择。
 ```
  + **`<<langlink>>`** 的说明: **`<<langlink>>`** 完全支持原版的 **`<<link>>`** 逻辑 [多语言管理](#多语言管理)，**`<<langlink>>`** 的第三个字符串将支持 **`convert`** 函数。
 ```
@@ -1082,6 +1097,8 @@ migrator.utils.fill(userData, { settings: { theme: 'dark' } });
  ### 文本片段
  + 核心方法
 ```
+- replaceText(oldText, newText)：替换文本 - 支持多种参数格式
+- replaceLink(oldLink, newLink)：替换链接 - 支持 SugarCube 链接语法
 - reg(key, handler, [id]): 注册处理器
 - unreg(key, [idOrHandler]): 注销处理器
 ```
@@ -1092,6 +1109,20 @@ migrator.utils.fill(userData, { settings: { theme: 'dark' } });
 - wikify(content): 解析维基语法
 - raw(content): 添加原始HTML/节点
 - box(content, style): 添加带样式的容器
+```
+  #### 文本替换
+  - 使用 replaceText(oldText, newText) 方法来替换当前页面文本， **(要注意当前语言)**
+```
+使用示例：
+maplebirch.tool.text.replaceText("旧文本", "新文本");
+maplebirch.tool.text.replaceText({CN: "中文", EN: "English"}, {CN: "新中文", EN: "New English"});
+maplebirch.tool.text.replaceText(["old", "旧"], ["new", "新"]);
+```
+  - 使用 replaceLink(oldLink, newLink) 方法来替换当前页面链接， **(要注意当前语言)**
+```
+使用示例：
+maplebirch.tool.text.replaceLink("点击这里", "[[新页面|新链接]]");
+maplebirch.tool.text.replaceLink({CN: "链接", EN: "Link"}, {CN: "[[页面|中文链接]]", EN: "[[page|English Link]]"});
 ```
   #### 注册文本
   - 使用 maplebirchFrameworks.addText 方法注册文本处理器
