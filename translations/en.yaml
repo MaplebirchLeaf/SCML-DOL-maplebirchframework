@@ -3,7 +3,7 @@
 'Chinese': Chinese
 'Mods': Mods
 'Maplebirch Frameworks': Maplebirch Frameworks
-'Maplebirch_Leaf': Maplebirch Leaf
+'Download': Download
 'Version': Version
 'Author': Author
 'Last Modified By': Last Modified By
@@ -14,11 +14,11 @@
 'Mods Settings': Mods Settings
 'Mods Cheats': Mods Cheats
 'Mods Statistics': Mods Statistics
+'Mods Introduction': Mods Introduction
 'Apply': Apply
 'Maplebirch Mod': Maplebirch Mod
-'Search': Search
-'Clear': Clear
-'Module Introduction': Module Introduction
+'search': search
+'clear': clear
 'Character Panel': Character Panel
 'maplebirch': maplebirch
 'Mode': Mode
@@ -52,6 +52,7 @@
 'graphic': graphic
 'selection': selection
 'celestial phenomenons settings': celestial phenomenons settings
+'total number of status displays': total number of status displays
 'solar eclipse': solar eclipse
 'Set': Set
 'hidden': hidden
@@ -60,6 +61,11 @@
 'adjustments': adjustments
 'type': type
 'points': points
+'delete': delete
+'confirm': confirm
+'cancel': cancel
+'all': all
+'create': create
 
 'transformation': transformation
 'Prioritise headwear over horns': Prioritise headwear over horns

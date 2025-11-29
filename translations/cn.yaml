@@ -3,7 +3,7 @@
 'Chinese': 中文
 'Mods': 模组
 'Maplebirch Frameworks': 秋枫白桦框架
-'Maplebirch_Leaf': 枫桦叶
+'Download': 下载
 'Version': 当前版本
 'Author': 作者
 'Last Modified By': 最后修改者
@@ -14,11 +14,11 @@
 'Mods Settings': 模组设置
 'Mods Cheats': 模组作弊
 'Mods Statistics': 模组统计
+'Mods Introduction': 模组介绍
 'Apply': 应用
 'Maplebirch Mod': 秋枫白桦拓展
-'Search': 搜索
-'Clear': 清除
-'Module Introduction': 模组介绍
+'search': 搜索
+'clear': 清除
 'Character Panel': 角色面板
 'maplebirch': 秋枫白桦
 'Mode': 模式
@@ -52,6 +52,7 @@
 'graphic': 图形
 'selection': 选择
 'celestial phenomenons settings': 天象设置
+'total number of status displays': 状态显示总数
 'solar eclipse': 日蚀
 'Set': 设置
 'hidden': 隐藏
@@ -60,6 +61,11 @@
 'adjustments': 调整
 'type': 种类
 'points': 点数
+'delete': 删除
+'confirm': 确认
+'cancel': 取消
+'all': 全部
+'create': 创建
 
 'transformation': 转化
 'Prioritise headwear over horns': 置犄角于头饰后

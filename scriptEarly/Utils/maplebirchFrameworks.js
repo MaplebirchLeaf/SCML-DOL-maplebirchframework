@@ -470,6 +470,61 @@
       return true;
     }
 
+    /** 替换文本内容 @param {string|Object} oldText - 要替换的文本 * @param {string} newText - 新文本 */
+    replaceText(oldText, newText) {
+      const passageContent = document.getElementById('passage-content');
+      if (!passageContent) return;
+      const targetText = window.lanSwitch(oldText);
+      const actualNewText = window.lanSwitch(newText);
+      const fullText = passageContent.textContent || passageContent.innerText;
+      if (!fullText.includes(targetText)) return;
+      const walker = document.createTreeWalker(
+        passageContent,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+      let node;
+      while (node = walker.nextNode()) {
+        const nodeText = node.textContent;
+        if (nodeText.includes(targetText)) {
+          try {
+            const containerId = `textReplace_${Date.now()}`;
+            const container = document.createElement('span');
+            container.id = containerId;
+            node.parentNode.replaceChild(container, node);
+            new maplebirch.SugarCube.Wikifier(null, `<<replace "#${containerId}">>${actualNewText}<</replace>>`);
+            break;
+          } catch (error) {
+            try { node.textContent = actualNewText; } catch (e) {}
+          }
+        }
+      }
+    }
+
+    /** 替换链接 @param {string|Object} oldLink - 要替换的链接文本 @param {string} newLink - 新链接内容 */
+    replaceLink(oldLink, newLink) {
+      const passageContent = document.getElementById('passage-content');
+      if (!passageContent) return;
+      const targetLink = window.lanSwitch(oldLink);
+      const actualNewLink = window.lanSwitch(newLink);
+      const links = passageContent.querySelectorAll('.macro-link, .link-internal');
+      for (let link of links) {
+        if (link.textContent.includes(targetLink)) {
+          try {
+            const containerId = `linkReplace_${Date.now()}`;
+            const container = document.createElement('span');
+            container.id = containerId;
+            link.parentNode.replaceChild(container, link);
+            new maplebirch.SugarCube.Wikifier(null, `<<replace "#${containerId}">>${actualNewLink}<</replace>>`);
+            break;
+          } catch (error) {
+            try { link.outerHTML = actualNewLink; } catch (e) {}
+          }
+        }
+      }
+    }
+
     /**
      * 注册文本处理器函数
      * @param {string} key - 要注册的文本片段标识键

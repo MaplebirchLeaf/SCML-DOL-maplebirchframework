@@ -8,9 +8,7 @@
   const maplebirch = window.maplebirch;
 
   function createLog(prefix) {
-    return (message, level = 'INFO', ...objects) => {
-      maplebirch.log(`[${prefix}] ${message}`, level, ...objects);
-    };
+    return (message, level = 'INFO', ...objects) => {maplebirch.log(`[${prefix}] ${message}`, level, ...objects); };
   }
 
   // 模块提示系统 - 用于显示和搜索模块提示信息
@@ -261,36 +259,52 @@
         return { success: false, error: '请输入有效的Twine代码' };
       }
       try {
-        const linkMatch = code.match(/<<link\s+(["'])([^"']*)\1\s+(["'])([^"']*)\3\s*>>\s*<<\/link>>/);
-        if (linkMatch) {
-          const passage = linkMatch[4];
-          const $temp = $('<div>').appendTo(document.body).hide();
-          $.wiki(code, $temp);
-          $temp.remove();
-          this.log(`导航到段落: ${passage}`, 'INFO');
-          this.#updateTwineStatus(`正在导航到: ${passage}...`, true);
-          setTimeout(() => {
-            try {
-              SugarCube.Engine.play(passage);
-            } catch (err) {
-              console.error('导航失败:', err);
-              this.#updateTwineStatus(`导航失败: ${err.message}`, false);
+        const fragment = document.createDocumentFragment();
+        const hasNavigation = /<<(?:link|goto|display)\b/i.test(code);
+        try {
+          new maplebirch.SugarCube.Wikifier(fragment, code);
+          if (hasNavigation) {
+            if (code.includes('<<link')) {
+              const match = code.match(/<<link\s+(?:['"]([^'"]+)['"]\s*['"]([^'"]+)['"]|\[\[([^\]]+)\|([^\]]+)\]\]).*?>>/i);
+              if (match) {
+                let target = match[2] || match[4];
+                if (target) {
+                  this.#updateTwineStatus('执行成功，即将跳转...', true);
+                  setTimeout(() => maplebirch.SugarCube.Engine.play(target), 300);
+                  return {
+                    success: true,
+                    message: '代码执行成功',
+                    hasNavigation: true
+                  };
+                }
+              }
             }
-          }, 600);
-          return { 
-            success: true, 
-            message: `导航到: ${passage}`
+            this.#updateTwineStatus('执行成功，即将跳转...', true);
+            setTimeout(() => { if (fragment.children.length > 0) document.getElementById('your-output-container')?.appendChild(fragment); }, 300);
+            return {
+              success: true,
+              message: '代码执行成功',
+              hasNavigation: true
+            };
+          } else {
+            this.#updateTwineStatus('执行成功', true);
+            this.log('Twine代码执行成功', 'INFO');
+            return {
+              success: true,
+              message: '代码执行成功',
+              parsedContent: fragment.innerHTML
+            };
+          }
+        } catch (wikifyError) {
+          const errorMsg = wikifyError.message || 'Wikifier解析错误';
+          this.#updateTwineStatus(`解析错误: ${errorMsg}`, false);
+          this.log('Twine代码解析失败', 'ERROR', wikifyError);
+          return {
+            success: false,
+            error: errorMsg,
+            message: `解析错误: ${errorMsg}`
           };
         }
-        const $temp = $('<div>').appendTo(document.body).hide();
-        $.wiki(code, $temp);
-        $temp.remove();
-        this.#updateTwineStatus('执行成功', true);
-        this.log('Twine代码执行成功', 'INFO');
-        return { 
-          success: true, 
-          message: '代码执行成功'
-        };
       } catch (error) {
         const errorMsg = error.message || '未知错误';
         this.#updateTwineStatus(`执行错误: ${errorMsg}`, false);
@@ -325,10 +339,142 @@
     }
   }
 
+  // 作弊指令系统 - 用于管理和执行作弊指令
+  class cheatSystem {
+    constructor() {
+      this.db = null;
+      this.cache = [];
+      maplebirch.once(':dataImport', async() => await this.initDB());
+    }
+
+    async initDB() {
+      const idbRef = maplebirch.modUtils.getIdbRef();
+      this.db = await idbRef.idb_openDB('maplebirch-cheats', 1, {
+        upgrade: (db) => { if (!db.objectStoreNames.contains('cheats')) db.createObjectStore('cheats', { keyPath: 'name' }); }
+      });
+      await this.refreshCache();
+    }
+
+    async refreshCache() {
+      if (!this.db) return;
+      const tx = this.db.transaction('cheats', 'readonly');
+      const store = tx.objectStore('cheats');
+      this.cache = await store.getAll();
+    }
+
+    async add(name, code) {
+      if (!name?.trim() || !code?.trim()) return false;
+      const tx = this.db.transaction('cheats', 'readwrite');
+      const store = tx.objectStore('cheats');
+      const existing = await store.get(name.trim());
+      if (existing) return false;
+      await store.put({
+        name: name.trim(),
+        code: code.trim(),
+        type: code.trim().startsWith('<<') ? 'twine' : 'javascript',
+      });
+      await this.refreshCache();
+      return true;
+    }
+
+    async remove(name) {
+      const tx = this.db.transaction('cheats', 'readwrite');
+      const store = tx.objectStore('cheats');
+      await store.delete(name);
+      await this.refreshCache();
+      return true;
+    }
+
+    async execute(name) {
+      const cheat = this.cache.find(c => c.name === name);
+      if (!cheat) return false;
+      if (cheat.type === 'javascript') { T.maplebirchJSCheatConsole = cheat.code; }
+      else { T.maplebirchTwineCheatConsole = cheat.code; }
+      const result = maplebirch.tool.console.execute(cheat.type);
+      if (result?.success) {
+        const tx = this.db.transaction('cheats', 'readwrite');
+        const store = tx.objectStore('cheats');
+        await store.put(cheat);
+      }
+      return result.success || false;
+    }
+
+    search(term) {
+      if (!term?.trim()) return this.cache;
+      const searchTerm = term.toLowerCase();
+      return this.cache.filter(cheat => cheat.name.toLowerCase().includes(searchTerm));
+    }
+
+    searchAndDisplay() {
+      const term = T.maplebirchCheatSearch?.trim();
+      const results = term ? this.search(term) : this.cache;
+      this.updateContainer('maplebirch-cheat-container', this.HTML(results));
+    }
+
+    async displayAll() {
+      T.maplebirchCheatSearch = '';
+      await this.refreshCache();
+      this.updateContainer('maplebirch-cheat-container', this.HTML());
+    }
+
+    async createFromForm() {
+      const name = T.maplebirchModCheatNamebox?.trim();
+      const code = T.maplebirchModCheatCodebox?.trim();
+      if (name && code && await this.add(name, code)) {
+        T.maplebirchModCheatNamebox = T.maplebirchModCheatCodebox = '';
+        this.displayAll();
+      }
+    }
+
+    clearAll(confirm = false) {
+      if (!confirm) return `<div class='settingsToggleItem'><span class='red'><<lanSwitch 'Are you sure to clear' '确认清除'>> ${this.cache.length} <<lanSwitch 'codes' '个命令'>>?</span><br><<langlink 'confirm' null 'capitalize'>><<run maplebirch.tool?.cheat.clearAll(true)>><</langlink>> | <<langlink 'cancel' null 'capitalize'>><<run maplebirch.tool?.cheat.displayAll()>><</langlink>></div>`;
+      this.clearAllAsync();
+      return '';
+    }
+
+    async clearAllAsync() {
+      const tx = this.db.transaction('cheats', 'readwrite');
+      const store = tx.objectStore('cheats');
+      await store.clear();
+      this.cache = [];
+      this.displayAll();
+    }
+
+    updateContainer(containerId, content) {
+      if (!containerId) return;
+      try { new maplebirch.SugarCube.Wikifier(null, `<<replace "#${containerId}">>${content}<</replace>>`); }
+      catch (error) {}
+    }
+
+    deleteConfirm(name) {
+      const cheat = this.cache.find(c => c.name === name);
+      if (!cheat) return '';
+      const itemId = `cheat-item-${cheat.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+      return `<span class='red'><<lanSwitch 'Confirm to clear' '确认清除'>> "${cheat.name}"?</span><br><<langlink 'confirm' null 'capitalize'>><<run maplebirch.tool?.cheat.remove('${cheat.name.replace(/'/g, "\\'")}')>><<run maplebirch.tool?.cheat.displayAll()>><</langlink>> | <<langlink 'cancel' null 'capitalize'>><<run maplebirch.tool?.cheat.cancelDelete('${cheat.name.replace(/'/g, "\\'")}')>><</langlink>>`;
+    }
+
+    cancelDelete(name) {
+      const cheat = this.cache.find(c => c.name === name);
+      if (!cheat) return;
+      const itemId = `cheat-item-${cheat.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+      const normalHTML = `<span class='teal'>${cheat.name}</span><br><<langlink 'execute' null 'capitalize'>><<run maplebirch.tool?.cheat.execute('${cheat.name.replace(/'/g, "\\'")}')>><</langlink>> | <<langlink 'delete' null 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${cheat.name.replace(/'/g, "\\'")}'))>><</langlink>>`;
+      this.updateContainer(itemId, normalHTML);
+    }
+
+    HTML(cheats = this.cache) {
+      if (cheats.length === 0) return '';
+      return cheats.map(cheat => {
+        const itemId = `cheat-item-${cheat.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        return `<div id="${itemId}" class='settingsToggleItem'><span class='teal'>${cheat.name}</span><br><<langlink 'execute' null 'capitalize'>><<run maplebirch.tool?.cheat.execute('${cheat.name.replace(/'/g, "\\'")}')>><</langlink>> | <<langlink 'delete' null 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${cheat.name.replace(/'/g, "\\'")}'))>><</langlink>></div>`;
+      }).join('');
+    }
+  }
+
   class tools {
     static proto = {
       modhit: modhintSystem,
       console: consoleTools,
+      cheat: cheatSystem,
     }
 
     createLog = createLog;
@@ -336,6 +482,7 @@
     constructor() {
       this.modhint = new tools.proto.modhit(createLog('modhit'));
       this.console = new tools.proto.console(createLog('console'));
+      this.cheat = new tools.proto.cheat();
       maplebirch.trigger(':tool-init', this);
     }
 

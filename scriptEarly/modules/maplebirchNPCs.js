@@ -287,18 +287,17 @@
       }
       V.NPCName = [...manager.NamedNPC];
       V.NPCNameList = [...manager.NPCNameList];
-      if (modUtils.getMod('ModI18N')) {
-        if (setup.NPCNameList_cn_name) {
-          const npcNames = Object.keys(setup.NPCNameList_cn_name);
-          for (const npcName of npcNames) {
-            const cnTranslation = setup.NPCNameList_cn_name[npcName][0];
-            if (!maplebirch.lang.translations.has(npcName)) {
-              maplebirch.lang.translations.set(npcName, { EN: npcName, CN: cnTranslation });
-            } else {
-              const existing = maplebirch.lang.translations.get(npcName);
-              existing.CN = cnTranslation;
-              existing.EN = npcName;
-            }
+      const nameListStr = typeof setup.NPCNameList_cn_name === 'string'
+        ? setup.NPCNameList_cn_name
+        : "Avery,艾弗里|Bailey,贝利|Briar,布莱尔|Charlie,查里|Darryl,达里尔|Doren,多伦|Eden,伊甸|Gwylan,格威岚|Harper,哈珀|Jordan,约旦|Kylar,凯拉尔|Landry,兰德里|Leighton,礼顿|Mason,梅森|Morgan,摩根|River,瑞沃|Robin,罗宾|Sam,萨姆|Sirris,西里斯|Whitney,惠特尼|Winter,温特|Black Wolf,黑狼|Niki,尼奇|Quinn,奎恩|Remy,雷米|Alex,艾利克斯|Great Hawk,巨鹰|Wren,伦恩|Sydney,悉尼|Ivory Wraith,象牙怨灵|Zephyr,泽菲尔|Nona,诺娜|Lake couple,湖边情侣|the witch,巫女|Taylor,泰勒|Casey,凯西|Sterling,斯特林|Cass,卡斯";
+      const namePairs = nameListStr.split('|');
+      for (const pair of namePairs) {
+        const parts = pair.split(',');
+        if (parts.length === 2) {
+          const enName = parts[0].trim();
+          const cnName = parts[1].trim();
+          if (enName && cnName) {
+            maplebirch.lang.translations.set(enName, { EN: enName, CN: cnName });
           }
         }
       }

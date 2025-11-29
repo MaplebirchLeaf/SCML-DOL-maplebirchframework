@@ -14,7 +14,6 @@
 .maplebirch-cornflower    { color: #6495ed; } /* 魂器（矢车菊）*/
 
 
-/* ===== 安全作用域限定 ===== */
 .maplebirch-inventory-panel,
 .maplebirch-inventory-panel * {
   box-sizing: border-box;

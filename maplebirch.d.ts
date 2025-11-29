@@ -2,7 +2,40 @@
 declare global {
   interface Window {
     maplebirch: MaplebirchCore;
-    jsyaml: any;
+    jsyaml: {
+      load: (str: string) => any;
+      loadAll: (str: string) => any[];
+      dump: (obj: any, options?: any) => string;
+      safeLoad: (str: string) => any;
+      safeLoadAll: (str: string) => any[];
+      safeDump: (obj: any, options?: any) => string;
+      DEFAULT_FULL_SCHEMA: any;
+      DEFAULT_SAFE_SCHEMA: any;
+      JSON_SCHEMA: any;
+      CORE_SCHEMA: any;
+    };
+    LZString: {
+      compressToBase64: (input: string) => string;
+      decompressFromBase64: (input: string) => string | null;
+      compressToUTF16: (input: string) => string;
+      decompressFromUTF16: (input: string) => string | null;
+      compressToUint8Array: (input: string) => Uint8Array;
+      decompressFromUint8Array: (input: Uint8Array) => string | null;
+      compressToEncodedURIComponent: (input: string) => string;
+      decompressFromEncodedURIComponent: (input: string) => string | null;
+      compress: (input: string) => string;
+      decompress: (input: string) => string | null;
+    };
+    StartConfig: {
+      debug: boolean,
+      enableImages: boolean,
+      enableLinkNumberify: boolean,
+      version: string,
+      versionName: string,
+      sneaky: boolean,
+      socialMediaEnabled: boolean,
+      sourceLinkEnabled: boolean,
+    };
     modSC2DataManager: any;
     modUtils: any;
     addonBeautySelectorAddon: any;
@@ -93,6 +126,7 @@ declare global {
     get registeredModuleCount(): number;
     get dependencyGraph(): any;
     get yaml(): any;
+    get gameVersion(): string;
 
     static Manager: {
       Logger: typeof Logger;
@@ -334,27 +368,41 @@ declare global {
 
   class AudioManager {
     static ModAudioPlayer: typeof ModAudioPlayer;
-    static arrayBufferToBase64(buffer: ArrayBuffer): string;
-    static base64ToArrayBuffer(base64: string): ArrayBuffer;
     
+    log: (message: string, level?: string, ...objects: any[]) => void;
     audioContext: AudioContext | null;
-    audioBuffers: Map<string, AudioBuffer>;
+    idbManager: AudioIDBManager;
     modPlayers: Map<string, ModAudioPlayer>;
+    allAudioKeysCache: string[];
+    volume: number;
     
     constructor();
     
     initAudioContext(): void;
-    initStorage(): void;
-    #saveToStorage(key: string, arrayBuffer: ArrayBuffer): void;
-    loadAudio(key: string, arrayBuffer: ArrayBuffer): Promise<boolean>;
+    decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer>;
+    loadAudio(key: string, arrayBuffer: ArrayBuffer, modName?: string): Promise<boolean>;
     importAllAudio(modName: string, audioFolder?: string): Promise<boolean>;
     addAudioFromFile(file: File, modName?: string): Promise<boolean>;
-    getPlayer(modName: string): ModAudioPlayer | null;
-    getModAudioKeys(modName: string): string[];
+    getPlayer(modName: string): ModAudioPlayer;
+    getModAudioKeys(modName: string): Promise<string[]>;
+    getAllAudioKeys(): Promise<string[]>;
+    refreshCache(modName?: string): Promise<void>;
+    refreshAllCache(): Promise<void>;
+    
+    set Volume(volume: number);
+    get Volume(): number;
     get allAudioKeys(): string[];
     
-    Init(): void;
-    loadInit(): void;
+    preInit(): Promise<void>;
+  }
+
+  class AudioIDBManager {
+    constructor(core: MaplebirchCore);
+    
+    init(): Promise<void>;
+    store(key: string, arrayBuffer: ArrayBuffer, modName: string): Promise<boolean>;
+    get(key: string): Promise<ArrayBuffer | null>;
+    getModKeys(modName: string): Promise<string[]>;
   }
 
   class ModAudioPlayer {
@@ -366,31 +414,38 @@ declare global {
     globalGainNode: GainNode | null;
     loopCounters: Map<string, number>;
     defaultLoopCount: number;
+    bufferCache: Map<string, AudioBuffer>;
+    audioKeysCache: string[];
     
     constructor(audioManager: AudioManager, modName: string);
     
     initGainNode(): void;
-    play(key: string, options?: {
-      allowOverlap?: boolean;
-      stopOthers?: boolean;
-      volume?: number;
-      offset?: number;
-      duration?: number;
-      loop?: boolean;
-      loopCount?: number;
-      loopStart?: number;
-      loopEnd?: number;
-      onEnded?: Function;
-    }): any | null;
+    getAudioBuffer(key: string): Promise<AudioBuffer>;
+    play(key: string, options?: AudioPlayOptions): Promise<any | null>;
     stop(key: string): void;
     stopAll(): void;
-    setVolume(volume: number): void;
+    set Volume(volume: number);
     setVolumeFor(key: string, volume: number): void;
-    togglePause(key: string): { status: string; offset?: number; audioSource?: any };
+    togglePause(key: string): Promise<{ status: string; offset?: number; audioSource?: any }>;
     isPlaying(): string[];
     get audioKeys(): string[];
     getDuration(key: string): number;
     setLoopCount(key: string, count: number): void;
+    refreshCache(): Promise<void>;
+    refreshAudioKeys(): Promise<void>;
+  }
+
+  interface AudioPlayOptions {
+    allowOverlap?: boolean;
+    stopOthers?: boolean;
+    volume?: number;
+    offset?: number;
+    duration?: number;
+    loop?: boolean;
+    loopCount?: number;
+    loopStart?: number;
+    loopEnd?: number;
+    onEnded?: Function;
   }
 
   class tools {

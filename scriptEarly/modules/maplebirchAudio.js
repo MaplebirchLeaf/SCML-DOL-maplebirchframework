@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
   if (!window.maplebirch) {
@@ -7,8 +9,75 @@
 
   const maplebirch = window.maplebirch;
 
+  class AudioIDBManager {
+    /** @param {MaplebirchCore} core */
+    constructor(core) {
+      this.core = core;
+      this.db = null;
+    }
+
+    async init() {
+      if (this.db) return;
+      try {
+        const idbRef = this.core.modUtils.getIdbRef();
+        this.db = await idbRef.idb_openDB('maplebirch_audios', 1, {
+          upgrade: (/** @type {{ objectStoreNames: { contains: (arg0: string) => any; }; createObjectStore: (arg0: string, arg1: { keyPath: string; }) => any; }} */db) => {
+            if (!db.objectStoreNames.contains('audioBuffers')) {
+              const store = db.createObjectStore('audioBuffers', { keyPath: 'key' });
+              store.createIndex('mod', 'mod', { unique: false });
+            }
+          }
+        });
+      } catch (/** @type {any} */err) {
+        this.core.logger.log(`音频数据库初始化失败: ${err?.message || err}`, 'ERROR');
+      }
+    }
+
+    /** @param {any} key @param {any} arrayBuffer @param {string} modName */
+    async store(key, arrayBuffer, modName) {
+      if (!this.db) return false;
+      try {
+        const tx = this.db.transaction('audioBuffers', 'readwrite');
+        const store = tx.objectStore('audioBuffers');
+        await store.put({ key, arrayBuffer, mod: modName });
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    /** @param {any} key */
+    async get(key) {
+      if (!this.db) return null;
+      try {
+        const tx = this.db.transaction('audioBuffers', 'readonly');
+        const store = tx.objectStore('audioBuffers');
+        const record = await store.get(key);
+        return record ? record.arrayBuffer : null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    /** @param {string} modName */
+    async getModKeys(modName) {
+      if (!this.db) return [];
+      try {
+        const tx = this.db.transaction('audioBuffers', 'readonly');
+        const store = tx.objectStore('audioBuffers');
+        const index = store.index('mod');
+        const records = await index.getAll(modName);
+        return records.map((/** @type {{ key: any; }} */record) => record.key);
+      } catch (err) {
+        return [];
+      }
+    }
+  }
+
   class ModAudioPlayer {
+    /** @param {AudioManager} audioManager @param {string} modName */
     constructor(audioManager, modName) {
+      /** @type {any} */
       this.audioManager = audioManager;        // 音频管理器实例
       this.modName = modName;                  // 所属模块名称
       this.activeSources = new Map();          // 当前活动的音频源
@@ -17,7 +86,11 @@
       this.globalGainNode = null;              // 全局增益节点
       this.loopCounters = new Map();           // 音频循环计数器
       this.defaultLoopCount = 100;             // 默认循环次数
+      this.bufferCache = new Map();            // 内存缓存解码后的AudioBuffer
+      /** @type {never[]} */
+      this.audioKeysCache = [];                // 音频键缓存
       this.initGainNode();                     // 初始化增益节点
+      this.refreshAudioKeys();                 // 初始化时自动刷新缓存
     }
 
     initGainNode() {
@@ -27,12 +100,29 @@
       this.globalGainNode.gain.value = this.volume;
     }
 
-    play(key, options = {}) {
-      if (!this.audioManager.audioBuffers.has(key)) {
-        maplebirch.log(`[AudioPlayer] Audio not found: ${key}`, 'WARN');
+    /** @param {any} key */
+    async getAudioBuffer(key) {
+      if (this.bufferCache.has(key)) return this.bufferCache.get(key);
+      const arrayBuffer = await this.audioManager.idbManager.get(key);
+      if (!arrayBuffer) throw new Error(`音频未找到: ${key}`);
+      const audioBuffer = await this.audioManager.decodeAudioData(arrayBuffer);
+      this.bufferCache.set(key, audioBuffer);
+      return audioBuffer;
+    }
+
+    /** @param {any} key */
+    async play(key, options = {}) {
+      try {
+        const audioBuffer = await this.getAudioBuffer(key);
+        return this.#playWithBuffer(audioBuffer, key, options);
+      } catch (error) {
+        this.audioManager.log(`播放音频失败: ${key}`, 'WARN');
         return null;
       }
+    }
 
+    /** @param {AudioBuffer|null} audioBuffer @param {any} key @param {any} options */
+    #playWithBuffer(audioBuffer, key, options = {}) {
       const baseFullKey = `${this.modName}:${key}`;
       const allowOverlap = !!options.allowOverlap;
       const instanceKey = allowOverlap ? `${baseFullKey}|${Date.now()}|${Math.random().toString(36).slice(2,6)}` : baseFullKey;
@@ -53,9 +143,11 @@
       }
 
       const source = this.audioManager.audioContext.createBufferSource();
-      source.buffer = this.audioManager.audioBuffers.get(key);
+      source.buffer = audioBuffer;
       const gainNode = this.audioManager.audioContext.createGain();
-      gainNode.gain.value = (options.volume !== undefined) ? options.volume : this.volume;
+      let volumeValue = (options.volume !== undefined) ? Number(options.volume) : this.volume;
+      if (isNaN(volumeValue) || volumeValue < 0) volumeValue = this.volume;
+      gainNode.gain.value = volumeValue;
       source.connect(gainNode);
       gainNode.connect(this.globalGainNode || this.audioManager.audioContext.destination);
       const startTime = this.audioManager.audioContext.currentTime;
@@ -76,7 +168,7 @@
       try {
         source.start(startTime, offset, duration);
       } catch (e) {
-        maplebirch.log(`[AudioPlayer] Failed to start source for ${key}`, 'WARN', e);
+        this.audioManager.log(`启动音频源失败: ${key}`, 'WARN', e);
         return null;
       }
 
@@ -86,7 +178,7 @@
         startTime,
         playStartTime: startTime,
         currentOffset: offset,
-        options,
+        options: { ...options, volume: volumeValue },
         key: instanceKey,
         logicalKey: baseFullKey
       };
@@ -124,12 +216,14 @@
 
         this.activeSources.delete(instanceKey);
         this.loopCounters.delete(instanceKey);
+        this.bufferCache.delete(key);
         if (options.onEnded) options.onEnded();
       };
 
       return audioSource;
     }
 
+    /** @param {any} key */
     stop(key) {
       const baseFullKey = `${this.modName}:${key}`;
       const matchKey = Array.from(this.activeSources.keys()).find(k => k.startsWith(baseFullKey));
@@ -157,26 +251,31 @@
       this.pausedStates.clear();
     }
 
-    setVolume(volume) {
-      this.volume = volume;
-      if (this.globalGainNode) {
-        this.globalGainNode.gain.value = volume;
-      }
+    /** @param {any} volume */
+    set Volume(volume) {
+      if (isNaN(Number(volume)) || Number(volume) < 0) return;
+      this.volume = Number(volume);
+      if (this.globalGainNode) this.globalGainNode.gain.value = Number(volume);
       this.activeSources.forEach(source => {
-        try { source.gainNode.gain.value = volume; } catch(e) {}
+        try { source.gainNode.gain.value = source.options.volume !== undefined ? source.options.volume : this.volume; } catch (e) { }
       });
     }
 
+    /** @param {any} key @param {any} volume */
     setVolumeFor(key, volume) {
       const baseFullKey = `${this.modName}:${key}`;
       const matchKey = Array.from(this.activeSources.keys()).find(k => k.startsWith(baseFullKey));
       if (matchKey) {
+        const volumeValue = Number(volume);
+        if (isNaN(volumeValue) || volumeValue < 0) return;
         const audioSource = this.activeSources.get(matchKey);
-        audioSource.gainNode.gain.value = volume;
+        audioSource.gainNode.gain.value = volumeValue;
+        audioSource.options.volume = volumeValue;
       }
     }
 
-    togglePause(key) {
+    /** @param {any} key */
+    async togglePause(key) {
       const baseFullKey = `${this.modName}:${key}`;
       const matchKey = Array.from(this.activeSources.keys()).find(k => k.startsWith(baseFullKey));
 
@@ -208,7 +307,7 @@
       if (this.pausedStates.has(baseFullKey)) {
         const pausedState = this.pausedStates.get(baseFullKey);
         this.pausedStates.delete(baseFullKey);
-        const audioSource = this.play(key, {
+        const audioSource = await this.play(key, {
           ...pausedState.options,
           offset: pausedState.offset,
           stopOthers: false,
@@ -239,14 +338,21 @@
     }
 
     get audioKeys() {
-      return Array.from(this.audioManager.audioBuffers.keys());
+      return this.audioKeysCache;
     }
 
+    async refreshAudioKeys() {
+      try { this.audioKeysCache = await this.audioManager.idbManager.getModKeys(this.modName); }
+      catch { this.audioKeysCache = []; }
+    }
+
+    /** @param {any} key */
     getDuration(key) {
-      const buffer = this.audioManager.audioBuffers.get(key);
-      return buffer ? buffer.duration : 0;
+      if (this.bufferCache.has(key)) return this.bufferCache.get(key).duration;
+      return 0;
     }
 
+    /** @param {any} key @param {any} count */
     setLoopCount(key, count) {
       const baseFullKey = `${this.modName}:${key}`;
       Array.from(this.activeSources.keys()).forEach(k => {
@@ -255,31 +361,20 @@
         }
       });
     }
-  };
+  }
 
   class AudioManager {
-    static ModAudioPlayer = ModAudioPlayer
-
-    static arrayBufferToBase64(buffer) {
-      let binary = '';
-      const bytes = new Uint8Array(buffer);
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-      return window.btoa(binary);
-    }
-
-    static base64ToArrayBuffer(base64) {
-      const binaryString = window.atob(base64);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
-      return bytes.buffer;
-    }
+    static ModAudioPlayer = ModAudioPlayer;
 
     constructor() {
-      this.audioContext = null;            // Web Audio API上下文
-      this.audioBuffers = new Map();       // 音频缓冲区
-      this.modPlayers = new Map();         // 模块播放器实例
-      this.initAudioContext();             // 初始化音频上下文
+      this.log = maplebirch.tool.createLog('audio');
+      this.audioContext = null;
+      this.idbManager = new AudioIDBManager(maplebirch);
+      this.modPlayers = new Map();
+      /** @type {any[]} */
+      this.allAudioKeysCache = [];
+      this.initAudioContext();
+      maplebirch.once(':dataImport', async() => await this.idbManager.init());
     }
 
     initAudioContext() {
@@ -287,65 +382,51 @@
       try {
         this.audioContext = new window.AudioContext();
       } catch (e) {
-        maplebirch.log('[AudioManager] AudioContext init failed', 'WARN', e);
+        this.log('AudioContext 初始化失败', 'WARN', e);
       }
-    }
-    
-    initStorage() {
-      if (!V.maplebirch?.audio?.storage) return
-      if (Object.keys(V.maplebirch.audio.storage).length === 0) return;
-      for (const [key, base64] of Object.entries(V.maplebirch.audio.storage)) {
-        try {
-          const arrayBuffer = AudioManager.base64ToArrayBuffer(base64);
-          this.loadAudio(key, arrayBuffer);
-          maplebirch.log(`[AudioManager] Restored audio: ${key}`);
-        } catch (e) {
-          maplebirch.log(`[AudioManager] Failed to restore audio: ${key}`, 'WARN', e);
-        }
-      }
-    }
-    
-    #saveToStorage(key, arrayBuffer) {
-      if (!V.maplebirch && !V.maplebirch.audio) return;
-      if (!V.maplebirch.audio.storage) V.maplebirch.audio.storage = {};
-      V.maplebirch.audio.storage[key] = AudioManager.arrayBufferToBase64(arrayBuffer);
     }
 
-    async loadAudio(key, arrayBuffer) {
-      if (!this.audioContext) return false;
-      if (this.audioBuffers.has(key)) return true;
-      
-      return new Promise((resolve) => {
+    /** @param {{ slice: (arg0: number) => ArrayBuffer; }} arrayBuffer */
+    decodeAudioData(arrayBuffer) {
+      return new Promise((resolve, reject) => {
+        // @ts-ignore
         this.audioContext.decodeAudioData(arrayBuffer.slice(0), 
-          (buffer) => {
-            this.audioBuffers.set(key, buffer);
-            resolve(true);
-          },
-          (error) => {
-            maplebirch.log(`[AudioManager] Failed to decode ${key}`, 'WARN', error);
-            resolve(false);
-          }
+          (buffer) => resolve(buffer),
+          (error) => reject(error)
         );
       });
     }
 
+    /** @param {any} key @param {any} arrayBuffer */
+    async loadAudio(key, arrayBuffer, modName = 'default') {
+      if (!this.audioContext) return false;
+      const success = await this.idbManager.store(key, arrayBuffer, modName);
+      if (success) await this.refreshCache(modName);
+      return success;
+    }
+
+    /** @param {string} modName */
     async importAllAudio(modName, audioFolder = 'audio') {
       const modLoader = maplebirch.modLoader;
       if (!modLoader) return false;
       const modZip = modLoader.getModZip(modName);
       if (!modZip || !modZip.modInfo || !modZip.modInfo.bootJson || !modZip.modInfo.bootJson.additionFile) return false;
+      /** @type {any[]} */
       const allAudioFiles = [];
-      modZip.zip.forEach((path, file) => {
+      modZip.zip.forEach((/** @type {string} */ path, /** @type {{ dir: any; }} */ file) => {
         if (path.startsWith(`${audioFolder}/`) && !file.dir) {
+          // @ts-ignore
           const ext = path.split('.').pop().toLowerCase();
           if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext)) allAudioFiles.push(path);
         }
       });
       const additionFileSet = new Set(modZip.modInfo.bootJson.additionFile);
-      allAudioFiles.forEach(path => { if (!additionFileSet.has(path)) modLoader.logger.error(`[AudioManager] Audio file "${path}" found in mod but not listed in additionFile`); });
+      allAudioFiles.forEach(path => { if (!additionFileSet.has(path)) this.log(`音频文件 "${path}" 在模组中找到但未在 additionFile 中列出`, 'WARN'); });
+      /** @type {{ path: any; key: any; }[]} */
       const audioFiles = [];
-      modZip.modInfo.bootJson.additionFile.forEach(path => {
+      modZip.modInfo.bootJson.additionFile.forEach((/** @type {string} */path) => {
         if (path.startsWith(`${audioFolder}/`)) {
+          // @ts-ignore
           const ext = path.split('.').pop().toLowerCase();
           if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext)) {
             let key = path.substring(audioFolder.length + 1);
@@ -355,31 +436,27 @@
           }
         }
       });
-      
       for (const { path, key } of audioFiles) {
         const file = modZip.zip.file(path);
         if (!file) continue;
         try {
           const arrayBuffer = await file.async('arraybuffer');
-          await this.loadAudio(key, arrayBuffer);
+          await this.loadAudio(key, arrayBuffer, modName);
         } catch (e) {
-          maplebirch.log(`[AudioManager] Failed to load ${key}`, 'WARN', e);
+          this.log(`加载模组音频文件失败: ${path}`, 'WARN', e);
         }
       }
-      
-      if (!this.modPlayers.has(modName)) {
-        this.modPlayers.set(modName, new AudioManager.ModAudioPlayer(this, modName));
-      }
-      
+      if (!this.modPlayers.has(modName)) this.modPlayers.set(modName, new AudioManager.ModAudioPlayer(this, modName));
       return true;
     }
 
+    /** @param {any} file */
     async addAudioFromFile(file, modName = 'maplebirch-audio') {
       if (!file) return false;
       const fileName = file.name;
       const fileExt = fileName.split('.').pop().toLowerCase();
       if (!['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(fileExt)) {
-        maplebirch.log(`[AudioManager] Unsupported file format: ${fileExt}`, 'WARN');
+        this.log(`不支持的文件格式: ${fileExt}`, 'WARN');
         return false;
       }
       const key = fileName.substring(0, fileName.lastIndexOf('.'));
@@ -390,41 +467,65 @@
           reader.onerror = reject;
           reader.readAsArrayBuffer(file);
         });
-        const success = await this.loadAudio(key, arrayBuffer);
+        const success = await this.loadAudio(key, arrayBuffer, modName);
         if (success) {
           if (!this.modPlayers.has(modName)) this.modPlayers.set(modName, new AudioManager.ModAudioPlayer(this, modName));
-          this.#saveToStorage(key, arrayBuffer);
-          maplebirch.log(`[AudioManager] Audio added successfully: ${key}`);
+          this.log(`添加音频成功: ${key}`, 'INFO');
           return true;
         }
         return false;
       } catch (error) {
-        maplebirch.log(`[AudioManager] Failed to add audio from file: ${error}`, 'WARN');
+        this.log(`添加音频文件失败: ${error}`, 'WARN');
         return false;
       }
     }
 
+    /** @param {string} modName */
     getPlayer(modName) {
-      return this.modPlayers.get(modName) || null;
+      if (!this.modPlayers.has(modName)) this.modPlayers.set(modName, new AudioManager.ModAudioPlayer(this, modName));
+      return this.modPlayers.get(modName);
     }
     
-    getModAudioKeys(modName) {
-      const player = this.getPlayer(modName);
-      return player ? player.audioKeys : [];
-    }
-
     get allAudioKeys() {
-      return Array.from(this.audioBuffers.keys());
+      return this.allAudioKeysCache;
     }
 
-    Init() {
-      this.initStorage();
+
+    set Volume(volume) {
+      // @ts-ignore
+      const volumeValue = Number(volume);
+      if (isNaN(volumeValue) || volumeValue < 0 || volumeValue > 1) return;
+      // @ts-ignore
+      this.volume = volumeValue;
+      this.modPlayers.forEach((player, modName) => player.Volume = volumeValue);
     }
 
-    loadInit() {
-      this.initStorage();
+    // @ts-ignore
+    get Volume() {
+      return this.volume;
+    }
+
+    /** @param {string} modName */
+    async refreshCache(modName) {
+      const player = this.modPlayers.get(modName);
+      if (player) { player.bufferCache.clear(); await player.refreshAudioKeys(); }
+      await this.#refreshAllAudioKeys();
+    }
+
+    async #refreshAllAudioKeys() {
+      const allKeys = [];
+      for (const modName of this.modPlayers.keys()) {
+        const keys = await this.idbManager.getModKeys(modName);
+        allKeys.push(...keys);
+      }
+      this.allAudioKeysCache = allKeys;
+    }
+
+    async refreshAllCache() {
+      for (const player of this.modPlayers.values()) { player.bufferCache.clear(); await player.refreshAudioKeys(); }
+      await this.#refreshAllAudioKeys();
     }
   }
 
-  await maplebirch.register('audio', new AudioManager(), []);
+  await maplebirch.register('audio', new AudioManager(), ['tool']);
 })();

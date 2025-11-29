@@ -9,25 +9,25 @@
 
   class ShopManager {
     static categoryMap = {
-      all:        { icon: "all",      text: "View All",         widget: "AllShop" },
-      overhead:   { icon: "overhead",   text: "View Headgear",         widget: "OverheadShop" },
-      overupper:  { icon: "overupper",  text: "View Over Tops",  widget: "OverTopShop" },
-      overlower:  { icon: "overlower",  text: "View Over Bottoms",  widget: "OverBottomShop" },
-      overoutfit: { icon: "overoutfit", text: "View Over Outfits",    widget: "OverOutfitShop" },
-      outfit:     { icon: "outfit",   text: "View Outfits",         widget: "OutfitShop" },
-      upper:      { icon: "upper",    text: "View Tops",         widget: "TopShop" },
-      lower:      { icon: "lower",    text: "View Bottoms",         widget: "BottomShop" },
+      all:        { icon: "all",      text: "View All",           widget: "AllShop" },
+      overhead:   { icon: "overhead",   text: "View Headgear",    widget: "OverheadShop" },
+      overupper:  { icon: "overupper",  text: "View Over Tops",   widget: "OverTopShop" },
+      overlower:  { icon: "overlower",  text: "View Over Bottoms",widget: "OverBottomShop" },
+      overoutfit: { icon: "overoutfit", text: "View Over Outfits",widget: "OverOutfitShop" },
+      outfit:     { icon: "outfit",   text: "View Outfits",       widget: "OutfitShop" },
+      upper:      { icon: "upper",    text: "View Tops",          widget: "TopShop" },
+      lower:      { icon: "lower",    text: "View Bottoms",       widget: "BottomShop" },
       underoutfit:{ icon: "underoutfit", text: "View Under Outfits", widget: "UnderOutfitShop" },
-      underupper: { icon: "underupper", text: "View Under Tops", widget: "UnderTopShop" },
-      underlower: { icon: "underlower", text: "View Under Bottoms", widget: "UnderBottomShop" },
-      head:       { icon: "head",     text: "View Head Accessories",    widget: "HeadShop" },
+      underupper: { icon: "underupper", text: "View Under Tops",  widget: "UnderTopShop" },
+      underlower: { icon: "underlower", text: "View Under Bottoms",  widget: "UnderBottomShop" },
+      head:       { icon: "head",     text: "View Head Accessories", widget: "HeadShop" },
       face:       { icon: "face",     text: "View Face Accessories", widget: "FaceShop" },
-      neck:       { icon: "neck",     text: "View Neck Accessories",   widget: "NeckShop" },
-      handheld:   { icon: "handheld", text: "View Handheld Items",  widget: "HandheldShop" },
-      hands:      { icon: "hand",     text: "View Hand Accessories",    widget: "HandsShop" },
-      legs:       { icon: "legs",     text: "View Legwear",     widget: "LegsShop" },
-      feet:       { icon: "feet",     text: "View Shoes",    widget: "FeetShop" },
-      genital:    { icon: "strapon",  text: "View Genital Wear", widget: "GenitalShop" }
+      neck:       { icon: "neck",     text: "View Neck Accessories", widget: "NeckShop" },
+      handheld:   { icon: "handheld", text: "View Handheld Items",   widget: "HandheldShop" },
+      hands:      { icon: "hand",     text: "View Hand Accessories", widget: "HandsShop" },
+      legs:       { icon: "legs",     text: "View Legwear",       widget: "LegsShop" },
+      feet:       { icon: "feet",     text: "View Shoes",         widget: "FeetShop" },
+      genital:    { icon: "strapon",  text: "View Genital Wear",  widget: "GenitalShop" }
     };
 
     constructor() {

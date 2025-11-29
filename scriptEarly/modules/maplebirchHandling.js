@@ -28,6 +28,7 @@
       setup.maplebirch.language = {
         managers: {
           language: new Map(),
+          langswitch: new Map(),
           langbutton: new Map(),
           langlink: new Map(),
           langlistbox: new Map(),
@@ -65,7 +66,7 @@
         $container.empty();
         if (content) {
           const fragment = document.createDocumentFragment();
-          new Wikifier(fragment, content);
+          new maplebirch.SugarCube.Wikifier(fragment, content);
           $container.append(fragment);
           Links.generate();
         }
@@ -74,6 +75,54 @@
       $(this.output).append($container);
       setup.maplebirch.language.add('language', uniqueId, render);
       $container.on('remove', () => setup.maplebirch.language.remove('language', uniqueId));
+    }
+
+    _languageSwitch(...lanObj) {
+      const lancheck = maplebirch.Language;
+      let targetObj;
+      if (typeof lanObj[0] === 'object' && lanObj[0] !== null && !Array.isArray(lanObj[0])) {
+        targetObj = lanObj[0];
+      } else {
+        targetObj = { EN: lanObj[0], CN: lanObj[1] };
+        if (Array.isArray(lanObj[0])) {
+          targetObj.EN = lanObj[0][0];
+          targetObj.CN = lanObj[0][1];
+        }
+      }
+
+      if (targetObj[lancheck] == undefined) {
+        const availableLanguages = Object.keys(targetObj);
+        lancheck = availableLanguages.length > 0 ? availableLanguages[0] : 'EN';
+      }
+
+      if (this.output) {
+        try {
+          const $container = jQuery('<span style="display: contents;"></span>');
+          const uniqueId = `langswitch-${Date.now()}-${Math.random().toString(36)}`;
+          const contentObj = targetObj;
+          const renderContent = () => {
+            $container.empty();
+            const currentLang = maplebirch.Language;
+            const content = contentObj[currentLang] || contentObj.EN || '';
+            if (content) {
+              const fragment = document.createDocumentFragment();
+              new maplebirch.SugarCube.Wikifier(fragment, content);
+              $container.append(fragment);
+              Links.generate();
+            }
+          };
+          renderContent();
+          $(this.output).append($container);
+          setup.maplebirch.language.add('langswitch', uniqueId, renderContent);
+          $container.on('remove', () => setup.maplebirch.language.remove('langswitch', uniqueId));
+          return $container[0];
+        } catch (e) {
+          console.error('lanSwitch 宏模式错误', e);
+          return targetObj[lancheck];
+        }
+      } else {
+        return targetObj[lancheck];
+      }
     }
 
     _languageButton() {
@@ -124,7 +173,7 @@
           role: 'button',
           one: false
         }, this.createShadowWrapper(
-          payloadContent ? () => { Wikifier.wikifyEval(payloadContent, macroThis.passageObj); } : null
+          payloadContent ? () => { maplebirch.SugarCube.Wikifier.wikifyEval(payloadContent, macroThis.passageObj); } : null
         ));
 
         const updateButtonText = () => {
@@ -209,7 +258,7 @@
           role: passageName != null ? 'link' : 'button',
           one: passageName != null
         }, this.createShadowWrapper(
-          payloadContent ? () => { Wikifier.wikifyEval(payloadContent, macroThis.passageObj); } : null,
+          payloadContent ? () => { maplebirch.SugarCube.Wikifier.wikifyEval(payloadContent, macroThis.passageObj); } : null,
           passageName != null ? () => maplebirch.SugarCube.Engine.play(passageName) : null
         ));
 
@@ -240,7 +289,7 @@
       try {
         if (!this.args || this.args.length === 0) return this.error('<<langlistbox>> 需要至少一个参数：变量名');
         const varName = String(this.args[0]).trim();
-        if (!varName || (varName[0] !== '$' && varName[0] !== '_')) return this.error(`变量名 "${varName}" 缺少sigil（$ 或 _）`);
+        if (!varName || (varName[0] !== '$' && varName[0] !== '_')) return this.error(`变量名 '${varName}' 缺少sigil（$ 或 _）`);
         const varId = maplebirch.SugarCube.Util.slugify(varName);
         const config = { autoselect: false };
         for (let i = 1; i < this.args.length; ++i) {
@@ -336,7 +385,7 @@
       options.forEach((option, index) => {
         const label = $('<label>').addClass('radiobuttonsfrom-label');
         const temp = document.createElement('div');
-        new Wikifier(temp, `<<radiobutton "${varPath}" "${option}" autocheck>>`);
+        new maplebirch.SugarCube.Wikifier(temp, `<<radiobutton '${varPath}' '${option}' autocheck>>`);
         $(temp).children().appendTo(label);
         label.append(document.createTextNode(option));
         container.append(label);
@@ -388,30 +437,25 @@
         const modName = modList[i];
         const modinfo = modUtils.getMod(modName);
         if (!modinfo) continue;
-        if (modinfo.bootJson.dependenceInfo.some(dep => dep.modName === "maplebirch") && !maplebirch.modList.includes(modinfo.name)) {
+        if (!modinfo.bootJson.dependenceInfo) continue;
+        if (modinfo.bootJson.dependenceInfo.some(dep => dep.modName === 'maplebirch') && !maplebirch.modList.includes(modinfo.name)) {
           maplebirch.modList.push(modinfo.name);
         }
       }
     }
 
     _showModVersions() {
-      const html = `<div id="modversions">Maplebirch Framework v${maplebirch.constructor.meta.version} | 
+      const html = `<div id='modversions'>Maplebirch Framework v${maplebirch.constructor.meta.version} | 
       ${maplebirch.autoTranslate('Dependence')}: ${maplebirch.modList.length}</div>`;
       return html;
     }
 
     _showFrameworkInfo() {
-      let html_1 = `<div class="p-2 text-align-center">
-          <h3>${maplebirch.t('Maplebirch Frameworks')}</h3>
-          <div class="m-2">
-            <span class="gold">${maplebirch.t('Version')}：</span>${maplebirch.constructor.meta.version}<br>
-          </div>
-          <div class="m-2">
-            <span class="gold">${maplebirch.t('Author')}：</span>${maplebirch.autoTranslate(maplebirch.constructor.meta.author)}<br>
-          </div>
-          <div class="m-2">
-            <span class="gold">${maplebirch.t('Last Modified By')}：</span>${maplebirch.autoTranslate(maplebirch.constructor.meta.modifiedby)}<br>
-          </div>
+      let html_1 = `<div class='p-2 text-align-center'>
+          <h3>[[${maplebirch.t('Maplebirch Frameworks')}|'https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchframework']]</h3>
+          <div class='m-2'><span class='gold'>${maplebirch.t('Version')}：</span>${maplebirch.constructor.meta.version}<br></div>
+          <div class='m-2'><span class='gold'>${maplebirch.t('Author')}：</span>${maplebirch.autoTranslate(maplebirch.constructor.meta.author)}<br></div>
+          <div class='m-2'><span class='gold'>${maplebirch.t('Last Modified By')}：</span>${maplebirch.autoTranslate(maplebirch.constructor.meta.modifiedby)}<br></div>
       </div>`;
 
       this.#getModDependenceInfo();
@@ -426,7 +470,7 @@
         const modname = this.#getModName(modinfo);
         const modversion = modinfo.version;
         const text = `
-          <div class="modinfo">
+          <div class='modinfo'>
             ・ ${modname}：v${modversion}
           </div>
           `;
@@ -435,9 +479,9 @@
 
       if (html.length > 0) {
         html_1 += `
-          <div class="p-2 text-align-center">
+          <div class='p-2 text-align-center'>
             <h3>${maplebirch.t('Maplebirch Frameworks Mod List')}</h3>
-            <div id="modlist">
+            <div id='modlist'>
               ${html.join('')}
             </div>
           </div>
@@ -472,42 +516,48 @@
       if (sandbox.window && !this.tool.console.fullAccess) { this.tool.console.enableFullAccess(); }
       else if (!sandbox.window && this.tool.console.fullAccess) { this.tool.console.disableFullAccess(); }
       const text = maplebirch.t('permission');
-      const vItem = $(`label:contains("V ${text}")`).closest('.settingsToggleItem');
-      const tItem = $(`label:contains("T ${text}")`).closest('.settingsToggleItem');
-      const mbItem = $(`label:contains("Maplebirch ${text}")`).closest('.settingsToggleItem');
-      const wItem = $(`label:contains("window ${text}")`).closest('.settingsToggleItem');
+      const vItem = $(`label:contains('V ${text}')`).closest('.settingsToggleItem');
+      const tItem = $(`label:contains('T ${text}')`).closest('.settingsToggleItem');
+      const mbItem = $(`label:contains('Maplebirch ${text}')`).closest('.settingsToggleItem');
+      const wItem = $(`label:contains('window ${text}')`).closest('.settingsToggleItem');
       const vDisabled = sandbox.window || sandbox.maplebirch;
       const tDisabled = sandbox.window || sandbox.maplebirch;
       const mbDisabled = sandbox.window || !(sandbox.V && sandbox.T);
       const wDisabled = !sandbox.maplebirch;
-      vItem.css("color", vDisabled ? "var(--400)" : "var(--000)");
+      vItem.css('color', vDisabled ? 'var(--400)' : 'var(--000)');
       vItem.find('input').prop('disabled', vDisabled).prop('checked', sandbox.V);
-      tItem.css("color", tDisabled ? "var(--400)" : "var(--000)");
+      tItem.css('color', tDisabled ? 'var(--400)' : 'var(--000)');
       tItem.find('input').prop('disabled', tDisabled).prop('checked', sandbox.T);
-      mbItem.css("color", mbDisabled ? "var(--400)" : "var(--000)");
+      mbItem.css('color', mbDisabled ? 'var(--400)' : 'var(--000)');
       mbItem.find('input').prop('disabled', mbDisabled).prop('checked', sandbox.maplebirch);
-      wItem.css("color", wDisabled ? "var(--400)" : "var(--000)");
+      wItem.css('color', wDisabled ? 'var(--400)' : 'var(--000)');
       wItem.find('input').prop('disabled', wDisabled).prop('checked', sandbox.window);
     }
 
-    // 更新后记得删
-    #compatibleModI18N() {
+    compatibleModI18N() {
       if (modUtils.getMod('ModI18N')) {
+        const originalName = setup.NPC_CN_NAME;
         setup.NPC_CN_NAME = function (args) {
-          if (setup.NPCNameList.indexOf(args) == -1) {
-            return args;
-          } else if (typeof V.NPCName[V.NPCNameList.indexOf(args)].pronoun == 'undefined') {
-            return args;
-          } else if (maplebirch.lang.translations.has(args)) {
-            return maplebirch.autoTranslate(args);
-          } else {
-            return setup.NPCNameList_cn_name[args][0];
-          }
-        }
+          if (!args || typeof args !== 'string') return args;
+          const originalResult = originalName(args);
+          if (originalResult !== args) return originalResult;
+          if (maplebirch.lang.translations.has(args)) return maplebirch.autoTranslate(args);
+          return args;
+        };
+        const originalTitle = setup.NPC_CN_TITLE;
+        setup.NPC_CN_TITLE = function (str) {
+          if (!str || typeof str !== 'string') return str;
+          const originalResult = originalTitle(str);
+          if (originalResult !== str) return originalResult;
+          if (maplebirch.lang.translations.has(str)) return maplebirch.autoTranslate(str);
+          return str;
+        };
       }
     }
 
     preInit() {
+      Object.defineProperties(window, { lanSwitch: { value: this._languageSwitch }, });
+
       this.tool.framework.onInit(() => {
         setup.maplebirch = {};
         this.#languageWidgetManager();
@@ -535,6 +585,7 @@
 
       maplebirch.once(':definewidget', () => {
         this.tool.widget.defineMacro('language', this._language, ['option'], false, false);
+        this.tool.widget.defineMacro('lanSwitch', this._languageSwitch);
         this.tool.widget.defineMacro('langbutton', this._languageButton, null, false, true);
         this.tool.widget.defineMacro('langlink', this._languageLink, null, false, true);
         this.tool.widget.defineMacro('langlistbox', this._langlistbox, ['option', 'optionsfrom'], ['optionsfrom'], true);
@@ -548,7 +599,7 @@
 
       maplebirch.on(':loadSaveData', () => maplebirch.Language = V?.maplebirch?.language);
 
-      $(document).on('mouseup touchend', () => {
+      $(document).on('mouseup touchend', '.settingsToggleItem', () => {
         if (!maplebirch.modules.initPhase.preInitCompleted) return;
         try {
           let needsRefresh = false;
@@ -563,9 +614,7 @@
           const npcSidebarName = V.options?.maplebirch?.npcsidebar?.nnpc;
           if (T.fixedName && typeof T.fixedName === 'string' && npcSidebarName) if (T.fixedName.split('.')[T.fixedName.split('.').length - 1] !== npcSidebarName) needsRefresh = true;
           if (needsRefresh) $.wiki('<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>');
-        } catch (error) {
-          console.log('鼠标事件处理错误:', error);
-        }
+        } catch (error) { console.log('鼠标事件处理错误:', error); }
       });
 
       maplebirch.on('update', () => {
@@ -575,11 +624,22 @@
           this.updateTimer = null;
         }, 50);
       });
+
+      $(document).on('click', '.link-internal.macro-button', () => {
+        if (!maplebirch.modules.initPhase.preInitCompleted) return;
+        if (this.updateTimer) clearTimeout(this.updateTimer);
+        try {
+          this.updateTimer = setTimeout(() => {
+          const count = ((V.options.maplebirch?.relationcount ?? 4) - 2);
+          document.querySelectorAll('.relation-stat-list').forEach(list => list.style.setProperty('--maplebirch-relation-count', count));
+        }, 100);
+        } catch { console.log('点击事件处理错误:', error); }
+      });
     }
 
     Init() {
       Dynamic.task = (fn, name) => this._fixDynamicTask(fn, name);
-      this.#compatibleModI18N();
+      if (maplebirch.gameVersion >= '0.5.6.10') this.compatibleModI18N();
     }
 
     postInit() {

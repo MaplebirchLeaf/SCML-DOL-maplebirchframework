@@ -2,8 +2,8 @@
 /// <reference path='../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  const frameworkVersion = '2.5.3';
-  const lastUpdate = '2025.11.10';
+  const frameworkVersion = '2.5.6';
+  const lastUpdate = '2025.11.29';
   const lastModifiedBy = '楓樺葉';
   const DEBUGMODE = false;
 
@@ -16,11 +16,11 @@
   if (window.maplebirch) return;
 
   let yaml = window.jsyaml;
+
   if (!yaml) {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js';
     script.onload = () => yaml = window.jsyaml;
-    script.onerror = () => yaml = { load: JSON.parse };
     document.head.appendChild(script);
   }
 
@@ -1234,6 +1234,10 @@
     get yaml() {
       return yaml;
     }
+
+    get gameVersion() {
+      return window.StartConfig.version;
+    }
   }
 
   // @ts-ignore
@@ -1262,8 +1266,8 @@
       const modLoader = window.modSC2DataManager.getModLoader();
       const modUtils = window.modSC2DataManager.getModUtils();
       maplebirch.setModLoader(modLoader, modUtils);
-      await maplebirch.preInit();
       maplebirch.trigger(':dataImport');
+      await maplebirch.preInit();
     });
 
     maplebirch.on(':passageinit', async (/** @type {{ passage: any; }} */ev) => {
@@ -1309,7 +1313,7 @@
       tryPostInit();
     });
 
-    maplebirch.on(':passageend' , async () => setTimeout(() => maplebirch.events.trigger(':finally'), 1000));
+    maplebirch.on(':passageend' , async () => setTimeout(() => maplebirch.events.trigger(':finally'), 500));
 
     maplebirch.once(':storyready' , async () => {
       SugarCube.Save.onSave.add(async() => maplebirch.trigger(':onSave', State));

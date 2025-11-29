@@ -72,32 +72,4 @@
   
   window.simpleFrameworks = createFrameworkProxy();
   window.maplebirchFrameworks = createFrameworkProxy();
-
-  function _languageSwitch(...lanObj) {
-    const lancheck = maplebirch.Language;
-    let targetObj;
-    if (typeof lanObj[0] === 'object' && lanObj[0] !== null && !Array.isArray(lanObj[0])) {
-      targetObj = lanObj[0];
-    } else {
-      targetObj = {
-        EN: lanObj[0],
-        CN: lanObj[1]
-      };
-      if (Array.isArray(lanObj[0])) {
-        targetObj.EN = lanObj[0][0];
-        targetObj.CN = lanObj[0][1];
-      }
-    }
-    if (targetObj[lancheck] == undefined) {
-      const availableLanguages = Object.keys(targetObj);
-      lancheck = availableLanguages.length > 0 ? availableLanguages[0] : 'EN';
-    }
-    return targetObj[lancheck];
-  }
-
-  Object.defineProperties(window, {
-    lanSwitch: {
-      value: _languageSwitch
-    },
-  });
 })();

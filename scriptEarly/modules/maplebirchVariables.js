@@ -36,6 +36,7 @@
         nnpc: false,
         display: {}
       },
+      relationcount: 4,
       solarEclipse: true
     }
 

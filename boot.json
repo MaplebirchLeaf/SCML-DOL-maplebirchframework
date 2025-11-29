@@ -5,14 +5,14 @@
     "cn": "秋枫白桦"
   },
   "alias": ["Simple Frameworks"], 
-  "version": "2.5.3",
+  "version": "2.5.6",
   "imgFileList": [
     "img/misc/sky/solar-eclipse-0.png",
     "img/misc/sky/solar-eclipse-1.png",
     "img/misc/sky/solar-eclipse-2.png"
   ],
   "styleFileList": [
-    "styles/maplebirchDefault.css",
+    "styles/maplebirch-styles.css",
     "styles/maplebirchPanel​.css"
   ],
   "scriptFileList": [
@@ -22,12 +22,11 @@
     "data/maplebirchData-v1.js"
   ],
   "scriptFileList_earlyload": [
-    "scriptEarly/modules/maplebirchAudio.js",
-    "scriptEarly/modules/maplebirchShop.js",
     "scriptEarly/modules/maplebirchVariables.js",
+    "scriptEarly/modules/maplebirchNPCs.js",
+    "scriptEarly/modules/maplebirchShop.js",
     "scriptEarly/modules/maplebirchHandling.js",
     "scriptEarly/modules/maplebirchCharacter.js",
-    "scriptEarly/modules/maplebirchNPCs.js",
     "scriptEarly/modules/maplebirchCombat.js"
   ],
   "scriptFileList_inject_early": [
@@ -44,7 +43,8 @@
     "scriptEarly/Utils/maplebirchTransformation.js",
     "scriptEarly/modules/maplebirchTimeState.js",
     "scriptEarly/modules/maplebirchTools.js",
-    "game/03-JavaScript/maplebirchSFcompatible.js"
+    "game/03-JavaScript/maplebirchSFcompatible.js",
+    "scriptEarly/modules/maplebirchAudio.js"
   ],
   "tweeFileList": [
 
@@ -111,48 +111,6 @@
        "types": [
         ]
       }
-    }
-  ],
-  "dependenceInfo": [
-    {
-      "modName": "ModLoaderGui",
-      "version": ">=1.8.0"
-    },
-    {
-      "modName": "ConflictChecker",
-      "version": ">=1.3.0"
-    },
-    {
-      "modName": "ModLoader DoL ImageLoaderHook",
-      "version": ">=2.23.3"
-    },
-    {
-      "modName": "ImageLoaderHook",
-      "version": "^2.23.3"
-    },
-    {
-      "modName": "BeautySelectorAddon",
-      "version": "^2.8.0"
-    },
-    {
-      "modName": "TweeReplacer",
-      "version": "^1.7.0"
-    },
-    {
-      "modName": "ReplacePatcher",
-      "version": "^1.3.0"
-    },
-    {
-      "modName": "ModdedClothesAddon",
-      "version": "^1.1.0"
-    },
-    {
-      "modName": "ModdedFeatsAddon",
-      "version": "^1.0.0"
-    },
-    {
-      "modName": "GameVersion",
-      "version": ">=0.5.4.9"
     }
   ]
 }
