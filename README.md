@@ -1686,36 +1686,26 @@ maplebirchFrameworks.addNPC({
 ```
 @param {Object} statsObject - 状态配置对象
 @param {Object} statsObject[statName] - 状态配置
-  - min: 状态最小值
-  - max: 状态最大值
   - position: 在状态列表中的位置 (数字索引/"first"/"last"/"secondLast")
 
 示例：
-// 添加新状态
+// 修改原有状态
 maplebirchFrameworks.addStats({
-  'friendship': {
-    name: () => maplebirch.Language === 'CN' ? '友情' : 'Friendship',
-    value: T.npcData.friendship,
-    activeIcon: 'img/ui/friendship.png',
-    inactiveIcon: 'img/ui/friendship_empty.png',
-    color: 'green',
-    position: 'first'
-  },
-  'trust': {
-    name: "信任",
-    value: T.npcData.trust,
-    activeIcon: T.npcData.trust > 50 ? 'img/ui/trust_high.png' : 'img/ui/trust_low.png',
-    color: 'orange',
-    iconOrientation: 'vertical'
+  'love': {
+    name: "情感连接",
+    activeIcon: 'img/ui/custom_love.png',
+    color: 'pink',
+    position: 0
   }
 });
-
-// 更新现有状态
-maplebirchFrameworks.addStats({
-  love: {
-    min: -100, // 允许负值
-    max: 100,
-    position: "first" // 移动到第一位
+// 添加新状态
+maplebirch.npc.addStats({
+  'confidence': {
+    name: "自信",
+    value: T.npcData.confidence,
+    activeIcon: 'img/ui/confidence.png',
+    color: 'blue',
+    position: 3
   }
 });
 ```
@@ -2096,4 +2086,5 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
 
