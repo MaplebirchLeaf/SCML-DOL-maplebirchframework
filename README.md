@@ -1693,15 +1693,20 @@ maplebirchFrameworks.addNPC({
 示例：
 // 添加新状态
 maplebirchFrameworks.addStats({
-  trust: {
-    min: 0,
-    max: 100,
-    position: "secondLast" // 显示在倒数第二位
+  'friendship': {
+    name: () => maplebirch.Language === 'CN' ? '友情' : 'Friendship',
+    value: T.npcData.friendship,
+    activeIcon: 'img/ui/friendship.png',
+    inactiveIcon: 'img/ui/friendship_empty.png',
+    color: 'green',
+    position: 'first'
   },
-  loyalty: {
-    min: 0,
-    max: 10,
-    position: 3 // 显示在第四位
+  'trust': {
+    name: "信任",
+    value: T.npcData.trust,
+    activeIcon: T.npcData.trust > 50 ? 'img/ui/trust_high.png' : 'img/ui/trust_low.png',
+    color: 'orange',
+    iconOrientation: 'vertical'
   }
 });
 
@@ -2091,3 +2096,4 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)
+
