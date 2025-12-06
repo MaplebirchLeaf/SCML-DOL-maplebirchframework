@@ -99,6 +99,7 @@
 | 添加NPC服装数据 | `maplebirchFrameworks.addNPCClothes` / `simplebirchFrameworks.addNPCClothes` | `maplebirch.npc.addClothes` |
 | 气象管理 | `maplebirchFrameworks.modifyWeather` / `simplebirchFrameworks.modifyWeather` | `maplebirch.state.modifyWeather` |
 | 添加转化 | `maplebirchFrameworks.addTransform` / `simplebirchFrameworks.addTransform` | `maplebirch.char.transformation.add` |
+| 添加涂鸦 | `maplebirchFrameworks.addBodywriting` / `simplebirchFrameworks.addBodywriting` | `maplebirch.tool.other.addBodywriting` |
 
 <details>
 <summary>点击查看现已实现的功能</summary>
@@ -119,6 +120,7 @@
 | ​​区域注册​ | 动态注册界面部件区域​ |
 | ​​特质注册​ | 动态添加游戏特质 |
 | 地点注册​​ | 动态添加游戏地点​ |
+| 涂鸦注册​​ | 动态添加游戏涂鸦​ |
 | 商店注册 | 编写在游戏内添加商店 |
 | NPC注册 | 为游戏内添加NPC​ |
 | NPC侧绘 | 为游戏内添加NPC​的侧边栏立绘 |
@@ -1507,6 +1509,49 @@ maplebirchFrameworks.addLocation('forest', {
   animation: { frameDelay: 300 }
 }, { layer: 'emissive', element: 'fireflies' });
 ```
+ ### 地点注册
+   + 使用 `maplebirchFrameworks.addBodywriting(key, config)` 为原版添加纹身以及涂鸦。
+   + 身体涂鸦配置参数说明
+```
+@param {string} key - 涂鸦的唯一标识符，将用作 setup.bodywriting 的键名
+@param {object} config - 涂鸦配置对象
+@param {string} [config.writing] - 英文涂鸦文本
+@param {string} [config.writ_cn] - 中文涂鸦文本
+@param {string} [config.type='text'] - 涂鸦类型(text文本/object图形)
+@param {number} [config.arrow=0] - 是否有指向性箭头(0/1)
+@param {string} [config.special='none'] - 类别暗示，如''none'-无,'rape'-强奸,'Robin'-罗宾
+@param {string} [config.gender='n'] - 性别暗示，n=中性，f=女性，m=男性，h=双性
+@param {number} [config.lewd=0] - 是否有淫秽暗示(0/1)
+@param {number} [config.degree=0] - 金钱价值程度-1000=10￡
+@param {boolean} [config.featSkip=true] - 是否跳过成就检查
+@param {string[]} [config.sprites] - 精灵图身体部位
+```
+  + 使用示例
+```
+// 添加简单的羞辱性涂鸦（中英双语）
+addBodywriting('public_toilet', {
+  writing: 'Public Toilet',
+  writ_cn: '公共厕所',
+  type: 'text',
+  arrow: 0,
+  special: 'none',
+  gender: 'n',
+  lewd: 1,
+  degree: 0,
+});
+// 添加罗宾相关的涂鸦（带指向性箭头）
+addBodywriting('robin_slave', {
+  writing: 'Robin\'s Toy',
+  writ_cn: '罗宾的玩具',
+  type: 'text',
+  arrow: 1,
+  special: 'Robin',
+  gender: 'f',
+  lewd: 1,
+  degree: 500,
+});
+```
+ 
  ### 商店注册
  + 关于你的商店页面名称为 **"商店唯一标识名称" + Shop**，通过 **`<<link [[你的商店|"商店唯一标识名称" Shop]]>><</link>>`** 来进入，所以入口需要你自己填写
  #### 特别参数说明
@@ -2085,6 +2130,4 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 - 感谢 污度孤儿中国模组制作群 提供的交流环境和新手引导。
 
 ## 未实现的功能构想
-- 人类体型战斗系统重置、完善制作全新npc架构(画布...)
-
-
+- 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
