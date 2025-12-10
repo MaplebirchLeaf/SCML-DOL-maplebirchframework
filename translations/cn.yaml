@@ -100,6 +100,10 @@
 'Buy clothes and send to wardrobe': 购买衣物并送至衣柜
 'Leave': 离开
 
+'None': 无
+
+'male': 男性
+'famale': 女性
 'asexual': 无性
 'hermaphrodite': 双性
 'businessperson': 商人
@@ -114,6 +118,7 @@
 'huntress': 女猎人
 'hunter': 猎人
 'shopkeeper': 商店店主
+'curious': 奇寻者
 'doctor': 医生
 'silver fox': 银狐
 'pious': 敬虔者

@@ -7,7 +7,7 @@
     /** @param {NPCManager} [manager] */
     constructor(manager) {
       /** @type {any} */
-      this.manager = this.manager;
+      this.manager = manager;
       this.clothes = new Map();
       /** @type {any[]} */
       this.outfits = [];

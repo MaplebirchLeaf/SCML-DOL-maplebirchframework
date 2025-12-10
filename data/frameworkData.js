@@ -4,6 +4,209 @@
   'use strict';
   const maplebirch = window.maplebirch;
 
+  const bodywriting = [
+    `<<widget 'maplebirchBodyWriting'>>
+      <<if Object.keys(_bodyPartOptions).length gt 0 && $options.maplebirch.bodywriting is true>><div class='settingsToggleItemWide'>
+        <<set _maplebirchBodywriting to {}>>
+        <<set _maplebirchBodywritingSpecialList to [...new Set(['none',...new Set(Object.values(setup.bodywriting).map(item => item.special).filter(Boolean)),'loveInterest'])].filter(special => !setup.loveInterestNpc?.includes(special))>>
+        <<set _bodywritingSpecialTranslations to {none:{cn:'无',en:'None'},rape:{cn:'强奸',en:'Rape'},slave:{cn:'奴隶',en:'Slave'},violence:{cn:'暴力',en:'Violence'},sex:{cn:'性爱',en:'Sex'},bestiality:{cn:'兽交',en:'Bestiality'},prostitution:{cn:'卖淫',en:'Prostitution'},exhibitionism:{cn:'暴露癖',en:'Exhibitionism'},combat:{cn:'战斗',en:'Combat'},holy:{cn:'神圣',en:'Holy'},cattle:{cn:'牲畜',en:'Cattle'},criminal:{cn:'罪犯',en:'Criminal'},pregnancy:{cn:'怀孕',en:'Pregnancy'},impreg:{cn:'受孕',en:'Impregnation'},islander:{cn:'岛民',en:'Islander'},esoteric:{cn:'隐秘',en:'Esoteric'},loveInterest:{cn:'恋爱对象',en:'Love Interest'}}>>
+        <<language>>
+          <<option 'CN'>>
+            <<set _maplebirchTextColorNames to [
+              ['red', '<span class="red">红色</span>'],
+              ['pink', '<span class="pink">粉色</span>'],
+              ['light-pink', '<span class="light-pink">浅粉色</span>'],
+              ['rose-gold', '<span class="rose-gold">玫瑰金</span>'],
+              ['hospital-pink', '<span class="hospital-pink">医院粉</span>'],
+              ['purple', '<span class="purple">紫色</span>'],
+              ['lilac', '<span class="lilac">淡紫色</span>'],
+              ['blue', '<span class="blue">蓝色</span>'],
+              ['lblue', '<span class="lblue">浅蓝色</span>'],
+              ['light-blue', '<span class="light-blue">亮蓝色</span>'],
+              ['teal', '<span class="teal">青绿色</span>'],
+              ['green', '<span class="green">绿色</span>'],
+              ['lime-green', '<span class="lime-green">酸橙绿</span>'],
+              ['light-green', '<span class="light-green">浅绿色</span>'],
+              ['brown', '<span class="brown">棕色</span>'],
+              ['gold', '<span class="gold">金色</span>'],
+              ['silver', '<span class="silver">银色</span>'],
+              ['bronze', '<span class="bronze">青铜色</span>'],
+              ['steel', '<span class="steel">钢色</span>'],
+              ['blue-steel', '<span class="blue-steel">蓝钢色</span>'],
+              ['yellow', '<span class="yellow">黄色</span>'],
+              ['pale-yellow', '<span class="pale-yellow">淡黄色</span>'],
+              ['orange', '<span class="orange">橙色</span>'],
+              ['tangerine', '<span class="tangerine">橘色</span>'],
+              ['pale-tangerine', '<span class="pale-tangerine">淡橘色</span>'],
+              ['black', '<span class="black">黑色</span>'],
+              ['softbrown', '<span class="softbrown">软棕色</span>'],
+              ['lightbrown', '<span class="lightbrown">浅棕色</span>'],
+              ['burntorange', '<span class="burntorange">焦橙色</span>'],
+              ['bloodorange', '<span class="bloodorange">血橙色</span>'],
+              ['bluehair', '<span class="bluehair">蓝发色</span>'],
+              ['deepblue', '<span class="deepblue">深蓝色</span>'],
+              ['neonblue', '<span class="neonblue">霓虹蓝</span>'],
+              ['greenhair', '<span class="greenhair">绿发色</span>'],
+              ['darklime', '<span class="darklime">深柠檬绿</span>'],
+              ['toxicgreen', '<span class="toxicgreen">毒绿色</span>'],
+              ['tealhair', '<span class="tealhair">青绿发色</span>'],
+              ['pinkhair', '<span class="pinkhair">粉发色</span>'],
+              ['brightpink', '<span class="brightpink">亮粉色</span>'],
+              ['hotpink', '<span class="hotpink">热粉色</span>'],
+              ['softpink', '<span class="softpink">柔粉色</span>'],
+              ['crimson', '<span class="crimson">深红色</span>'],
+              ['purplehair', '<span class="purplehair">紫发色</span>'],
+              ['mediumpurple', '<span class="mediumpurple">中紫色</span>'],
+              ['brightpurple', '<span class="brightpurple">亮紫色</span>'],
+              ['whitehair', '<span class="whitehair">白发色</span>'],
+              ['snowwhitehair', '<span class="snowwhitehair">雪白色</span>'],
+              ['softblond', '<span class="softblond">软金色</span>'],
+              ['platinum', '<span class="platinum">铂金色</span>'],
+              ['ashy', '<span class="ashy">灰金色</span>'],
+              ['strawberry', '<span class="strawberry">草莓色</span>'],
+              ['lewd', '<span class="lewd">淫荡色</span>'],
+              ['grey', '<span class="grey">灰色</span>'],
+              ['light-grey', '<span class="light-grey">浅灰色</span>'],
+              ['tan', '<span class="tan">棕褐色</span>'],
+              ['sand', '<span class="sand">沙色</span>'],
+              ['olive', '<span class="olive">橄榄色</span>'],
+              ['navy', '<span class="navy">海军蓝</span>'],
+              ['wine', '<span class="wine">酒红色</span>'],
+              ['russet', '<span class="russet">赤褐色</span>'],
+              ['fleshy', '<span class="fleshy">肉色</span>'],
+              ['brat', '<span class="brat">叛逆色</span>'],
+              ['meek', '<span class="meek">温顺色</span>'],
+              ['def', '<span class="def">反抗色</span>'],
+              ['sub', '<span class="sub">顺从色</span>'],
+              ['relaxed', '<span class="relaxed">放松色</span>'],
+              ['anxious', '<span class="anxious">焦虑色</span>'],
+              ['veteran', '<span class="veteran">老兵色</span>'],
+              ['methodical', '<span class="methodical">有条不紊色</span>'],
+              ['scarred', '<span class="scarred">伤疤色</span>'],
+              ['tattooed', '<span class="tattooed">纹身色</span>'],
+              ['manager', '<span class="manager">经理色</span>'],
+              ['lustful', '<span class="lustful">欲望色</span>'],
+              ['wraith', '<span class="wraith">幽灵色</span>'],
+              ['witch', '<span class="witch">女巫色</span>'],
+              ['custom', '自选']
+            ]>>
+            <<set _maplebirchBodywritingSpecialNames to {}>><<run _maplebirchBodywritingSpecialList.forEach(special => T.maplebirchBodywritingSpecialNames[T.bodywritingSpecialTranslations[special].cn] = special)>>
+          <<option 'EN'>>
+            <<set _maplebirchTextColorNames to [
+              ['red', '<span class="red">Red</span>'],
+              ['pink', '<span class="pink">Pink</span>'],
+              ['light-pink', '<span class="light-pink">Light Pink</span>'],
+              ['rose-gold', '<span class="rose-gold">Rose Gold</span>'],
+              ['hospital-pink', '<span class="hospital-pink">Hospital Pink</span>'],
+              ['purple', '<span class="purple">Purple</span>'],
+              ['lilac', '<span class="lilac">Lilac</span>'],
+              ['blue', '<span class="blue">Blue</span>'],
+              ['lblue', '<span class="lblue">Light Blue</span>'],
+              ['light-blue', '<span class="light-blue">Bright Blue</span>'],
+              ['teal', '<span class="teal">Teal</span>'],
+              ['green', '<span class="green">Green</span>'],
+              ['lime-green', '<span class="lime-green">Lime Green</span>'],
+              ['light-green', '<span class="light-green">Light Green</span>'],
+              ['brown', '<span class="brown">Brown</span>'],
+              ['gold', '<span class="gold">Gold</span>'],
+              ['silver', '<span class="silver">Silver</span>'],
+              ['bronze', '<span class="bronze">Bronze</span>'],
+              ['steel', '<span class="steel">Steel</span>'],
+              ['blue-steel', '<span class="blue-steel">Blue Steel</span>'],
+              ['yellow', '<span class="yellow">Yellow</span>'],
+              ['pale-yellow', '<span class="pale-yellow">Pale Yellow</span>'],
+              ['orange', '<span class="orange">Orange</span>'],
+              ['tangerine', '<span class="tangerine">Tangerine</span>'],
+              ['pale-tangerine', '<span class="pale-tangerine">Pale Tangerine</span>'],
+              ['black', '<span class="black">Black</span>'],
+              ['softbrown', '<span class="softbrown">Soft Brown</span>'],
+              ['lightbrown', '<span class="lightbrown">Light Brown</span>'],
+              ['burntorange', '<span class="burntorange">Burnt Orange</span>'],
+              ['bloodorange', '<span class="bloodorange">Blood Orange</span>'],
+              ['bluehair', '<span class="bluehair">Blue Hair</span>'],
+              ['deepblue', '<span class="deepblue">Deep Blue</span>'],
+              ['neonblue', '<span class="neonblue">Neon Blue</span>'],
+              ['greenhair', '<span class="greenhair">Green Hair</span>'],
+              ['darklime', '<span class="darklime">Dark Lime</span>'],
+              ['toxicgreen', '<span class="toxicgreen">Toxic Green</span>'],
+              ['tealhair', '<span class="tealhair">Teal Hair</span>'],
+              ['pinkhair', '<span class="pinkhair">Pink Hair</span>'],
+              ['brightpink', '<span class="brightpink">Bright Pink</span>'],
+              ['hotpink', '<span class="hotpink">Hot Pink</span>'],
+              ['softpink', '<span class="softpink">Soft Pink</span>'],
+              ['crimson', '<span class="crimson">Crimson</span>'],
+              ['purplehair', '<span class="purplehair">Purple Hair</span>'],
+              ['mediumpurple', '<span class="mediumpurple">Medium Purple</span>'],
+              ['brightpurple', '<span class="brightpurple">Bright Purple</span>'],
+              ['whitehair', '<span class="whitehair">White Hair</span>'],
+              ['snowwhitehair', '<span class="snowwhitehair">Snow White</span>'],
+              ['softblond', '<span class="softblond">Soft Blond</span>'],
+              ['platinum', '<span class="platinum">Platinum</span>'],
+              ['ashy', '<span class="ashy">Ashy</span>'],
+              ['strawberry', '<span class="strawberry">Strawberry</span>'],
+              ['lewd', '<span class="lewd">Lewd</span>'],
+              ['grey', '<span class="grey">Grey</span>'],
+              ['light-grey', '<span class="light-grey">Light Grey</span>'],
+              ['tan', '<span class="tan">Tan</span>'],
+              ['sand', '<span class="sand">Sand</span>'],
+              ['olive', '<span class="olive">Olive</span>'],
+              ['navy', '<span class="navy">Navy Blue</span>'],
+              ['wine', '<span class="wine">Wine Red</span>'],
+              ['russet', '<span class="russet">Russet</span>'],
+              ['fleshy', '<span class="fleshy">Fleshy</span>'],
+              ['brat', '<span class="brat">Brat</span>'],
+              ['meek', '<span class="meek">Meek</span>'],
+              ['def', '<span class="def">Defiant</span>'],
+              ['sub', '<span class="sub">Submissive</span>'],
+              ['relaxed', '<span class="relaxed">Relaxed</span>'],
+              ['anxious', '<span class="anxious">Anxious</span>'],
+              ['veteran', '<span class="veteran">Veteran</span>'],
+              ['methodical', '<span class="methodical">Methodical</span>'],
+              ['scarred', '<span class="scarred">Scarred</span>'],
+              ['tattooed', '<span class="tattooed">Tattooed</span>'],
+              ['manager', '<span class="manager">Manager</span>'],
+              ['lustful', '<span class="lustful">Lustful</span>'],
+              ['wraith', '<span class="wraith">Wraith</span>'],
+              ['custom', 'Custom']
+            ]>>
+            <<set _maplebirchBodywritingSpecialNames to {}>><<run _maplebirchBodywritingSpecialList.forEach(special => T.maplebirchBodywritingSpecialNames[T.bodywritingSpecialTranslations[special].en] = special)>>
+        <</language>>
+        <span class="gold bold"><<lanSwitch 'Custom Bodywriting' '定制涂鸦'>></span><br>
+        <<lanSwitch 'The characteristics of this bodywriting are' '这幅涂鸦的所具有的特定'>>：
+        <br><<lanSwitch 'Color' '颜色'>>：<br><<radiobuttonsfrom '_maplebirchBodywriting.color' _maplebirchTextColorNames>>
+        <div id='maplebirchBodyWriting' style='display:inline'></div><br><<lanSwitch 'Gender' '性别'>>：
+        <<langlistbox '_maplebirchBodywriting.gender'>><<option 'asexual' 'n'>><<option 'male' 'm'>><<option 'famale' 'f'>><<option 'hermaphrodite' 'h'>><</langlistbox>>
+        <br><<lanSwitch 'Category' '类别'>>：<<langlistbox '_maplebirchBodywriting.special' autoselect>><<optionsfrom _maplebirchBodywritingSpecialNames>><</langlistbox>>
+        <br><<lanSwitch 'Related to the Love Interest?' '与恋爱对象有关?'>>
+        <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'This option will only take effect when the category is selected as &quot;Love Interest&quot;' '仅在类别选用&quot;恋爱对象&quot;时，此选项才会生效'>></span>">(?)</span>
+        <<set _maplebirchBodywritingloveInterestNames = ['None', ...setup.loveInterestNpc.filter(name => isPossibleLoveInterest(name))]>>
+        <br><<langlistbox '_maplebirchBodywriting.loveInterest' autoselect>><<optionsfrom _maplebirchBodywritingloveInterestNames>><</langlistbox>>
+        <br><<lanSwitch 'A directional arrow?' '带有指向性的箭头?'>><br><<set _maplebirchBodywriting.arrow to 0>>
+        <label><<lanSwitch 'YES' '是'>> <<radiobutton '_maplebirchBodywriting.arrow' 1 autocheck>></label>|<label><<lanSwitch 'NO' '否'>> <<radiobutton '_maplebirchBodywriting.arrow' 0 autocheck>></label>
+        <br><<lanSwitch 'Does it imply lewd?' '具有淫秽暗示?'>><br><<set _maplebirchBodywriting.lewd to 0>>
+        <label><<lanSwitch 'YES' '是'>> <<radiobutton '_maplebirchBodywriting.lewd' 1 autocheck>></label>|<label><<lanSwitch 'NO' '否'>> <<radiobutton '_maplebirchBodywriting.lewd' 0 autocheck>></label>
+        <br><<set _maplebirchBodywritingPenNames to maplebirch.Language is 'CN' ? {普通笔: 'pen', 耐久笔: 'marker', 口红: 'lipstick', 泥巴: 'mud'} : {Pen: 'pen', Marker: 'marker', Lipstick: 'lipstick', Mud: 'mud'}>>
+        <<language>>
+        <<option 'CN'>>把 <<textbox '_maplebirchBodywriting.text' ''>> 用 <<langlistbox '_maplebirchBodywriting.pen'>><<optionsfrom _maplebirchBodywritingPenNames>><</langlistbox>> 写在你的 <<listbox '_maplebirchBodywriting.bodyPart'>><<optionsfrom _bodyPartOptions>><</listbox>> 上
+        <<option 'EN'>>Write <<textbox '_maplebirchBodywriting.text' ''>> on your <<listbox '_maplebirchBodywriting.bodyPart'>><<optionsfrom _bodyPartOptions>><</listbox>> with a <<langlistbox '_maplebirchBodywriting.pen'>><<optionsfrom _maplebirchBodywritingPenNames>><</langlistbox>>
+        <</language>>
+        <<langlink '应用' $passage>>
+          <<set _maplebirchBodywriting.skin to {
+            writing: T.maplebirchBodywriting.color === 'custom' ? \`<span style='color:\${T.maplebirchBodywriting.custom}'>\${T.maplebirchBodywriting.text}</span>\` : \`<span class='\${T.maplebirchBodywriting.color}'>\${T.maplebirchBodywriting.text}</span>\`,
+            writ_cn: T.maplebirchBodywriting.color === 'custom' ? \`<span style='color:\${T.maplebirchBodywriting.custom}'>\${T.maplebirchBodywriting.text}</span>\` : \`<span class='\${T.maplebirchBodywriting.color}'>\${T.maplebirchBodywriting.text}</span>\`,
+            type: 'text',
+            arrow: T.maplebirchBodywriting.arrow,
+            lewd: T.maplebirchBodywriting.lewd,
+            special: T.maplebirchBodywriting.special === 'loveInterest' ? T.maplebirchBodywriting.loveInterest : T.maplebirchBodywriting.special,
+            gender: T.maplebirchBodywriting.gender,
+            degree: 0
+          }>>
+          <<add_bodywriting _maplebirchBodywriting.bodyPart _maplebirchBodywriting.skin _maplebirchBodywriting.pen>>
+        <</langlink>>
+      </div><</if>>
+    <</widget>>`
+  ]
+
   const overlayWidgets = [
     `<<widget 'maplebirchReplace'>>
       <<set _key to _args[0]>>
@@ -232,7 +435,7 @@
             <<langlink _wings_text>><<run State.setVar('$wingslayer', _wings_value)>><<run Engine.show()>><<updatesidebarimg true>><</langlink>><br>
           <</if>>
         </div>
-        <<script>>jQuery('.passage').on('change', 'select.macro-langlistbox', function (e) { Wikifier.wikifyEval('<<updatesidebarimg true>>'); });<</script>>
+        <<script>>jQuery('.passage').on('change', 'select.macro-langlistbox', function (e) { maplebirch.SugarCube.Wikifier.wikifyEval('<<updatesidebarimg true>>'); });<</script>>
       <</if>>
     <</widget>>`,
   ];
@@ -313,6 +516,7 @@
   ];
 
   const specialWidget = [
+    ...bodywriting,
     ...overlayWidgets,
     ...audioWidgets,
     ...characterWidgets,
@@ -332,32 +536,39 @@
           <span class='gold'><<= maplebirch.t('Maplebirch Frameworks')>></span>
         </div>
         <div class='settingsToggleItem'>
-          <span class='gold'><<= maplebirch.t('Current Mods Language Setting')>>:</span>
+          <span class='gold'><<= maplebirch.t('Current Mods Language Setting')>></span>
           <<set _selectedLang to maplebirch.lang.language>>
-          <<langlistbox '_selectedLang' autoselect>>
-            <<option 'English' 'EN'>>
-            <<option 'Chinese' 'CN'>>
-          <</langlistbox>>
+          <<langlistbox '_selectedLang' autoselect>><<option 'English' 'EN'>><<option 'Chinese' 'CN'>><</langlistbox>>
         </div>
         <div class='settingsToggleItem'>
           <label><<checkbox '$options.maplebirch.debug' false true autocheck>><<= maplebirch.t('DEBUG')+maplebirch.t('Mode')>></label>
         </div>
         <div class='settingsToggleItem'>
-          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('sidebar',true)+maplebirch.t('position',true)+maplebirch.t('selection'),'capitalize')>>：</span>
-          <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'Update next time the interface is opened' '在下次打开界面时更新'>></span>">(?)</span><br>
-          <<langlistbox '$options.maplebirch.modHint' autoselect>>
-            <<option 'mobile client' 'mobile'>>
-            <<option 'desktop client' 'desktop'>>
-            <<option 'disable' 'disable'>>
-          <</langlistbox>>
+          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('sidebar',true)+maplebirch.t('position',true)+maplebirch.t('selection'),'capitalize')>></span>
+          <<langlistbox '$options.maplebirch.modHint' autoselect>><<option 'mobile client' 'mobile'>><<option 'desktop client' 'desktop'>><<option 'disable' 'disable'>><</langlistbox>>
+          <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'Update next time the interface is opened' '在下次打开界面时更新'>></span>">(?)</span>
         </div>
         <div class='settingsToggleItem'>
+          <label><<checkbox '$options.maplebirch.bodywriting' false true autocheck>><<lanSwitch 'Custom Bodywriting' '定制涂鸦'>></label>
+          <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'Customized bodywriting can be created at the mirror after activation.' '启用后在镜子处可定制涂鸦。'>></span>">(?)</span>
+        </div>
+        <div class='settingsToggleItem'>
+          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('celestial phenomenons settings'),'capitalize')>></span><br>
+          <label><<checkbox '$options.maplebirch.solarEclipse' false true autocheck>><<= maplebirch.t('solar eclipse')>></label>
+          <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'When enabled, a solar eclipse will occur in the specified month.' '启用后将在指定月份出现日蚀。'>></span>">(?)</span>
+        </div>
+        <div class='settingsToggleItem'>
+          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('total number of status displays'),'capitalize')>></span>
+          <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'Adjust the total number of status displays for Primary Relationships NPCs in the SOCIAL bar.' '调整社交栏中主要关系NPC的状态显示总数。'>></span>">(?)</span>
+          <br><div class='maplebirch-relationcount-slider'><<numberslider '$options.maplebirch.relationcount' $options.maplebirch.relationcount 2 10 2>></div>
+        </div>
+        <div class='settingsToggleItemWide'>
           <<set _npcsidebarName = {}>>
           <<set setup.NPCNameList.forEach(name => T.npcsidebarName[maplebirch.autoTranslate(maplebirch.tool.convert(name, 'title'))] = name)>>
           <label onclick='maplebirch.trigger("update")'><<checkbox '$options.maplebirch.npcsidebar.show' false true autocheck>><<= maplebirch.tool.convert('NPC '+maplebirch.t('model',true)+maplebirch.t('display',true),'title')>></label> |
           <label onclick='maplebirch.trigger("update")'><<checkbox '$options.maplebirch.npcsidebar.model' false true autocheck>><<= maplebirch.tool.convert(maplebirch.t('canvas')+maplebirch.t('Mode'),'pascal')>></label>
           <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'After enabling the display, named NPCs will show their models when nearby, with the canvas mode set to the player model' '开启显示后命名NPC在附近将显示模型，画布模式为玩家模型'>></span>">(?)</span><br>
-          <<listbox '$options.maplebirch.npcsidebar.nnpc' autoselect>><<optionsfrom _npcsidebarName>><</listbox>><br>
+          <<langlistbox '$options.maplebirch.npcsidebar.nnpc' autoselect>><<optionsfrom _npcsidebarName>><</langlistbox>>
           <<if $options.maplebirch.npcsidebar.nnpc>>
             <<if !['none'].concat(Array.from(maplebirch.npc.Sidebar.display[$options.maplebirch.npcsidebar.nnpc])).includes($options.maplebirch.npcsidebar.display[$options.maplebirch.npcsidebar.nnpc])>>
               <<set $options.maplebirch.npcsidebar.display[$options.maplebirch.npcsidebar.nnpc] = 'none'>>
@@ -366,16 +577,6 @@
             <<set _npcsidebarDisplay = ['none'].concat(Array.from(maplebirch.npc.Sidebar.display[$options.maplebirch.npcsidebar.nnpc]))>>
             <<= maplebirch.tool.convert(maplebirch.t('graphic',true)+maplebirch.t('selection'), 'capitalize')>>：<<radiobuttonsfrom _fixedName _npcsidebarDisplay>>
           <</if>>
-        </div>
-        <div class='settingsToggleItem'>
-          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('celestial phenomenons settings'),'capitalize')>>：</span><br>
-          <label><<checkbox '$options.maplebirch.solarEclipse' false true autocheck>><<= maplebirch.t('solar eclipse')>></label>
-          <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'When enabled, a solar eclipse will occur in the specified month.' '启用后将在指定月份出现日蚀'>></span>">(?)</span>
-        </div>
-        <div class='settingsToggleItem'>
-          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('total number of status displays'),'capitalize')>></span>
-          <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'Adjust the total number of status displays for Primary Relationships NPCs in the SOCIAL bar.' '调整社交栏中主要关系NPC的状态显示总数。'>></span>">(?)</span>
-          <br><div class='maplebirch-relationcount-slider'><<numberslider '$options.maplebirch.relationcount' $options.maplebirch.relationcount 2 10 2>></div>
         </div>
       </div><hr>`,
     Cheats : `
@@ -531,6 +732,7 @@
     'Widgets Mirror': [
       { src: '<</if>>\n\t\t<<if ![', to: '<</if>>\n\t\t<<maplebirchTransformationMirror>>\n\t\t<<if ![' },
       { src: '<<else>><<tficon "angel">>', to: '<<else>><<= maplebirch.char.transformation.icon>>' },
+      { src: '</div>\n\t\t</div>\n\t\t<div class="settingsToggleItemWide">', to: '</div>\n\t\t</div>\n\t\t<<maplebirchBodyWriting>>\n\t\t<div class="settingsToggleItemWide">' },
     ]
   };
 

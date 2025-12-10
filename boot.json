@@ -5,7 +5,7 @@
     "cn": "秋枫白桦"
   },
   "alias": ["Simple Frameworks"], 
-  "version": "2.5.6",
+  "version": "2.5.8",
   "imgFileList": [
     "img/misc/sky/solar-eclipse-0.png",
     "img/misc/sky/solar-eclipse-1.png",
@@ -16,7 +16,7 @@
     "styles/maplebirchPanel​.css"
   ],
   "scriptFileList": [
-    "game/03-JavaScript/maplebirchDefineMacros.js"
+    "game/03-JavaScript/maplebirchDefineSugarCube.js"
   ],
   "scriptFileList_preload":[
     "data/maplebirchData-v1.js"

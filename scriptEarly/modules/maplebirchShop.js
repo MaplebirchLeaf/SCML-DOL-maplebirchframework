@@ -143,7 +143,7 @@
       if (this.shopText[shopName].includes('intro')) html += `\t<<maplebirchTextOutput "${shopName+'_intro'}">><br><br>\n`;
       if (options.stress) html += `\t<<if $stress gte $stressmax>>\n\t\t<<${options.stressMacro}>>\n\t<<else>>\n`;
 
-      const modUtils = window.modUtils;
+      const modUtils = window.maplebirch.modUtils;
       const hasReOverfits = modUtils.getMod('ReOverfits');
       html += `\t\t<span><<= maplebirch.Language === 'CN' ? '保暖度：' : 'Warmth: '>></span>\n`;
       html += `\t\t<<warmthscale>>\n`;

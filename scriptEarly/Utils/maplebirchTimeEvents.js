@@ -665,10 +665,10 @@
             }
           };
           this.log('时间事件系统已激活', 'INFO');
-          window.getFormattedDate = createDateFormatters().getFormattedDate;
-          window.getShortFormattedDate = createDateFormatters().getShortFormattedDate;
+          try { window.getFormattedDate = createDateFormatters().getFormattedDate; } catch(e) { this.log(`getFormattedDate错误: ${e.message}`, 'WARN')};
+          try { window.getShortFormattedDate = createDateFormatters().getShortFormattedDate; } catch(e) { this.log(`getShortFormattedDate错误: ${e.message}`, 'WARN')};
           maplebirch.on(':languageChange', () => this.updateTimeLanguage());
-        } catch (error) { this.log(`初始化时间系统失败: ${error.message}`, 'ERROR'); }
+        } catch (e) { this.log(`初始化时间系统失败: ${e.message}`, 'ERROR'); }
       });
     }
   }

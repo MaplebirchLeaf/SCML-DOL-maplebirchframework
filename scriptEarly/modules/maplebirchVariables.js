@@ -37,7 +37,8 @@
         display: {}
       },
       relationcount: 4,
-      solarEclipse: true
+      solarEclipse: true,
+      bodywriting: false
     }
 
     static audio = {

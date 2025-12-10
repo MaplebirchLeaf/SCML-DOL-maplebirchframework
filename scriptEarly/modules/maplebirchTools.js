@@ -1,3 +1,4 @@
+// @ts-check
 (async() => {
   'use strict';
   if (!window.maplebirch) {
@@ -7,16 +8,19 @@
 
   const maplebirch = window.maplebirch;
 
+  /** @param {string} prefix */
   function createLog(prefix) {
-    return (message, level = 'INFO', ...objects) => {maplebirch.log(`[${prefix}] ${message}`, level, ...objects); };
+    return (/**@type {any}*/message, level = 'INFO', /**@type {any}*/...objects) => {maplebirch.log(`[${prefix}] ${message}`, level, ...objects); };
   }
 
   // 模块提示系统 - 用于显示和搜索模块提示信息
   class modhintSystem {
+    /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
     constructor(logger) {
       this.log = logger;
     }
     
+    /** @param {any} newElement @param {{ parentNode: { insertBefore: (arg0: any, arg1: any) => void; }; }} targetElement */
     #insertBefore(newElement, targetElement) {
       if (targetElement && targetElement.parentNode) {
         targetElement.parentNode.insertBefore(newElement, targetElement);
@@ -24,7 +28,7 @@
     }
     
     hintClicked() {
-      if (window.$ && window.$.wiki) {
+      if ($?.wiki) {
         $.wiki('<<maplebirchReplace "maplebirchModHint" "title">>');
         maplebirch.trigger('characterRender');
       } else {
@@ -40,6 +44,7 @@
       if (!value || value.trim() === "") return;
       
       const keyword = value.trim();
+      /** @type {any} */
       const contentEl = document.getElementById("maplebirchModHintContent");
       if (!contentEl) return;
       
@@ -47,8 +52,8 @@
       const originalHtml = contentEl.innerHTML;
       
       const highlightedHtml = originalHtml.replace(
-        regex, 
-        match => `<span class="gold searchResult">${match}</span>`
+        regex,
+        (/**@type {any}*/match) => `<span class="gold searchResult">${match}</span>`
       );
       
       contentEl.innerHTML = highlightedHtml;
@@ -74,12 +79,8 @@
       if (contentEl) {
         const results = contentEl.querySelectorAll('.searchResult');
         results.forEach(el => {
-          const parent = el.parentNode;
-          
-          while (el.firstChild) {
-            parent.insertBefore(el.firstChild, el);
-          }
-
+          /** @type {any} */const parent = el.parentNode;
+          while (el.firstChild) parent.insertBefore(el.firstChild, el);
           parent.removeChild(el);
         });
       }
@@ -88,6 +89,7 @@
 
   // 控制台系统 - 用于执行JS和Twine代码
   class consoleTools {
+    /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
     constructor(logger, allowedObjects = ['V', 'T']) {
       this.log = logger;
       this.globalNamespace = {};
@@ -105,6 +107,7 @@
       return true;
     }
     
+    /** @param {string} objectName */
     allowObject(objectName) {
       if (typeof objectName === 'string') {
         if (this.allowedObjects.has(objectName)) return false;
@@ -115,12 +118,14 @@
       return false;
     }
     
+    /** @param {string} objectName */
     disallowObject(objectName) {
       if (this.allowedObjects.has(objectName)) { this.allowedObjects.delete(objectName); return true; }
       this.log(`对象 ${objectName} 不在权限列表中`, 'WARN');
       return false;
     }
     
+    /** @param {Iterable<any> | null | undefined} objects */
     setAllowedObjects(objects) {
       if (Array.isArray(objects)) {
         this.allowedObjects = new Set(objects);
@@ -153,7 +158,7 @@
           message: message,
           globals: this.globalNamespace
         };
-      } catch (error) {
+      } catch (/**@type {any}*/error) {
         const errorMsg = error.message || '未知错误';
         const message = `执行错误 → ${errorMsg}`;
         this.log('执行失败', 'ERROR', error);
@@ -166,6 +171,7 @@
       }
     }
 
+    /** @param {string} message @param {any} isSuccess */
     #updateJSStatus(message, isSuccess) {
       const statusElement = $('#js-cheat-console-status');
       statusElement.text(message);
@@ -173,6 +179,7 @@
       statusElement.addClass(isSuccess ? 'success visible' : 'error visible');
     }
     
+    /** @param {any} code */
     #executeJSCode(code) {
       const sandbox = {
         Math: Object.freeze(Math),
@@ -186,11 +193,9 @@
       };
       
       for (const objName of this.allowedObjects) {
-        if (window[objName] !== undefined) {
-          sandbox[objName] = window[objName];
-        } else {
-          this.log(`对象 ${objName} 在全局作用域中不存在`, 'WARN');
-        }
+        // @ts-ignore
+        if (window[objName] !== undefined) { sandbox[objName] = window[objName]; } 
+        else { this.log(`对象 ${objName} 在全局作用域中不存在`, 'WARN'); }
       }
       Object.freeze(Object.prototype);
       Object.freeze(Array.prototype);
@@ -200,28 +205,22 @@
       Object.freeze(Date.prototype);
       const sandboxProxy = new Proxy(sandbox, {
         has: () => true,
-        get: (target, prop) => {
+        get: (/**@type {any}*/target, /**@type {any}*/prop) => {
           if (prop === Symbol.unscopables) return undefined;
           if (prop in target) return target[prop];
           if (this.fullAccess && prop in window) return window[prop];
           if (this.allowedObjects.has(prop) && prop in window) return window[prop];
           throw new ReferenceError(`对象 '${prop}' 未授权访问 - 权限不足`);
         },
-        set: (target, prop, value) => {
-          const canWrite = (obj, prop) => {
+        set: (/**@type {any}*/target, /**@type {any}*/prop, value) => {
+          const canWrite = (/**@type {any}*/obj, /**@type {any}*/prop) => {
             const descriptor = Object.getOwnPropertyDescriptor(obj, prop);
             if (!descriptor) return true;
             if (descriptor.writable === false) return false;
             return true;
           };
-          if (this.fullAccess && prop in window && canWrite(window, prop)) {
-            window[prop] = value;
-            return true;
-          }
-          if (this.allowedObjects.has(prop) && prop in window && canWrite(window, prop)) {
-            window[prop] = value;
-            return true;
-          }
+          if (this.fullAccess && prop in window && canWrite(window, prop)) { window[prop] = value; return true; }
+          if (this.allowedObjects.has(prop) && prop in window && canWrite(window, prop)) { window[prop] = value; return true; }
           if (prop === 'global') throw new Error('不能覆盖 global 命名空间');
           if (prop in sandbox && prop !== 'global') throw new Error(`修改 ${prop} 被禁止`);
           if (prop in window) throw new Error(`修改 '${prop}' 被禁止 - 权限不足`);
@@ -238,6 +237,7 @@
       }
     }
 
+    /** @param {null | undefined} result */
     #formatResult(result) {
       if (result === null) return 'null';
       if (result === undefined) return 'undefined';
@@ -292,10 +292,11 @@
             return {
               success: true,
               message: '代码执行成功',
+              // @ts-ignore
               parsedContent: fragment.innerHTML
             };
           }
-        } catch (wikifyError) {
+        } catch (/**@type {any}*/wikifyError) {
           const errorMsg = wikifyError.message || 'Wikifier解析错误';
           this.#updateTwineStatus(`解析错误: ${errorMsg}`, false);
           this.log('Twine代码解析失败', 'ERROR', wikifyError);
@@ -305,7 +306,7 @@
             message: `解析错误: ${errorMsg}`
           };
         }
-      } catch (error) {
+      } catch (/**@type {any}*/error) {
         const errorMsg = error.message || '未知错误';
         this.#updateTwineStatus(`执行错误: ${errorMsg}`, false);
         this.log('Twine代码执行失败', 'ERROR', error);
@@ -317,6 +318,7 @@
       }
     }
 
+    /** @param {string} message @param {any} isSuccess */
     #updateTwineStatus(message, isSuccess) {
       const statusElement = $('#twine-cheat-console-status');
       statusElement.text(message);
@@ -324,6 +326,7 @@
       statusElement.addClass(isSuccess ? 'success visible' : 'error visible');
     }
     
+    /** @param {string} type */
     execute(type) {
       if (type === 'javascript') {
         return this.#executeJS();
@@ -343,6 +346,7 @@
   class cheatSystem {
     constructor() {
       this.db = null;
+      /** @type {any[]} */
       this.cache = [];
       maplebirch.once(':dataImport', async() => await this.initDB());
     }
@@ -350,7 +354,7 @@
     async initDB() {
       const idbRef = maplebirch.modUtils.getIdbRef();
       this.db = await idbRef.idb_openDB('maplebirch-cheats', 1, {
-        upgrade: (db) => { if (!db.objectStoreNames.contains('cheats')) db.createObjectStore('cheats', { keyPath: 'name' }); }
+        upgrade: (/** @type {{objectStoreNames: { contains: (arg0: string) => any; }; createObjectStore: (arg0: string, arg1: { keyPath: string; }) => void; }}*/db) => { if (!db.objectStoreNames.contains('cheats')) db.createObjectStore('cheats', { keyPath: 'name' }); }
       });
       await this.refreshCache();
     }
@@ -362,6 +366,7 @@
       this.cache = await store.getAll();
     }
 
+    /** @param {string} name @param {string} code */
     async add(name, code) {
       if (!name?.trim() || !code?.trim()) return false;
       const tx = this.db.transaction('cheats', 'readwrite');
@@ -377,6 +382,7 @@
       return true;
     }
 
+    /** @param {any} name */
     async remove(name) {
       const tx = this.db.transaction('cheats', 'readwrite');
       const store = tx.objectStore('cheats');
@@ -385,6 +391,7 @@
       return true;
     }
 
+    /** @param {any} name */
     async execute(name) {
       const cheat = this.cache.find(c => c.name === name);
       if (!cheat) return false;
@@ -399,6 +406,7 @@
       return result.success || false;
     }
 
+    /** @param {string} term */
     search(term) {
       if (!term?.trim()) return this.cache;
       const searchTerm = term.toLowerCase();
@@ -440,12 +448,14 @@
       this.displayAll();
     }
 
+    /** @param {string} containerId @param {string} content */
     updateContainer(containerId, content) {
       if (!containerId) return;
       try { new maplebirch.SugarCube.Wikifier(null, `<<replace "#${containerId}">>${content}<</replace>>`); }
       catch (error) {}
     }
 
+    /** @param {any} name */
     deleteConfirm(name) {
       const cheat = this.cache.find(c => c.name === name);
       if (!cheat) return '';
@@ -453,6 +463,7 @@
       return `<span class='red'><<lanSwitch 'Confirm to clear' '确认清除'>> "${cheat.name}"?</span><br><<langlink 'confirm' null 'capitalize'>><<run maplebirch.tool?.cheat.remove('${cheat.name.replace(/'/g, "\\'")}')>><<run maplebirch.tool?.cheat.displayAll()>><</langlink>> | <<langlink 'cancel' null 'capitalize'>><<run maplebirch.tool?.cheat.cancelDelete('${cheat.name.replace(/'/g, "\\'")}')>><</langlink>>`;
     }
 
+    /** @param {any} name */
     cancelDelete(name) {
       const cheat = this.cache.find(c => c.name === name);
       if (!cheat) return;
@@ -487,15 +498,17 @@
     }
 
     async preInit() {
-      maplebirch.once(':finally', () => {
-        this.linkzone.removeZones();
-        this.linkzone.apply({ debug: true });
-      });
+      // @ts-ignore
+      maplebirch.once(':finally', () => { this.linkzone.removeZones(); this.linkzone.apply({ debug: true }); });
+      // @ts-ignore
       maplebirch.on(':passagedisplay', () => this.linkzone.apply(), 'applylinkzone');
     }
 
     Init() {
-      this.other.applyLocationUpdates();
+      // @ts-ignore
+      this.other.applyLocation();
+      // @ts-ignore
+      this.other.applyBodywriting();
     }
 
     postInit() {

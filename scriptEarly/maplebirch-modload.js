@@ -3,7 +3,7 @@
 (async() => {
   'use strict';
   if (!window.maplebirch) return;
-  const modUtils = window.modUtils;
+  const modUtils = window.maplebirch.modUtils;
   const logger = modUtils.getLogger();
   const modSC2DataManager = window.modSC2DataManager;
   const addonBeautySelectorAddon = window.addonBeautySelectorAddon;

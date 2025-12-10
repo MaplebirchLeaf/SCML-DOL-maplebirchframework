@@ -32,7 +32,7 @@
       return true;
     }
 
-    tryRun() {
+    tryRun(passageName) {
       if (!this.#checkPassage(passageName)) return null;
       if (!!this.cond()) return [!!this.output, !!this.action, this.#check()];
       return null

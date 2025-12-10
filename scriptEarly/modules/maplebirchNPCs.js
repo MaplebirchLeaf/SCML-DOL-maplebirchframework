@@ -140,7 +140,7 @@
     }
 
     static #generatePronouns(gender) {
-      const lang = modUtils.getMod('ModI18N') ? 'CN' : 'EN';
+      const lang = maplebirch.modUtils.getMod('ModI18N') ? 'CN' : 'EN';
       const data = NPCcreator.pronounsMap[gender] || NPCcreator.pronounsMap.n;
       return data[lang] || data.EN;
     }
@@ -270,7 +270,6 @@
     static onUpdate(manager) {
       let addedCount = 0;
       let skippedCount = 0;
-      const modUtils = window.modUtils;
       const existingNames = [...manager.NamedNPC.map(npc => npc.nam), ...manager.NPCNameList];
       for (const npcName in manager.data) {
         if (manager.data.hasOwnProperty(npcName)) {
@@ -296,9 +295,7 @@
         if (parts.length === 2) {
           const enName = parts[0].trim();
           const cnName = parts[1].trim();
-          if (enName && cnName) {
-            maplebirch.lang.translations.set(enName, { EN: enName, CN: cnName });
-          }
+          if (enName && cnName) maplebirch.lang.translations.set(enName, { EN: enName, CN: cnName });
         }
       }
       manager.log(`更新完成: 添加 ${addedCount} 个NPC, 跳过 ${skippedCount} 个重复NPC`, 'DEBUG');
@@ -310,9 +307,8 @@
         if (Object.prototype.hasOwnProperty.call(manager.npcConfigData, npcId)) {
           const config = manager.npcConfigData[npcId];
           if (config && typeof config === 'object') {
-            if (config.important === true && !manager.importantNPCs.includes(npcId)) manager.importantNPCs.push(npcId);
-            if (config.special === true && !manager.specialNPCs.includes(npcId)) manager.specialNPCs.push(npcId);
-            if (config.loveInterest === true && !manager.loveInterestNpcs.includes(npcId)) manager.loveInterestNpcs.push(npcId);
+            const checks = [['important', manager.importantNPCs],['special', manager.specialNPCs],['loveInterest', manager.loveInterestNpcs]];
+            checks.forEach(([key, arr]) => (typeof config[key] === 'function' ? config[key]() : config[key]) === true && !arr.includes(npcId) && arr.push(npcId));
           }
         }
       }
@@ -333,7 +329,7 @@
       setup.loveInterestNpc = [...new Set([...setup.loveInterestNpc, ...manager.loveInterestNpcs])];
       for (const npcName of Object.keys(manager.npcConfigData)) {
         const config = manager.npcConfigData[npcName];
-        NPCUtils.setupLoveAlias(npcName, config?.loveAlias);
+        if (config.loveAlias) NPCUtils.setupLoveAlias(npcName, config.loveAlias);
       }
     }
 
@@ -490,8 +486,6 @@
      * 添加/修改NPC状态系统
      * @param {Object} statsObject - 状态配置对象
      * @param {Object} statsObject[statName] - 状态配置
-     * @param {number} statsObject[statName].min - 状态最小值
-     * @param {number} statsObject[statName].max - 状态最大值
      * @param {number|string} [statsObject[statName].position='secondLast'] - 在状态列表中的位置(数字索引/'first'/'last'/'secondLast')
      */
     addStats(statsObject) {
@@ -589,10 +583,9 @@
       const Config = this.tool.clone(npcConfig);
       for (const npcName in this.npcConfigData) {
         if (Object.prototype.hasOwnProperty.call(this.npcConfigData, npcName)) {
-          const modConfig = this.npcConfigData[npcName];
+          const modConfig = this.tool.clone(this.npcConfigData[npcName]);
           if (Object.keys(modConfig).length === 0) continue;
           delete modConfig.loveAlias;
-          delete modConfig.loveInterest;
           if (Config[npcName]) {
             Config[npcName] = this.#mergeConfigs(Config[npcName], modConfig);
             this.log(`合并NPC配置: ${npcName}`, 'DEBUG');
@@ -667,6 +660,8 @@
     }
 
     postInit() {
+      NPCUtils.updateNPCdata(this);
+      NPCUtils.processSetup(this);
       NPCUtils.setupNpcData(this, 'postInit');
     }
   }

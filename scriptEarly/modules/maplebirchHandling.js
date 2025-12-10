@@ -78,7 +78,7 @@
     }
 
     _languageSwitch(...lanObj) {
-      const lancheck = maplebirch.Language;
+      let lancheck = maplebirch.Language;
       let targetObj;
       if (typeof lanObj[0] === 'object' && lanObj[0] !== null && !Array.isArray(lanObj[0])) {
         targetObj = lanObj[0];
@@ -91,8 +91,8 @@
       }
 
       if (targetObj[lancheck] == undefined) {
-        const availableLanguages = Object.keys(targetObj);
-        lancheck = availableLanguages.length > 0 ? availableLanguages[0] : 'EN';
+        const available = Object.keys(targetObj);
+        lancheck = available.length > 0 ? available[0] : 'EN';
       }
 
       if (this.output) {
@@ -319,13 +319,18 @@
             let result;
             try {
               const exp = payload.args.full;
-              result = Scripting.evalJavaScript(exp[0] === '{' ? `(${exp})` : exp);
+              result = maplebirch.SugarCube.Scripting.evalJavaScript(exp[0] === '{' ? `(${exp})` : exp);
             } catch (ex) {
               return this.error(`表达式错误: ${ex.message}`);
             }
             if (typeof result !== 'object' || result === null) return this.error('表达式必须返回对象或数组');
-            const entries = result instanceof Map ? Array.from(result.entries()) : result instanceof Set ? Array.from(result).map(v => [v, v]) : Object.entries(result);
-            entries.forEach(([key, val]) => { options.push({ label: String(key), value: val }); });
+            if (Array.isArray(result) || result instanceof Set) {
+              result.forEach(val => options.push({ label: String(val), value: val }));
+            } else if (result instanceof Map) {
+              result.forEach((val, key) => options.push({ label: String(key), value: val }));
+            } else {
+              Object.keys(result).forEach(key => options.push({ label: key, value: result[key] }));
+            }
           }
         }
 
@@ -385,9 +390,17 @@
       options.forEach((option, index) => {
         const label = $('<label>').addClass('radiobuttonsfrom-label');
         const temp = document.createElement('div');
-        new maplebirch.SugarCube.Wikifier(temp, `<<radiobutton '${varPath}' '${option}' autocheck>>`);
+        let optionValue, displayText;
+        if (Array.isArray(option)) {
+          optionValue = option[0];
+          displayText = option[1];
+        } else {
+          optionValue = option;
+          displayText = option;
+        }
+        new maplebirch.SugarCube.Wikifier(temp, `<<radiobutton '${varPath}' '${optionValue.replace(/'/g, "\\'")}' autocheck>>`);
         $(temp).children().appendTo(label);
-        label.append(document.createTextNode(option));
+        label.append(displayText);
         container.append(label);
         if (index < options.length - 1) container.append(document.createTextNode(separator));
       });
@@ -432,10 +445,10 @@
     }
 
     #getModDependenceInfo() {
-      const modList = modUtils.getModListName();
+      const modList = maplebirch.modUtils.getModListName();
       for (let i = 0; i < modList.length; i++) {
         const modName = modList[i];
-        const modinfo = modUtils.getMod(modName);
+        const modinfo = maplebirch.modUtils.getMod(modName);
         if (!modinfo) continue;
         if (!modinfo.bootJson.dependenceInfo) continue;
         if (modinfo.bootJson.dependenceInfo.some(dep => dep.modName === 'maplebirch') && !maplebirch.modList.includes(modinfo.name)) {
@@ -466,14 +479,9 @@
         const modId = modlist[i];
         const modinfo = modUtils.getMod(modId);
         if (!modinfo) continue;
-
         const modname = this.#getModName(modinfo);
         const modversion = modinfo.version;
-        const text = `
-          <div class='modinfo'>
-            ・ ${modname}：v${modversion}
-          </div>
-          `;
+        const text = `<div class='modinfo'>・${modname}：v${modversion}</div>`;
         html.push(text);
       }
 
@@ -481,9 +489,7 @@
         html_1 += `
           <div class='p-2 text-align-center'>
             <h3>${maplebirch.t('Maplebirch Frameworks Mod List')}</h3>
-            <div id='modlist'>
-              ${html.join('')}
-            </div>
+            <div id='modlist'>${html.join('')}</div>
           </div>
         `;
       }
@@ -535,7 +541,7 @@
     }
 
     compatibleModI18N() {
-      if (modUtils.getMod('ModI18N')) {
+      if (maplebirch.modUtils.getMod('ModI18N')) {
         const originalName = setup.NPC_CN_NAME;
         setup.NPC_CN_NAME = function (args) {
           if (!args || typeof args !== 'string') return args;
@@ -595,7 +601,13 @@
         this.tool.widget.defineMacroS('maplebirchFrameworkInfo', () => this._showFrameworkInfo());
       });
 
-      maplebirch.on(':passagestart', () => V.debug = V.options?.maplebirch?.debug ? 1 : V.debug);
+      maplebirch.on(':passagestart', () => {
+        if (!V.options) return;
+        const c = V.options.maplebirch?.debug, d = V.debug
+        this.debug ??= typeof c === 'boolean' ? c : (d === 0 || d === 1 ? d === 1 : false)
+        typeof c === 'boolean' && c !== this.debug ? (this.debug = c, V.debug = c ? 1 : 0) : (d === 0 || d === 1) && (d === 1) !== this.debug ? (this.debug = d === 1, V.options.maplebirch.debug = this.debug) : 0
+        V.options.maplebirch.debug = this.debug, V.debug = this.debug ? 1 : 0
+      });
 
       maplebirch.on(':loadSaveData', () => maplebirch.Language = V?.maplebirch?.language);
 
@@ -635,6 +647,23 @@
         }, 100);
         } catch { console.log('点击事件处理错误:', error); }
       });
+
+      $(document).on('change', 'input[name="radiobutton--maplebirchbodywritingcolor"]', function () {
+        if (!maplebirch.modules.initPhase.preInitCompleted) return;
+        if (T.maplebirchBodywriting.color === 'custom') {
+          $.wiki('<<replace "#maplebirchBodyWriting">><br><<lanSwitch "Custom Color" "自定义颜色">>: <<textbox "_maplebirchBodywriting.custom" "#FFFFFF">><span id="colorPreviewBox" style="display: inline-block;width: 20px;height: 20px;border:1px solid #ccc;margin-left:5px;background-color: #FFFFFF;"></span><</replace>>');
+        } else {
+          $.wiki('<<replace "#maplebirchBodyWriting">><</replace>>');
+        }
+      });
+
+      $(document).on('input', 'input[name="textbox--maplebirchbodywritingcustom"]', function () {
+        if (!maplebirch.modules.initPhase.preInitCompleted) return;
+        let color = this.value;
+        if (!color.startsWith('#')) color = '#' + color;
+        let preview = document.getElementById('colorPreviewBox');
+        if (preview && /^#[0-9A-F]{3,6}$/i.test(color)) preview.style.backgroundColor = color;
+      });
     }
 
     Init() {
@@ -643,9 +672,7 @@
     }
 
     postInit() {
-      
     }
   }
-
   await maplebirch.register('processHandling', new processHandling(), ['tool']);
 })();

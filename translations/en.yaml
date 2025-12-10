@@ -100,6 +100,10 @@
 'Buy clothes and send to wardrobe': Buy clothes and send to wardrobe
 'Leave': Leave
 
+'None': None
+
+'male': male
+'famale': famale
 'asexual': asexual
 'hermaphrodite': hermaphrodite
 'businessperson': businessperson
@@ -114,6 +118,7 @@
 'huntress': huntress
 'hunter': hunter
 'shopkeeper': shopkeeper
+'curious': curious
 'doctor': doctor
 'silver fox': silver fox
 'pious': pious

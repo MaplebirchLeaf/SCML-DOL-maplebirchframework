@@ -1,19 +1,22 @@
-// @ts-expect-error
+// @ts-check
 /// <reference path='../../maplebirch.d.ts' />
 (() => {
 	'use strict';
 	const maplebirch = window.maplebirch;
 
 	class Transformation {
+		/** @param {{ log: any; }} manager */
 		constructor(manager) {
 			this.lang = maplebirch.lang;
 			this.log = manager.log;
+			/** @type {any} */
 			this.transformation = {};
+			/**@type {any}*/
 			this.config = {};
 			this.defaultCallback = [() => ({})];
-			this.preCallback = [(opts) => {}];
+			this.preCallback = [(/**@type {any}*/opts) => {}];
 			this.defaultOptions = () => { return this.defaultCallback.reduce((result, callback) => {return { ...result, ...callback() }; }, {});};
-			this.preprocess = (opts) => { this.preCallback.forEach(callback => callback(opts)); };
+			this.preprocess = (/**@type {any}*/opts) => { this.preCallback.forEach(callback => callback(opts)); };
 			this.layers = {};
 			maplebirch.once(':passagestart', () => {
 				this.canvas();
@@ -21,22 +24,26 @@
 				this.inject();
 			});
 			maplebirch.once(':finally', () => {
-				maplebirch.tool.widget.defineMacro('transform', (name, change) => this._transform(name, change));
+				maplebirch.tool.widget.defineMacro('transform', (/**@type {String}*/name, /**@type {Number}*/change) => this._transform(name, change));
 				maplebirch.tool.widget.defineMacro('transformationAlteration', () => this._transformationAlteration());
 				maplebirch.tool.widget.defineMacro('transformationStateUpdate', () => this._transformationStateUpdate());
 			});
 		}
 
 		get ZIndices() {
+			// @ts-ignore
 			return maplebirch.npc.Sidebar.constructor.ZIndices;
 		}
 
+		/** @param {string} widget @param {any[]} args */
 		#wikifier(widget, ...args) {
 			return maplebirch.SugarCube.Wikifier.wikifyEval('<<' + widget + (args.length ? ' ' + args.join(' ') : '') + '>>');
 		}
 
+		/** @param {boolean} boolean */
 		vanillaTransformation(boolean) {
 			if (!V.transformationParts || boolean===true) {
+				/**@type {any}*/
 				this.vanilla = {
 					transformation: new Set(['traits', 'angel', 'demon', 'fallenAngel', 'cat', 'cow', 'wolf', 'bird', 'fox']),
 					traits: new Set()
@@ -50,6 +57,7 @@
 			if (V.transformationParts.traits && typeof V.transformationParts.traits === 'object') Object.keys(V.transformationParts.traits).forEach(trait => this.vanilla.traits.add(trait));
 		}
 
+		/** @param {{ z: string|number; zfn: (options: any) => any; }} config */
 		#processLayerConfig(config) {
 			if (config.z && typeof config.z === 'string') config.z = this.ZIndices[config.z] || this.ZIndices.lower;
 			if (config.zfn && typeof config.zfn === 'function') {
@@ -63,14 +71,15 @@
 			return config;
 		}
 
+		/** @param {string|number} name @param {string|number} type @param {any} options */
 		add(name, type, options = {}) {
-			const physicalAttrs = {};
+			/**@type {any}*/const physicalAttrs = {};
 			if (type && !this.transformation[type]) this.transformation[type] = {};
-			if (Array.isArray(options.physical)) options.physical.forEach(attr => physicalAttrs[attr] = 'disabled');
+			if (Array.isArray(options.physical)) options.physical.forEach((/**@type {string|number}*/attr) => physicalAttrs[attr] = 'disabled');
 			this.transformation[type][name] = physicalAttrs;
 			this.log(`转化 ${name} 已添加到 ${type} 类型`, 'DEBUG');
 			if (options.traits && Array.isArray(options.traits)) {
-				options.traits.forEach(trait => {
+				options.traits.forEach((/** @type {string} */trait) => {
 					if (!(trait in this.transformation.traits)) this.transformation.traits[trait] = 'disabled';
 				});
 			}
@@ -84,7 +93,7 @@
 				get message_up() {
 					if (!options.message_up) return undefined;
 					const lang = maplebirch.Language;
-					const processed = {};
+					/**@type {any}*/const processed = {};
 					for (const [level, message] of Object.entries(options.message_up)) {
 						if (typeof message === 'string') { processed[level] = message; }
 						else if (typeof message === 'object') { processed[level] = message[lang] || message.EN || message[Object.keys(message)[0]]; }
@@ -94,7 +103,7 @@
 				get message_down() {
 					if (!options.message_down) return undefined;
 					const lang = maplebirch.Language;
-					const processed = {};
+					/**@type {any}*/const processed = {};
 					for (const [level, message] of Object.entries(options.message_down)) {
 						if (typeof message === 'string') { processed[level] = message; } 
 						else if (typeof message === 'object') { processed[level] = message[lang] || message.EN || message[Object.keys(message)[0]]; }
@@ -106,7 +115,7 @@
 			if (options.defaultOptions) this.defaultCallback.push(options.defaultOptions);
 			if (options.preprocess) this.preCallback.push(options.preprocess);
 			if (options.layers) {
-				const Layers = {};
+				/**@type {any}*/const Layers = {};
 				Object.entries(options.layers).forEach(([layerName, layerConfig]) => { Layers[layerName] = this.#processLayerConfig(layerConfig); });
 				Object.assign(this.layers, Layers);
 			}
@@ -116,7 +125,7 @@
 					if (options.translations.hasOwnProperty(key)) {
 						try {
 							this.lang.translations.set(key, options.translations[key]);
-						} catch (error) {
+						} catch (/**@type {any}*/error) {
 							this.log(`设置翻译键失败: ${key} - ${error.message}`, 'ERROR');
 						}
 					}
@@ -141,7 +150,7 @@
 						const originalResult = originalDefaultOptions();
 						const customResult = this.defaultOptions();
 						return { ...originalResult, ...customResult };
-					} catch (error) {
+					} catch (/**@type {any}*/error) {
 						this.log(`defaultOptions 错误: ${error.message}`, 'ERROR');
 						try { return originalDefaultOptions(); }
 						catch { return {}; }
@@ -149,11 +158,11 @@
 				};
 			}
 			if (originalPreprocess) {
-				Renderer.CanvasModels.main.preprocess = (options) => {
+				Renderer.CanvasModels.main.preprocess = (/**@type {any}*/options) => {
 					try {
 						originalPreprocess(options);
 						this.preprocess(options);
-					} catch (error) {
+					} catch (/**@type {any}*/error) {
 						this.log(`preprocess 错误: ${error.message}`, 'ERROR');
 					}
 				};
@@ -162,7 +171,7 @@
 				try {
 					Object.assign(Renderer.CanvasModels.main.layers, this.layers);
 					this.log(`成功合并 ${Object.keys(this.layers).length} 个图层`, 'DEBUG');
-				} catch (error) {
+				} catch (/**@type {any}*/error) {
 					this.log(`图层合并错误: ${error.message}`, 'ERROR');
 				}
 			}
@@ -175,7 +184,7 @@
 			if (!this.transformation.special) this.transformation.special = {};
 			if (!this.transformation.physical) this.transformation.physical = {};
 			const vanillaAnimals = ['cat', 'cow', 'wolf', 'bird', 'fox'];
-			const animals = {};
+			/**@type {any}*/const animals = {};
 			vanillaAnimals.forEach(animal => {
 				if (V.transformationParts[animal] && typeof V.transformationParts[animal] === 'object') animals[animal] = V.transformationParts[animal];
 			});
@@ -259,47 +268,32 @@
 			}
 		}
 
+		/** @param {string} name @param {number} change */
 		_transform(name, change) {
 			if (!change) return;
 			const type = this.config[name]?.type || this.#vanillaType(name);
 			switch (name) {
-				case 'wolf':
-					V.wolfbuild = Math.clamp(V.wolfbuild + change, 0, 100);
-					break;
-				case 'cat':
-					V.catbuild = Math.clamp(V.catbuild + change, 0, 100);
-					break;
-				case 'cow':
-					V.cowbuild = Math.clamp(V.cowbuild + change, 0, 100);
-					break;
-				case 'bird':
-					V.birdbuild = Math.clamp(V.birdbuild + change, 0, 100);
-					break;
-				case 'fox':
-					V.foxbuild = Math.clamp(V.foxbuild + change, 0, 100);
-					break;
-				case 'angel':
-					V.angelbuild = Math.clamp(V.angelbuild + change, 0, 100);
-					break;
-				case 'fallen':
-					V.fallenbuild = Math.clamp(V.fallenbuild + change, 0, 100);
-					break;
-				case 'demon':
-					V.demonbuild = Math.clamp(V.demonbuild + change, 0, 100);
-					break;
-				default:
-					this.#modTransform(name, change);
-					break;
+				case 'wolf': V.wolfbuild = Math.clamp(V.wolfbuild + change, 0, 100); break;
+				case 'cat': V.catbuild = Math.clamp(V.catbuild + change, 0, 100); break;
+				case 'cow': V.cowbuild = Math.clamp(V.cowbuild + change, 0, 100); break;
+				case 'bird': V.birdbuild = Math.clamp(V.birdbuild + change, 0, 100); break;
+				case 'fox': V.foxbuild = Math.clamp(V.foxbuild + change, 0, 100); break;
+				case 'angel': V.angelbuild = Math.clamp(V.angelbuild + change, 0, 100); break;
+				case 'fallen': V.fallenbuild = Math.clamp(V.fallenbuild + change, 0, 100); break;
+				case 'demon': V.demonbuild = Math.clamp(V.demonbuild + change, 0, 100); break;
+				default: this.#modTransform(name, change); break;
 			}
 			if (change > 0 && type !== 'special') this.#suppress(name, type, change);
 		}
 
+		/** @param {string} name */
 		#vanillaType(name) {
 			if (['angel', 'fallen', 'demon'].includes(name)) return 'special';
 			if (['wolf', 'cat', 'cow', 'bird', 'fox'].includes(name)) return 'physical';
 			return 'physical';
 		}
 
+		/** @param {string|number} name @param {any} change */
 		#modTransform(name, change) {
 			const config = this.config[name];
 			if (!config) return;
@@ -308,6 +302,7 @@
 			data.build = Math.clamp(data.build + change, 0, config.build);
 		}
 
+		/** @param {string} name @param {string} type @param {number} change */
 		#suppress(name, type, change) {
 			const absChange = Math.abs(change);
 			Object.entries(this.config).forEach(([otherName, config]) => {
@@ -320,6 +315,7 @@
 			});
 		}
 
+		/** @param {string} name @param {string} otherName @param {number} absChange */
 		#vanillaSuppress(name, otherName, absChange) {
 			switch (otherName) {
 				case 'wolf':
@@ -340,6 +336,12 @@
 			}
 		}
 
+		/**
+		 * @param {string} name
+		 * @param {string|number} otherName
+		 * @param {{ condition: (arg0: any) => any; build: any; }} config
+		 * @param {number} absChange
+		 */
 		#modSuppress(name, otherName, config, absChange) {
 			const data = V.maplebirch.transformation[otherName];
 			if (!data) return;
@@ -376,7 +378,7 @@
 						T.activeTransformIndex = highestBuildIndex;
 					}
 				}
-
+				/**@type {any}*/
 				const modTransforms = Object.entries(this.config)
 					.filter(([name, config]) => config.type === 'physical' && !['wolf', 'cat', 'cow', 'bird', 'fox'].includes(name))
 					.map(([name, config]) => ({
@@ -386,7 +388,7 @@
 					}));
 
 				if (modTransforms.length > 0) {
-					const highestModTransform = modTransforms.reduce((max, transform) => transform.build > max.build ? transform : max, { build: -1 });
+					const highestModTransform = modTransforms.reduce((/** @type {{ build: number; }} */max, /** @type {{ build: number; }} */transform) => transform.build > max.build ? transform : max, { build: -1 });
 					if (highestModTransform.build >= 5) {
 						const buildArray = [V.wolfbuild, V.catbuild, V.cowbuild, V.birdbuild, V.foxbuild];
 						const maxVanillaBuild = Math.max(...buildArray);
@@ -464,6 +466,7 @@
 			this.#processHiddenTransformations(excludeWings);
 		}
 
+		/** @param {any} excludeWings */
 		#processHiddenTransformations(excludeWings) {
 			const keys = Object.keys(V.transformationParts);
 			if (V.panicattacks >= 2) {
@@ -504,6 +507,10 @@
 			return false;
 		}
 
+		/**
+		 * @param {string} key
+		 * @param {{ element: (arg0: string, arg1: string, arg2: string) => void; wikifier: (arg0: string, arg1: string) => void; }} tools
+		 */
 		message(key, tools) {
 			const match = key.match(/^([a-z]+)(Up|Down)(\d+)$/i);
 			if (!match) return false;
@@ -539,5 +546,6 @@
 		}
 	}
 
-	maplebirch.once(':char-init', (data) => Object.assign(data, { transformation: new Transformation(data) }));
+	maplebirch.once(':char-init', (/**@type {{ log: any; }}*/data) => Object.assign(data, { transformation: new Transformation(data) }));
 })();
+

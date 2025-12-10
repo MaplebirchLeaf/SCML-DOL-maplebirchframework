@@ -1,4 +1,4 @@
-// @ts-expect-error
+// @ts-check
 /// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
@@ -7,18 +7,22 @@
 
   // 变量迁徙系统 - 用于管理数据迁移和版本控制
   class migrationSystem {
+    /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
     constructor(logger) {
       this.log = logger;
     }
 
     create() {
+      /** @type {{ fromVersion: string; toVersion: string; migrationFn: Function; }[]} */
       const migrations = [];
 
-      const renameFunc = (data, oldPath, newPath) => {
+      const renameFunc = (/** @type {Object} */data, /** @type {string} */oldPath, /** @type {string} */newPath) => {
+        /** @type {any} */
         const source = utils.resolvePath(data, oldPath);
         if (!source?.parent[source.key]) return false;
         const value = source.parent[source.key];
         delete source.parent[source.key];
+        /** @type {any} */
         const target = utils.resolvePath(data, newPath, true);
         target.parent[target.key] = value;
         return true;
@@ -35,7 +39,7 @@
         resolvePath: (obj, path, createIfMissing = false) => {
           const parts = String(path).split('.').filter(Boolean);
           if (parts.length === 0) return null;
-          let current = obj;
+          /** @type {any} */let current = obj;
           for (let i = 0; i < parts.length - 1; i++) {
             const part = parts[i];
             if (current[part] === undefined) {
@@ -70,6 +74,7 @@
          * @returns {boolean} 是否成功
          */
         remove: (data, path) => {
+          /** @type {any} */
           const target = utils.resolvePath(data, path);
           if (target?.parent[target.key] !== undefined) {
             delete target.parent[target.key];
@@ -86,6 +91,7 @@
          * @returns {boolean} 是否成功
          */
         transform: (data, path, transformer) => {
+          /** @type {any} */
           const target = utils.resolvePath(data, path);
           if (!target?.parent[target.key]) return false;
           try {
@@ -105,13 +111,13 @@
          */
         fill: (target, defaults, options = {}) => {
           const arrayBehaviour = options.arrayBehaviour || "merge";
-          const filterFn = (key, value, depth) => {
+          const filterFn = (/** @type {string} */key, /** @type {any} */value, /** @type {any} */depth) => {
             if (key === "version") return false;
             return !Object.prototype.hasOwnProperty.call(target, key);
           }
           try {
             maplebirch.tool.merge(target, defaults, { arrayBehaviour, filterFn });
-          } catch (err) {
+          } catch (/** @type {any} */err) {
             this.log(`属性填充失败: ${err?.message || err}`, 'ERROR');
           }
         }
@@ -136,7 +142,7 @@
          * @param {Object} data - 待迁移的数据对象
          * @param {string} targetVersion - 目标版本
          */
-        run: (data, targetVersion) => {
+        run: (/** @type {any} */data, targetVersion) => {
           data.version ||= '0.0.0';
           let currentVersion = data.version;
           if (!/^\d+(\.\d+){0,2}$/.test(targetVersion)) this.log(`警告: 目标版本格式无效 ${targetVersion}`, 'WARN');
@@ -148,6 +154,7 @@
 
           while (this.#compareVersions(currentVersion, targetVersion) < 0 && steps++ < MAX_STEPS) {
             const candidates = sortedMigrations.filter(m => this.#compareVersions(m.fromVersion, currentVersion) === 0 && this.#compareVersions(m.toVersion, targetVersion) <= 0);
+            /** @type {any} */
             const migration = candidates.reduce((best, curr) => this.#compareVersions(curr.toVersion, best.toVersion) > 0 ? curr : best , { toVersion: currentVersion });
             if (!migration || migration.toVersion === currentVersion) {
               this.log(`迁移中断: ${currentVersion} -> ${targetVersion}`, 'WARN');
@@ -157,7 +164,8 @@
               this.log(`迁移中: ${currentVersion} → ${migration.toVersion}`, 'DEBUG');
               migration.migrationFn(data, utils);
               data.version = currentVersion = migration.toVersion;
-            } catch (e) {
+            } catch (/** @type {any} */e) {
+              /** @type {any} */
               const migrationError = new Error(`迁移失败 ${currentVersion}→${migration.toVersion}: ${e.message}`);
               migrationError.fromVersion = currentVersion;
               migrationError.toVersion = migration.toVersion;
@@ -177,8 +185,9 @@
       });
     }
 
+    /** @param {string} a @param {string} b */
     #compareVersions(a, b) {
-      const parse = v => String(v || '0.0.0').split('.').map(Number);
+      const parse = (/** @type {string} */v) => String(v || '0.0.0').split('.').map(Number);
       const v1 = parse(a);
       const v2 = parse(b);
       for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
@@ -191,8 +200,10 @@
 
   // 随机数生成系统 - 提供伪随机数生成和状态管理
   class randomSystem {
+    /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
     constructor(logger) {
       this.log = logger;
+      /** @type {any} */
       this.state = {
         seed: null,       // 当前种子值
         a: 1664525,       // LCG乘数
@@ -214,7 +225,6 @@
     
     /**
      * 生成随机数（内部方法）
-     * @private
      * @param {*} [options] - 随机数选项
      * @returns {number} 生成的随机数
      */
@@ -228,6 +238,7 @@
       this.state.callCount++;
       
       let result;
+      /** @type {any} */
       let details = { type: "default" };
       
       // 根据选项处理不同生成模式
@@ -295,12 +306,11 @@
     
     set Seed(newSeed) {
       const parsedSeed = parseInt(newSeed);
-      if (isNaN(parsedSeed)) { this.log(`设置种子失败: 无效的种子值 ${newSeed}`, 'WARN'); return false; }
+      if (isNaN(parsedSeed)) { this.log(`设置种子失败: 无效的种子值 ${newSeed}`, 'WARN'); }
       this.state.seed = parsedSeed >>> 0;
       this.state.callCount = 0;
       this.state.history = [];
       this.log(`种子已设置为: ${this.state.seed}`, 'DEBUG');
-      return true;
     }
     
     get Seed() {
@@ -331,7 +341,7 @@
       ];
       if (this.state.history.length > 0) {
         output.push("\n最近5次调用:");
-        this.state.history.slice(-5).forEach(entry => { output.push(`#${entry.call}: ${entry.value} (种子: ${entry.seed})`); });
+        this.state.history.slice(-5).forEach((/** @type {{ call: any; value: any; seed: any; }} */entry) => { output.push(`#${entry.call}: ${entry.value} (种子: ${entry.seed})`); });
       }
       return output.join("\n");
     }
@@ -339,13 +349,17 @@
 
   // 部件系统 - 用于定义和管理宏部件
   class widgetSystem {
+    /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
     constructor(logger) {
       this.log = logger;
       this.Macro = null;
+      /** @type {any} */
       this.statFunctions = {};
+      /** @type {string[]} */
       this.macro = [];
     }
 
+    /** @param {any} data */
     _getMacro(data) {
       if (!data) return false
       this.Macro = data;
@@ -356,7 +370,7 @@
      * 定义宏
      * @param {string} macroName - 宏名称
      * @param {Function} macroFunction - 宏处理函数
-     * @param {Array} [tags] - 标签配置
+     * @param {Array<string>} [tags] - 标签配置
      * @param {boolean} [skipArgs] - 是否跳过参数解析
      */
     defineMacro(macroName, macroFunction, tags, skipArgs, isAsync=false) {
@@ -391,13 +405,14 @@
      * 定义字符串输出宏（简化版）
      * @param {string} macroName - 宏名称
      * @param {Function} macroFunction - 返回字符串的函数
-     * @param {object} [tags] - 标签配置
+     * @param {Array<string>} [tags] - 标签配置
      * @param {boolean} [skipArgs] - 是否跳过参数解析
      * @param {boolean} [maintainContext] - 是否保持上下文
      */
     defineMacroS(macroName, macroFunction, tags, skipArgs, maintainContext) {
       this.defineMacro(
         macroName,
+        // @ts-ignore
         function () {$(this.output).wiki(macroFunction.apply(maintainContext ? this : null, this.args));},
         tags,
         skipArgs
@@ -432,11 +447,9 @@
      * @param {Function} fn - 状态显示函数
      */
     create(name, fn) {
-      if (this.statFunctions[name] === undefined && !this.Macro.get(name)) {
-        this.defineMacro(name, function() {
-          this.output.append(fn(...this.args));
-        });
-        
+      if (!this.statFunctions[name] && !this.Macro.get(name)) {
+        // @ts-ignore
+        this.defineMacro(name, function() { this.output.append(fn(...this.args)); });
         this.statFunctions[name] = fn;
         this.log(`已创建状态显示函数: ${name}`, 'DEBUG');
       } else {
@@ -459,12 +472,14 @@
 
   // 文本系统 - 用于注册和渲染文本片段
   class textSystem {
+    /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
     constructor(logger) {
       this.log = logger;
       this.store = new Map();
       this.Wikifier = null;
     }
 
+    /** @param {any} wikifier */
     _getWikifier(wikifier) {
       this.Wikifier = wikifier;
       return true;
@@ -476,30 +491,30 @@
       if (!passageContent) return;
       const targetText = window.lanSwitch(oldText);
       const actualNewText = window.lanSwitch(newText);
-      const fullText = passageContent.textContent || passageContent.innerText;
+      const fullText = passageContent.textContent;
       if (!fullText.includes(targetText)) return;
       const walker = document.createTreeWalker(
         passageContent,
         NodeFilter.SHOW_TEXT,
         null,
-        false
       );
       let node;
-      while (node = walker.nextNode()) {
-        const nodeText = node.textContent;
-        if (nodeText.includes(targetText)) {
-          try {
-            const containerId = `textReplace_${Date.now()}`;
-            const container = document.createElement('span');
-            container.id = containerId;
-            node.parentNode.replaceChild(container, node);
-            new maplebirch.SugarCube.Wikifier(null, `<<replace "#${containerId}">>${actualNewText}<</replace>>`);
-            break;
-          } catch (error) {
-            try { node.textContent = actualNewText; } catch (e) {}
-          }
+      const nodesToReplace = [];
+      // @ts-ignore
+      while (node = walker.nextNode()) if (node.textContent.includes(targetText)) nodesToReplace.push(node);
+      nodesToReplace.forEach(node => {
+        try {
+          const containerId = `textReplace_${Date.now()}_${Math.random()}`;
+          const container = document.createElement('span');
+          container.id = containerId;
+          // @ts-ignore
+          node.parentNode.replaceChild(container, node);
+          new maplebirch.SugarCube.Wikifier(null, `<<replace "#${containerId}">>${actualNewText}<</replace>>`);
+        } catch (error) {
+          this.log('replaceText:', 'ERROR', error);
+          try { node.textContent = actualNewText; } catch (e) { }
         }
-      }
+      });
     }
 
     /** 替换链接 @param {string|Object} oldLink - 要替换的链接文本 @param {string} newLink - 新链接内容 */
@@ -515,10 +530,12 @@
             const containerId = `linkReplace_${Date.now()}`;
             const container = document.createElement('span');
             container.id = containerId;
+            // @ts-ignore
             link.parentNode.replaceChild(container, link);
             new maplebirch.SugarCube.Wikifier(null, `<<replace "#${containerId}">>${actualNewLink}<</replace>>`);
             break;
           } catch (error) {
+            this.log('replaceLink:', 'ERROR', error)
             try { link.outerHTML = actualNewLink; } catch (e) {}
           }
         }
@@ -543,6 +560,7 @@
       return finalId;
     }
 
+    /** @param {string} key @param {String|Function} idOrHandler */
     unreg(key, idOrHandler) {
       if (!this.store.has(key)) return false;
       if (!idOrHandler) {
@@ -551,7 +569,7 @@
         return true;
       }
       const originalCount = this.store.get(key).length;
-      const arr = this.store.get(key).filter(h => h.id !== idOrHandler && h.fn !== idOrHandler);
+      const arr = this.store.get(key).filter((/** @type {{ id:string; fn:Function; }} */ h) => h.id !== idOrHandler && h.fn !== idOrHandler);
       if (arr.length) {
         this.store.set(key, arr);
         const removedCount = originalCount - arr.length;
@@ -579,7 +597,7 @@
       const fragment = document.createDocumentFragment();
       const tools = {
         ctx: context,
-        text: (content, style) => {
+        text: (/** @type {String|null} */content, /** @type {?string} */style) => {
           if (content == null) return tools;
           const el = document.createElement('span');
           if (style) el.classList.add(style);
@@ -589,7 +607,7 @@
           fragment.appendChild(el);
           return tools;
         },
-        line: (content, style) => {
+        line: (/** @type {String|null} */content, /** @type {?string} */style) => {
           fragment.appendChild(document.createElement('br'));
           if (content == null) return tools;
           const contentStr = String(content);
@@ -597,10 +615,10 @@
           tools.text(translated, style);
           return tools;
         },
-        wikify: content => {
+        wikify: (/** @type {String|null} */content) => {
           if (!this.Wikifier) {
             this.log('Wikifier 未设置，无法解析维基语法', 'ERROR');
-            tools.text(content);
+            tools.text(content, null);
             return tools;
           }
           const tempContainer = document.createElement('div');
@@ -609,7 +627,7 @@
           while (tempContainer.firstChild) fragment.appendChild(tempContainer.firstChild);
           return tools;
         },
-        raw: content => {
+        raw: (/** @type {Node|String|null} */content) => {
           if (content == null) return tools;
           if (content instanceof Node) {
             fragment.appendChild(content);
@@ -620,7 +638,7 @@
           }
           return tools;
         },
-        box: (content, style) => {
+        box: (/** @type {Node|String|null} */content, /** @type {?string} */style) => {
           const box = document.createElement('div');
           if (style) box.classList.add(style);
           if (content == null) { fragment.appendChild(box); return tools; }
@@ -646,7 +664,7 @@
         for (const { fn } of handlers) {
           try {
             fn(tools);
-          } catch (e) {
+          } catch (/**@type {any}*/e) {
             this.log(`处理器错误 [${key}]: ${e?.message || e}`, 'ERROR');
           }
         }
@@ -657,7 +675,7 @@
 
     /**
      * 渲染到宏输出
-     * @param {object} macro - 宏上下文
+     * @param {Object<any,any>} macro - 宏上下文
      * @param {string|string[]} keys - 要渲染的键或键数组
      */
     renderToMacroOutput(macro, keys) {
@@ -672,7 +690,7 @@
           this.log(`无法找到宏输出目标: ${macro}`, 'WARN');
           console.log(frag);
         }
-      } catch (e) {
+      } catch (/**@type {any}*/e) {
         this.log(`渲染到宏输出失败: ${e?.message || e}`, 'ERROR');
       }
     }
@@ -685,10 +703,12 @@
     makeMacroHandler(options = {}) {
       const cfg = { allowCSV: true, ...options };
       const self = this;
-      return function() {
+      return function () {
+        // @ts-ignore
         const raw = this.args && this.args.length ? this.args[0] : null;
         let keys = raw;
         if (cfg.allowCSV && typeof raw === 'string' && raw.includes(',')) keys = raw.split(',').map(s => s.trim()).filter(Boolean);
+        // @ts-ignore
         self.renderToMacroOutput(this, keys);
       };
     }
@@ -696,9 +716,10 @@
 
   // 框架系统 - 用于管理和渲染各种框架部件
   class frameworks {
+    /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
     constructor(logger) {
       this.log = logger;
-
+      /** @type {Object<string,Array<string|object>>} */
       this.data = {
         Init                    : [], // 初始化脚本-静态变量(如setup)
         DataInit                : [], // 初始化变量( 读档 或 开始游戏 时注入你模组需要注入的变量)
@@ -740,8 +761,11 @@
         NPCinit                 : [], // 原版NPC初遇初始化(详情看原版initnpc宏)
         NPCspawn                : [], // 原版NPC出现初始化(详情看原版npc宏)
       };
+      /** @type {(Object<any,Function>|Function)[]} */
       this.initFunction = [];
+      /** @type {string[]|Function[]} */
       this.specialWidget = [];
+      /** @type {Object<string,Array<string>|Function>} */
       this.default = {};
       this.widgethtml = '';
       this.patchedPassage = new Set();
@@ -767,13 +791,10 @@
     /**
      * 添加部件到指定区域
      * @param {string} zone - 目标区域名称
-     * @param {...(string|Function|Object|Array)} widgets - 要添加的部件
+     * @param {...(string|Function|Object<any,Array<string>>|Array<string>)} widgets - 要添加的部件
      */
     addTo(zone, ...widgets) {
-      if (!this.data[zone]) {
-        this.log(`区域 ${zone} 不存在`, 'ERROR');
-        return;
-      }
+      if (!this.data[zone]) { this.log(`区域 ${zone} 不存在`, 'ERROR'); return; }
       widgets.forEach(widget => {
         if (zone === 'CustomLinkZone') {
           let position = 0;
@@ -805,6 +826,7 @@
       });
     }
 
+    /** @param {string} str */
     #hashCode(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
@@ -825,7 +847,7 @@
           } else if (typeof initfunc === 'object' && typeof initfunc.init === 'function') {
             initfunc.init();
           }
-        } catch (error) {
+        } catch (/**@type {any}*/error) {
           this.log(`初始化函数执行失败: ${error.message}`, 'ERROR');
           this.log(error.stack, 'DEBUG');
         }
@@ -835,7 +857,7 @@
     async #createWidgets() {
       const data = this.data;
       const print = {
-        start : zone => {
+        start : (/** @type {string} */zone) => {
           let html = `<<widget "maplebirch${zone}">>\n\t`;
           if (typeof this.default[zone] === 'function') {
             html += `${this.default[zone]()}\n\t`;
@@ -844,7 +866,7 @@
           }
           return html;
         },
-        end : (zone, length) => {
+        end : (/** @type {string} */zone, /** @type {number} */length) => {
           let html = '\n<</widget>>\n\n';
           const br = ['CaptionAfterDescription'];
           if (br.includes(zone) && length > 0) html = `<br>\n\t${html}`;
@@ -884,14 +906,16 @@
      * 渲染指定区域内容
      * @param {string} zone - 区域名称
      * @param {string} passageTitle - 当前段落标题
-     * @returns {string} 渲染结果
+     * @returns {string|object|object[]} 渲染结果
      */
     play(zone, passageTitle) {
       const data = this.data[zone];
       if (!data?.length) return '';
       const title = passageTitle ?? V.passage;
       if (zone === 'CustomLinkZone') {
-        const sortedData = data.slice().sort((a, b) => a.position - b.position);
+        /**@type {any[]}*/
+        const sortedData = data.slice().sort((/**@type {Object<Any,Number>}*/a, /**@type {Object<Any,Number>}*/b) => a.position - b.position);
+        /**@type {Object<any,any>}*/
         const positionGroups = {};
         sortedData.forEach(item => {
           const pos = item.position;
@@ -900,7 +924,7 @@
         });
         return Object.entries(positionGroups).map(([posStr, widgets]) => ({
           position: parseInt(posStr),
-          macro: widgets.map(w => this.#renderWidget(w, title)).join('')
+          macro: widgets.map((/**@type {string|Object}*/ w) => this.#renderWidget(w, title)).join('')
         }));
       }
       return data.reduce((result, widget) => result + this.#renderWidget(widget, title), '');
@@ -908,7 +932,7 @@
 
     /**
      * 私有方法：渲染单个部件
-     * @param {string|Object} widget - 部件定义
+     * @param {string|Object<any,any>} widget - 部件定义
      * @param {string} title - 当前段落标题
      * @returns {string} 渲染结果
      */
@@ -951,7 +975,7 @@
      * 私有方法：应用文本替换
      * @param {string} source - 原始文本
      * @param {string|RegExp} pattern - 匹配模式
-     * @param {Object} set - 替换配置
+     * @param {Object<any,any>} set - 替换配置
      * @returns {string} 替换后文本
      */
     #applyReplacement(source, pattern, set) {
@@ -970,7 +994,7 @@
 
     /**
      * 私有方法：匹配并应用替换规则
-     * @param {Object} set - 替换配置
+     * @param {Object<any,any>} set - 替换配置
      * @param {string} source - 原始文本
      * @returns {string} 处理后的文本
      */
@@ -1014,18 +1038,18 @@
 
     /**
      * 私有方法：特殊段落包装
-     * @param {Object} passage - 段落对象
+     * @param {Object<string,string>} passage - 段落对象
      * @param {string} title - 段落标题
      * @returns {Object} 包装后的段落
      */
     #wrapSpecialPassages(passage, title) {
       const wrappers = {
-        'StoryCaption': content => content,
-        'PassageHeader': content => `<div id="passage-header">\n${content}\n<<maplebirchHeader>>\n</div>`,
-        'PassageFooter': content => `<div id="passage-footer">\n<<maplebirchFooter>>\n${content}\n</div>`,
-        'default': content => `<div id="passage-content">\n<<maplebirchMonitor "interrupt">>\n${content}\n<<maplebirchMonitor "overlay">>\n</div>`
+        'StoryCaption': (/**@type {string}*/content) => content,
+        'PassageHeader': (/**@type {string}*/content) => `<div id="passage-header">\n${content}\n<<maplebirchHeader>>\n</div>`,
+        'PassageFooter': (/**@type {string}*/content) => `<div id="passage-footer">\n<<maplebirchFooter>>\n${content}\n</div>`,
+        'default': (/**@type {string}*/content) => `<div id="passage-content">\n<<if maplebirch.SugarCube.Macro.has('maplebirchMonitor')>><<maplebirchMonitor "interrupt">><</if>>\n${content}\n<<if maplebirch.SugarCube.Macro.has('maplebirchMonitor')>><<maplebirchMonitor "overlay">><</if>>\n</div>`
       };
-      
+      // @ts-ignore
       const wrapper = wrappers[title] || wrappers.default;
       passage.content = wrapper(passage.content);
       return passage;
@@ -1033,9 +1057,9 @@
 
     /**
      * 私有方法：应用内容补丁
-     * @param {Object} passage - 段落对象
+     * @param {Object<string,string>} passage - 段落对象
      * @param {string} title - 段落标题
-     * @param {Object} patchSets - 补丁配置
+     * @param {Object<string,string>} patchSets - 补丁配置
      * @returns {Object} 修改后的段落
      */
     #applyContentPatches(passage, title, patchSets) {
@@ -1052,9 +1076,9 @@
 
     /**
      * 主段落处理函数
-     * @param {Object} passage - 段落对象
+     * @param {Object<any,any>} passage - 段落对象
      * @param {string} title - 段落标题
-     * @returns {Object} 处理后的段落
+     * @returns {Promise<Object>} 处理后的段落
      */
     async patchPassage(passage, title) { 
       if (!this.patchedPassage.has(title)) {
@@ -1071,8 +1095,8 @@
 
     /**
      * 部件初始化
-     * @param {Map} passageData - 段落数据映射
-     * @returns {Promise<Map>} 处理后的段落数据
+     * @param {Map<string,any>} passageData - 段落数据映射
+     * @returns {Promise<Map<string,string>>} 处理后的段落数据
      */
     async widgetInit(passageData) {
       await this.#createWidgets();
@@ -1083,10 +1107,10 @@
         name     : 'Maplebirch Frameworks Widgets',
         position : '100,100',
         size     : '100,100',
-        tags     : ['widget']
+        tags     : ['widget'],
+        content  : this.widgethtml
       };
 
-      data.content = this.widgethtml;
       passageData.set('Maplebirch Frameworks Widgets', data);
       this.log('创建部件段落: Maplebirch Frameworks Widgets', 'DEBUG');
 
@@ -1113,14 +1137,14 @@
       for (const [title, passage] of passageData) {
         try {
           this.patchPassage(passage, title);
-        } catch (e) {
+        } catch (/**@type {any}*/e) {
           const errorMsg = e?.message ? e.message : e;
           this.log(`处理段落 ${title} 时出错: ${errorMsg}`, 'ERROR');
           addonTweeReplacer.logger.error(`PatchScene: ${title} ${errorMsg}`);
         }
       }
       SCdata.passageDataItems.back2Array();
-      addonTweeReplacer.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);   
+      addonTweeReplacer.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);
       this.log('框架补丁应用完成', 'DEBUG');
     }
   }
@@ -1144,6 +1168,7 @@
       debug: false
     };
 
+    /** @param {string} message @param {any[]} objects */
     function log(message, level = 'INFO', ...objects) {
       maplebirch.log(`[tool] ${message}`, level, ...objects);
     }
@@ -1158,36 +1183,52 @@
       return result;
     }
 
+    /** @param {{ beforeMacro: string; afterMacro: string; customMacro: () => any[]; }} config */
     function addContentToZones(config) {
       defaultZone('beforeLinkZone', config.beforeMacro, config);
       defaultZone('afterLinkZone', config.afterMacro, config);
       const MacroArray = Array.isArray(config.customMacro()) ? config.customMacro() : [];
       if (MacroArray?.length > 0) {
-        MacroArray.forEach((zoneConfig) => {
+        MacroArray.forEach((/** @type {{ position: number; macro: string; }} */zoneConfig) => {
           const position = zoneConfig.position;
           customZone(position, zoneConfig.macro, config);
         });
       }
     }
 
+    /**
+     * @param {string} zoneId
+     * @param {string} macro
+     * @param {{ beforeMacro: string; afterMacro: string; customMacro: () => any[]; }} config
+     */
     function defaultZone(zoneId, macro, config) {
       const element = document.getElementById(zoneId);
       if (!element) return;
       processMacroContent(element, macro, config);
     }
 
+    /**
+     * @param {number} position
+     * @param {string} macro
+     * @param {{beforeMacro: string;afterMacro: string;customMacro: () => any[];}} config
+     */
     function customZone(position, macro, config) {
       const element = document.querySelector(`[data-link-zone-position="${position}"]`);
       if (!element) return;
       processMacroContent(element, macro, config);
     }
 
+    /**
+     * @param {Element|any} element
+     * @param {string|Function} macro
+     * @param {{ beforeMacro?: string; afterMacro?: string; customMacro?: (() => any[]) | (() => any[]); debug?: boolean; }} config
+     */
     function processMacroContent(element, macro, config) {
       let macroContent;
       if (typeof macro === 'function') {
         try {
           macroContent = macro();
-        } catch (error) {
+        } catch (/**@type {any}*/error) {
           log(`[link] 执行宏函数出错: ${error.message}`, 'ERROR');
           return;
         }
@@ -1203,7 +1244,7 @@
       if (typeof $.wiki === 'function') {
         $(tempContainer).wiki(macroContent);
       } else if (typeof Wikifier !== 'undefined') {
-        new Wikifier(tempContainer, macroContent);
+        new maplebirch.SugarCube.Wikifier(tempContainer, macroContent);
       } else if (typeof wikifier === 'function') {
         tempContainer.innerHTML = macroContent;
         wikifier(tempContainer);
@@ -1212,7 +1253,7 @@
       }
       element.innerHTML = '';
       element.append(...tempContainer.childNodes);
-      element.querySelectorAll('script').forEach(script => {
+      element.querySelectorAll('script').forEach((/** @type {{ textContent: string | null; replaceWith: (arg0: HTMLScriptElement) => void; }} */script) => {
         const newScript = document.createElement('script');
         newScript.textContent = script.textContent;
         script.replaceWith(newScript);
@@ -1226,6 +1267,7 @@
     }
 
     class LinkZoneManager {
+      /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
       constructor(containerId = 'passages', linkSelector = '.macro-link', logger) {
         this.log = logger || maplebirch.log;
         this.containerId = containerId;
@@ -1236,6 +1278,7 @@
       #resetState() {
         this.firstLink = null;
         this.lastLink = null;
+        /** @type {string | any[]} */
         this.allLinks = [];
         this.lineBreakBeforeFirstLink = null;
       }
@@ -1268,6 +1311,7 @@
         }
       }
 
+      /** @param {Element} node */
       #isLineBreakNode(node) {
         if (!node) return false;
         switch (node.nodeType) {
@@ -1283,6 +1327,7 @@
         }
       }
 
+      /** @param {Element} element */
       #isElementVisible(element) {
         if (!element || !element.getBoundingClientRect) return false;
         const { display, visibility, opacity } = getComputedStyle(element);
@@ -1291,6 +1336,10 @@
         return rect.width > 0 && rect.height > 0;
       }
 
+      /**
+       * @param {?string} id
+       * @param {{ zoneStyle: any;}} config
+       */
       #createZoneElement(id, config) {
         const zone = document.createElement('div');
         if (id) zone.id = id;
@@ -1298,8 +1347,14 @@
         return zone;
       }
 
+      /**
+       * @param {any} position
+       * @param {{ zoneStyle: any; }} config
+       */
       #applyCustomLinkZone(position, config) {
+        // @ts-ignore
         if (position < 0 || position >= this.allLinks.length) return null;
+        // @ts-ignore
         const targetLink = this.allLinks[position];
         if (!targetLink) {
           this.log(`[link] 未找到位置 ${position} 的链接`, 'WARN');
@@ -1338,6 +1393,7 @@
         return zone;
       }
 
+      /** @param {{ debug?: any; customMacro?: any; zoneStyle: any; }} config */
       applyZones(config) {
         const results = this.detectLinks();
         if (!results) {
@@ -1348,13 +1404,14 @@
         this.#applyAfterLinkZone(config);
         const MacroArray = Array.isArray(config.customMacro()) ? config.customMacro() : [];
         if (MacroArray?.length > 0) {
-          MacroArray.forEach(zoneConfig => {
+          MacroArray.forEach((/** @type {{ position: number; }} */zoneConfig) => {
             this.#applyCustomLinkZone(zoneConfig.position, config);
           });
         }
         return true;
       }
 
+      /** @param {{ debug?: any; zoneStyle: any; }} config */
       #applyBeforeLinkZone(config) {
         if (!this.firstLink || !this.lineBreakBeforeFirstLink) return;
         const zone = this.#createZoneElement('beforeLinkZone', config);
@@ -1375,6 +1432,7 @@
         if (config.debug) this.log('应用链接前区域', 'DEBUG', zone);
       }
 
+      /** @param {{ debug?: any; zoneStyle: any; }} config */
       #applyAfterLinkZone(config) {
         if (!this.lastLink) return;
         const zone = this.#createZoneElement('afterLinkZone', config);
@@ -1411,21 +1469,31 @@
       };
     }
 
+    /** @param {Object<string,string>} englishName */
     static getTraitCategory(englishName) {
+      // @ts-ignore
       return this.traitCategories[englishName] || englishName;
     }
 
+    /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
     constructor(logger) {
       this.log = logger;
+      /** @type {any[]} */
       this.traitsTitle = [];
+      /** @type {{ title: any; name: any; colour: any; has: any; text: any; }[]} */
       this.traitsData = [];
-      this.locationUpdates = {};
+      /** @type {any} */
+      this.locationData = {};
+      /** @type {any} */
+      this.bodywritingData = {};
     }
 
+    /** @param {any} data */
     #getTraits(data) {
+      /** @type {any} */
       const titleMap = {};
       const traitLists = maplebirch.tool.clone(data);
-      traitLists.forEach((category, index) => {
+      traitLists.forEach((/** @type {{ title: { [x: string]: string; }; }} */ category, /** @type {any} */ index) => {
         const mappedTitle = othersSystem.getTraitCategory(category.title);
         titleMap[mappedTitle] = index;
         if (!this.traitsTitle.includes(mappedTitle)) this.traitsTitle.push(mappedTitle);
@@ -1433,6 +1501,7 @@
       return titleMap;
     }
 
+    /** @param {any[]} data */
     addTraits(...data) {
       data.forEach(traits => {
         if (traits && traits.title && traits.name) {
@@ -1460,6 +1529,7 @@
       });
     }
 
+    /** @param {any} data */
     initTraits(data) {
       const titleMap = this.#getTraits(data);
       const result = maplebirch.tool.clone(data);
@@ -1497,44 +1567,22 @@
      * 地点配置方法（添加/更新）
      * @param {string} locationId - 地点ID
      * @param {object} config - 配置对象
+     * @param {any} [config.customMapping] - 自定义映射
      * @param {object} [options] - 配置选项
      * @param {boolean} [options.overwrite=false] - 是否覆盖整个配置
      * @param {string} [options.layer] - 指定操作图层
      * @param {string} [options.element] - 指定操作元素
-     * 
-     * 示例1：添加新地点
-     * configureLocation('magic_academy', {
-     *   folder: 'magic_academy',
-     *   base: { main: { image: 'main.png' } }
-     * });
-     * 
-     * 示例2：更新特定元素
-     * configureLocation('lake_ruin', {
-     *   condition: () => Weather.bloodMoon && !Weather.isSnow
-     * }, { layer: 'base', element: 'bloodmoon' });
-     * 
-     * 示例3：完全覆盖地点
-     * configureLocation('cafe', {
-     *   folder: 'cafe_remastered',
-     *   base: { ... }
-     * }, { overwrite: true });
-     * 
-     * 示例4：添加新图层元素
-     * configureLocation('forest', {
-     *   image: 'fireflies.png',
-     *   animation: { frameDelay: 300 }
-     * }, { layer: 'emissive', element: 'fireflies' });
      */
     configureLocation(locationId, config, options = {}) {
       const { overwrite = false, layer, element } = options;
-      if (!this.locationUpdates[locationId]) {
-        this.locationUpdates[locationId] = {
+      if (!this.locationData[locationId]) {
+        this.locationData[locationId] = {
           overwrite: false,
           config: {},
           customMapping: null
         };
       }
-      const update = this.locationUpdates[locationId];
+      const update = this.locationData[locationId];
       if (overwrite) {
         update.overwrite = true;
         update.config = maplebirch.tool.clone(config);
@@ -1552,8 +1600,8 @@
       return true;
     }
 
-    applyLocationUpdates() {
-      for (const [locationId, update] of Object.entries(this.locationUpdates)) {
+    applyLocation() {
+      for (const [locationId, update] of Object.entries(this.locationData)) {
         const current = setup.LocationImages[locationId] || {};
         if (update.overwrite || !setup.LocationImages[locationId]) {
           setup.LocationImages[locationId] = {
@@ -1568,16 +1616,70 @@
         }
         if (update.customMapping) setup.Locations[locationId] = update.customMapping;
       }
-      this.locationUpdates = {};
+      this.locationData = {};
       return true;
     }
 
+    /** @param {any} target @param {any} source */
     #deepMergeLocationConfig(target, source) {
-      const filterFn = (key, value, depth) => {
+      const filterFn = (/** @type {string} */ key, /** @type {any} */ value, /** @type {number} */ depth) => {
         if (depth === 1) return key === "folder" || ['base', 'emissive', 'reflective', 'layerTop'].includes(key);
         return true;
       }
       return maplebirch.tool.merge(target, source, { arrayBehaviour: "merge", filterFn });
+    }
+
+    /**
+     * 添加身体涂鸦配置
+     * @param {string} key - 涂鸦的唯一标识符，将用作 setup.bodywriting 的键名
+     * @param {object} config - 涂鸦配置对象
+     * @param {string} [config.writing] - 英文涂鸦文本
+     * @param {string} [config.writ_cn] - 中文涂鸦文本
+     * @param {string} [config.type='text'] - 涂鸦类型(text文本/object图形)
+     * @param {number} [config.arrow=0] - 是否有指向性箭头(0/1)
+     * @param {string} [config.special='none'] - 类别暗示，如''none'-无,'rape'-强奸,'Robin'-罗宾
+     * @param {string} [config.gender='n'] - 性别暗示，n=中性，f=女性，m=男性，h=双性
+     * @param {number} [config.lewd=0] - 是否有淫秽暗示(0/1)
+     * @param {number} [config.degree=0] - 金钱价值程度-1000=10￡
+     * @param {boolean} [config.featSkip=true] - 是否跳过成就检查
+     * @param {string[]} [config.sprites] - 精灵图身体部位
+     */
+    addBodywriting(key, config) {
+      this.bodywritingData[key] = {
+        operation: 'add',
+        config: maplebirch.tool.clone(config)
+      };
+    }
+
+    /** @param {string|number} key */
+    delBodywriting(key) {
+      this.bodywritingData[key] = { operation: 'del' };
+    }
+
+    applyBodywriting() {
+      for (const [key, data] of Object.entries(this.bodywritingData)) {
+        if (data.operation === 'del') {
+          if (setup.bodywriting[key]) {
+            const index = setup.bodywriting[key].index;
+            delete setup.bodywriting[key];
+            if (setup.bodywriting_namebyindex[index] === key) delete setup.bodywriting_namebyindex[index];
+          }
+        } else if (data.operation === 'add') {
+          const config = data.config;
+          if (config.index === undefined) {
+            let maxIndex = 0;
+            for (let writingKey in setup.bodywriting) {
+              if (setup.bodywriting[writingKey].index > maxIndex) maxIndex = setup.bodywriting[writingKey].index;
+            }
+            config.index = maxIndex + 1;
+          }
+          const defaultConfig = { key: key, type: 'text', arrow: 0, special: 'none', gender: 'n', lewd: 0, degree: 0, featSkip: true };
+          setup.bodywriting[key] = { ...defaultConfig, ...config };
+          setup.bodywriting_namebyindex[config.index] = key;
+        }
+      }
+      this.bodywritingData = {};
+      return true;
     }
   }
 
@@ -1591,7 +1693,7 @@
     other: Object.freeze(othersSystem)
   };
 
-  maplebirch.once(':tool-init', (data) => {
+  maplebirch.once(':tool-init', (/** @type {{ createLog: (arg0: string) => { (msg: string, level?: string, ...objs: any[]): void; }; constructor: { proto: any; }; }} */data) => {
     Object.assign(data, {
       migration: new migrationSystem(data.createLog('migration')),
       rand: new randomSystem(data.createLog('rand')),

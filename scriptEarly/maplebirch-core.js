@@ -2,7 +2,7 @@
 /// <reference path='../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  const frameworkVersion = '2.5.6';
+  const frameworkVersion = '2.5.8';
   const lastUpdate = '2025.11.29';
   const lastModifiedBy = '楓樺葉';
   const DEBUGMODE = false;
@@ -898,7 +898,6 @@
             try {
               const result = module.loadInit();
               if (result instanceof Promise) await result;
-              this.core.logger.log(`[${name}] 读档初始化完成`, 'DEBUG');
             } catch (/** @type {any} */error) {
               this.core.logger.log(`${name} 读档初始化失败: ${error.message}`, 'ERROR');
             }
@@ -924,7 +923,6 @@
             try {
               const result = module.postInit();
               if (result instanceof Promise) await result;
-              this.core.logger.log(`[${name}] 后初始化完成`, 'DEBUG');
             } catch (/** @type {any} */error) {
               this.core.logger.log(`${name} 后初始化失败: ${error.message}`, 'ERROR');
             }
@@ -1019,8 +1017,12 @@
       try {
         const initType = isPreInit ? 'preInit' : 'Init';
         if (typeof module[initType] === 'function') {
-          const result = module[initType]();
-          if (result instanceof Promise) await result;
+          try {
+            const result = module[initType]();
+            if (result instanceof Promise) await result;
+          } catch (/** @type {any} */ error) {
+            this.core.logger.log(`[${moduleName}] ${initType} 执行失败: ${error.message}`, 'ERROR');
+          }
         }
         if (isPreInit) {
           if (this.core.meta.coreModules?.includes(moduleName) && !this.core.meta.earlyMount?.includes(moduleName)) /** @type {any} */(this.core)[moduleName] = module;
@@ -1186,12 +1188,6 @@
     autoTranslate(text) {
       return this.lang.autoTranslate(text);
     }
-    /** @param {any} modLoader @param {any} modUtils */
-    setModLoader(modLoader,  modUtils) {
-      this.modLoader = modLoader;
-      this.modUtils = modUtils;
-      this.logger.log('Mod加载器已设置', 'DEBUG');
-    }
 
     set Language(lang) {
       this.lang.setLanguage(lang);
@@ -1235,6 +1231,14 @@
       return yaml;
     }
 
+    get modLoader() {
+      return window.modSC2DataManager.getModLoader()
+    }
+
+    get modUtils() {
+      return window.modSC2DataManager.getModUtils()
+    }
+
     get gameVersion() {
       return window.StartConfig.version;
     }
@@ -1263,9 +1267,6 @@
 
     maplebirch.once(':allModuleRegistered', async () => {
       maplebirch.log('所有模块注册完成，开始预初始化', 'INFO');
-      const modLoader = window.modSC2DataManager.getModLoader();
-      const modUtils = window.modSC2DataManager.getModUtils();
-      maplebirch.setModLoader(modLoader, modUtils);
       maplebirch.trigger(':dataImport');
       await maplebirch.preInit();
     });
