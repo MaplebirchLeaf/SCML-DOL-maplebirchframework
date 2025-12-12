@@ -86,7 +86,7 @@
 | 时间旅行 | `maplebirchFrameworks.timeTravel` / `simplebirchFrameworks.timeTravel` | `maplebirch.state.timeTravel` |
 | 导入音频文件 | `maplebirchFrameworks.addAudio` / `simplebirchFrameworks.addAudio` | `maplebirch.audio.importAllAudio` |
 | 获取音频播放实例 | `maplebirchFrameworks.getPlayer` / `simplebirchFrameworks.getPlayer` | `maplebirch.audio.getPlayer` |
-| 变量迁徙类 | `maplebirchFrameworks.migration` / `simplebirchFrameworks.migration` | `maplebirch.tool.migration` |
+| 变量迁徙 | `maplebirchFrameworks.migration` / `simplebirchFrameworks.migration` | `maplebirch.tool.migration.create` |
 | 注册文本片段 | `maplebirchFrameworks.addText` / `simplebirchFrameworks.addText` | `maplebirch.tool.text.reg` |
 | addto区域注册 | `maplebirchFrameworks.addto` / `simplebirchFrameworks.addto` | `maplebirch.tool.framework.addTo` |
 | 初始化函数脚本 | `maplebirchFrameworks.onInit` / `simplebirchFrameworks.onInit` | `maplebirch.tool.framework.onInit` |
@@ -1061,7 +1061,7 @@ colorSelector.match('yellow'); // '#FFFFFF'
   #### 变量迁徙使用示例
 ```
 // 创建迁移系统（带日志记录）
-const migrator = new maplebirchFrameworks.migration();
+const migrator = maplebirchFrameworks.migration();
 
 // 添加迁移脚本（1.0.0 → 1.1.0）
 migrator.add('1.0.0', '1.1.0', (data, utils) => {
@@ -2123,3 +2123,4 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
+
