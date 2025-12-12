@@ -2,30 +2,7 @@
 declare global {
   interface Window {
     maplebirch: MaplebirchCore;
-    jsyaml: {
-      load: (str: string) => any;
-      loadAll: (str: string) => any[];
-      dump: (obj: any, options?: any) => string;
-      safeLoad: (str: string) => any;
-      safeLoadAll: (str: string) => any[];
-      safeDump: (obj: any, options?: any) => string;
-      DEFAULT_FULL_SCHEMA: any;
-      DEFAULT_SAFE_SCHEMA: any;
-      JSON_SCHEMA: any;
-      CORE_SCHEMA: any;
-    };
-    LZString: {
-      compressToBase64: (input: string) => string;
-      decompressFromBase64: (input: string) => string | null;
-      compressToUTF16: (input: string) => string;
-      decompressFromUTF16: (input: string) => string | null;
-      compressToUint8Array: (input: string) => Uint8Array;
-      decompressFromUint8Array: (input: Uint8Array) => string | null;
-      compressToEncodedURIComponent: (input: string) => string;
-      decompressFromEncodedURIComponent: (input: string) => string | null;
-      compress: (input: string) => string;
-      decompress: (input: string) => string | null;
-    };
+    jsyaml: typeof yaml;
     StartConfig: {
       debug: boolean,
       enableImages: boolean,
@@ -41,9 +18,104 @@ declare global {
     addonBeautySelectorAddon: any;
     addonTweeReplacer: any;
     addonReplacePatcher: any;
-    DateTime: new () => any;
+    DateTime: typeof DateTime;
     getFormattedDate: any;
     getShortFormattedDate: any;
+    lanSwitch(text: any): string;
+    lanSwitch(english: string, chinese: string, ...args: any[]): string;
+    lanSwitch(options: { EN: string; CN: string; [key: string]: string }): string;
+  }
+
+  interface SugarCube {
+    Macro: {
+      add(name: string, definition: any): void;
+      delete(name: string): void;
+      get(name: string): any;
+      has(name: string): boolean;
+      [key: string]: any;
+    };
+    Wikifier: typeof Wikifier;
+    Engine: {
+      go(): any;
+      show(): void;
+      play(title: string, noHistory?: boolean): void;
+    };
+    Save: {
+      autosave: any;
+      onSave: any;
+      onLoad: any;
+    };
+    setup: any;
+    State: any;
+    Story: {
+      title: string;
+      get(title: string): any;
+      has(title: string): boolean;
+    }
+    Config: any;
+    Scripting: {
+      evalJavaScript(code, output, data): any;
+      evalTwineScript(code, output, data): any;
+      parse(rawCodeString): any;
+    }
+  };
+
+  interface Math {
+    clamp(value: number, min: number, max: number): number;
+  }
+
+  declare class Wikifier {
+    constructor(
+      destination: HTMLElement | DocumentFragment | JQuery | null,
+      source: string,
+      options?: object,
+      passageObj?: { title: string },
+      passageTitle?: string
+    );
+
+    source: string;
+    options: object;
+    output: HTMLElement | DocumentFragment | null;
+
+    static Option: {
+      readonly length: number;
+      readonly options: object;
+      clear(): void;
+      get(index: number): object | undefined;
+      pop(): object | undefined;
+      push(options: object): number;
+    };
+
+    static Parser: {
+      parsers: Array<{ name: string; match: string; handler: Function }>;
+      add(parser: { name: string; match: string; handler: Function }): void;
+      delete(name: string): void;
+      has(name: string): boolean;
+      get(name: string): { name: string; match: string; handler: Function } | null;
+      Profile: {
+        compile(): { all: any; core: any };
+        isEmpty(): boolean;
+        has(profile: string): boolean;
+        get(profile: string): any;
+      };
+    };
+
+    static helpers: {
+      inlineCss: Function;
+      evalText: (text: string) => string | number;
+      evalPassageId: (passage: string) => string;
+      hasBlockContext: (nodes: Node[]) => boolean;
+      createShadowSetterCallback: (code: string) => () => any;
+      parseSquareBracketedMarkup: (w: any) => any;
+    };
+
+    static stopWikify: boolean;
+    static wikifyEval(text: string, passageObj?: { title: string }, passageTitle?: string): DocumentFragment;
+    static createInternalLink(destination: any, passage: string | null, text: string, callback?: Function): HTMLElement;
+    static createExternalLink(destination: any, url: string | null, text: string): HTMLElement;
+    static isExternalLink(link: string): boolean;
+    static getPassageTitleLast(): string;
+    static getPassageObjLast(): { title: string } | undefined;
   }
 
   class MaplebirchCore {
@@ -59,34 +131,7 @@ declare global {
     modules: ModuleManager;
     modLoader: any;
     modUtils: any;
-    SugarCube: {
-      Macro: {
-        add(name: string, definition: any): void;
-        delete(name: string): void;
-        get(name: string): any;
-        has(name: string): boolean;
-        [key: string]: any;
-      };
-      Wikifier: new (...args: any[]) => any;
-      Engine: {
-        go(): any;
-        show(): void;
-        play(title: string, noHistory: boolean): void;
-      };
-      Save: {
-        autosave: any;
-        onSave: any;
-        onLoad: any;
-      };
-      setup: any;
-      State: any;
-      Story: {
-        title: string;
-        get(title: string): any;
-        has(title: string): boolean;
-      }
-      Config: any;
-    };
+    SugarCube: SugarCube;
     addonPlugin: any;
     onLoad: boolean;
     state: TimeStateManager;
@@ -104,28 +149,29 @@ declare global {
     once(evt: string, handler: Function, desc?: string): boolean;
     trigger(evt: string, ...args: any[]): void;
     register(name: string, module: any, dependencies?: string[]): Promise<boolean>;
-    
+
     preInit(): Promise<void>;
     init(): Promise<void>;
     loadInit(): Promise<void>;
     postInit(): Promise<void>;
-    
+
     t(key: string, space?: boolean): string;
     autoTranslate(text: string): string;
-    
-    setModLoader(modLoader: any, modUtils: any): void;
-    
-    set Language(lang: string);
-    set LogLevel(level: string);
-    set ExModCount(count: number);
-    
+
+
+    set Language(lang: string): string;
+    set LogLevel(level: string): string;
+    set ExModCount(count: number): number;
+
     getModule(name: string): any;
     get Language(): string;
     get LogLevel(): string;
     get expectedModuleCount(): number;
     get registeredModuleCount(): number;
     get dependencyGraph(): any;
-    get yaml(): any;
+    get yaml(): typeof yaml;
+    get modLoader(): any;
+    get modUtils(): any;
     get gameVersion(): string;
 
     static Manager: {
@@ -152,20 +198,20 @@ declare global {
 
   class Logger {
     constructor(core: MaplebirchCore);
-    
+
     log(message: string, levelName?: string | number, ...objects: any[]): void;
-    
+
     set LevelName(levelName: string);
     get LevelName(): string;
-    
+
     static LogConfig: any;
     static LogLevel: any;
   }
 
   class LanguageManager {
     constructor(core: MaplebirchCore);
-    translations: Map<string,string>;
-    
+    translations: Map<string, string>;
+
     setLanguage(lang: string): void;
     initDatabase(): Promise<void>;
     importAllLanguages(modName: string, languages?: string[]): Promise<boolean>;
@@ -175,9 +221,9 @@ declare global {
     preloadAllTranslations(): Promise<void>;
     clearDatabase(): Promise<void>;
     cleanOldVersions(): Promise<void>;
-    
+
     get language(): string;
-    
+
     static DEFAULT_LANGS: string[];
     static DEFAULT_IMPORT_CONCURRENCY: number;
     static DEFAULT_BATCH_SIZE: number;
@@ -186,12 +232,12 @@ declare global {
 
   class EventEmitter {
     constructor(core: MaplebirchCore);
-    
+
     on(eventName: string, callback: Function, description?: string): boolean;
     off(eventName: string, identifier: Function | string): boolean;
     once(eventName: string, callback: Function, description?: string): boolean;
     trigger(eventName: string, ...args: any[]): void;
-    
+
     static streamConfig: {
       batchSize: number;
       yieldInterval: number;
@@ -209,7 +255,7 @@ declare global {
       registeredModuleCount: number;
       allModuleRegisteredTriggered: boolean;
     };
-    
+
     register(name: string, module: any, dependencies?: string[]): Promise<boolean>;
     setExpectedModuleCount(count: number): void;
     getDependencyGraph(): any;
@@ -217,7 +263,7 @@ declare global {
     init(): Promise<void>;
     loadInit(): Promise<void>;
     postInit(): Promise<void>;
-    
+
     static streamConfig: {
       batchSize: number;
       yieldInterval: number;
@@ -232,9 +278,9 @@ declare global {
     passage: any;
     savedata: any;
     solarEclipse: any;
-    
+
     constructor();
-    
+
     receiveVariables(variables: { saveId?: number | string }): void;
     get Passage(): any;
     get modifyWeather(): any;
@@ -247,7 +293,7 @@ declare global {
     get StateEvents(): any;
     preInit(): Promise<void>;
     Init(): void;
-    
+
     #shouldCollectPassage(passage: any): boolean;
   }
 
@@ -261,9 +307,9 @@ declare global {
     once: boolean;
     forceExit: boolean;
     extra: any;
-    
+
     constructor(id: string, type: string, options?: any);
-    
+
     tryRun(): [boolean, boolean, boolean] | null;
     #checkPassage(passageName: string): boolean;
     #check(): boolean;
@@ -271,14 +317,14 @@ declare global {
 
   class StateManager {
     static StateEvent: typeof StateEvent;
-    
+
     manager: TimeStateManager;
     log: (message: string, level?: string, ...objects: any[]) => void;
     eventTypes: string[];
     stateEvents: { [key: string]: Map<string, StateEvent> };
-    
+
     constructor(manager: TimeStateManager);
-    
+
     trigger(type: string): string;
     #processInterruptEvents(passageName: string): string;
     #processOverlayEvents(passageName: string): string;
@@ -299,9 +345,9 @@ declare global {
     exact: boolean;
     accumulator: number;
     target: number;
-    
+
     constructor(id: string, type: string, options?: any);
-    
+
     tryRun(enhancedTimeData: any): boolean;
     #handleExactEvent(timeData: any): boolean;
     #handleAccumulateEvent(timeData: any): boolean;
@@ -315,7 +361,7 @@ declare global {
     static moonPhases: any;
     static monthNames: any;
     static daysOfWeek: any;
-    
+
     log: (message: string, level?: string, ...objects: any[]) => void;
     eventTypes: string[];
     timeEvents: { [key: string]: Map<string, TimeEvent> };
@@ -324,9 +370,9 @@ declare global {
     originalTimePass: Function;
     cumulativeTime: any;
     lastReportedCumulative: any;
-    
+
     constructor(manager: TimeStateManager);
-    
+
     #trigger(type: string, timeData: any): void;
     #updateCumulativeTime(passedSeconds: number): void;
     #triggerTimeEventsWithCumulative(timeData: any): void;
@@ -340,26 +386,60 @@ declare global {
     initialize(): void;
   }
 
-  interface DateTime {
-    year: number;
-    month: number;
-    day: number;
-    hour: number;
-    minute: number;
-    second: number;
-    timeStamp: number;
-    weekDay: number;
-    monthName: string;
-    monthCNName: string;
-    moonPhaseFraction: number;
-    fractionOfDay: number;
-    fractionOfDayFromNoon: number;
-    
-    compareWith(other: DateTime, getSeconds?: boolean): any;
+  declare class DateTime {
+    constructor(
+      year?: number,
+      month?: number,
+      day?: number,
+      hour?: number,
+      minute?: number,
+      second?: number
+    );
+
+    constructor(timestamp: number);
+
+    constructor(dateTime: DateTime);
+
+    readonly year: number;
+    readonly month: number;
+    readonly day: number;
+    readonly hour: number;
+    readonly minute: number;
+    readonly second: number;
+    readonly timeStamp: number;
+    readonly weekDay: number;
+    readonly weekDayName: string;
+    readonly monthName: string;
+    readonly weekEnd: boolean;
+    readonly lastDayOfMonth: number;
+    readonly yearDay: number;
+    readonly moonPhaseFraction: number;
+    readonly fractionOfDay: number;
+    readonly fractionOfDayFromNoon: number;
+    readonly simplifiedDayFactor: number;
+    readonly fractionOfYear: number;
+    readonly seasonFactor: number;
+    compareWith(otherDateTime: DateTime,getSeconds?: boolean): {
+      years: number;
+      months: number;
+      days: number;
+      hours: number;
+      minutes: number;
+      seconds: number;
+    }|number;
+    dayDifference(otherDateTime: DateTime): number;
+    getFirstWeekdayOfMonth(weekDay: number): DateTime;
+    getNextWeekdayDate(weekDay: number): DateTime;
+    getPreviousWeekdayDate(weekDay: number): DateTime;
     addYears(years: number): DateTime;
     addMonths(months: number): DateTime;
-    toTimestamp(year: number, month: number, day: number, hour: number, minute: number, second: number): void;
-    fromTimestamp(timestamp: number): void;
+    addDays(days: number): DateTime;
+    addHours(hours: number): DateTime;
+    addMinutes(minutes: number): DateTime;
+    addSeconds(seconds: number): DateTime;
+    isLastDayOfMonth(): boolean;
+    isFirstDayOfMonth(): boolean;
+    between(startDate: DateTime, endDate: DateTime): boolean;
   }
 
   function getFormattedDate(date: any, includeWeekday?: boolean): string;
@@ -368,16 +448,16 @@ declare global {
 
   class AudioManager {
     static ModAudioPlayer: typeof ModAudioPlayer;
-    
+
     log: (message: string, level?: string, ...objects: any[]) => void;
     audioContext: AudioContext | null;
     idbManager: AudioIDBManager;
     modPlayers: Map<string, ModAudioPlayer>;
     allAudioKeysCache: string[];
     volume: number;
-    
+
     constructor();
-    
+
     initAudioContext(): void;
     decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer>;
     loadAudio(key: string, arrayBuffer: ArrayBuffer, modName?: string): Promise<boolean>;
@@ -388,17 +468,17 @@ declare global {
     getAllAudioKeys(): Promise<string[]>;
     refreshCache(modName?: string): Promise<void>;
     refreshAllCache(): Promise<void>;
-    
+
     set Volume(volume: number);
     get Volume(): number;
     get allAudioKeys(): string[];
-    
+
     preInit(): Promise<void>;
   }
 
   class AudioIDBManager {
     constructor(core: MaplebirchCore);
-    
+
     init(): Promise<void>;
     store(key: string, arrayBuffer: ArrayBuffer, modName: string): Promise<boolean>;
     get(key: string): Promise<ArrayBuffer | null>;
@@ -416,9 +496,9 @@ declare global {
     defaultLoopCount: number;
     bufferCache: Map<string, AudioBuffer>;
     audioKeysCache: string[];
-    
+
     constructor(audioManager: AudioManager, modName: string);
-    
+
     initGainNode(): void;
     getAudioBuffer(key: string): Promise<AudioBuffer>;
     play(key: string, options?: AudioPlayOptions): Promise<any | null>;
@@ -449,16 +529,17 @@ declare global {
   }
 
   class tools {
-    migration: migrationSystem;
-    rand: randomSystem;
-    widget: widgetSystem;
-    text: textSystem;
+    migration: typeof migration;
+    rand: typeof randSystem;
+    widget: defineWidget;
+    text: htmlTools;
     framework: frameworks;
     linkzone: typeof applyLinkZone;
-    other: othersSystem;
-    
-    modhint: modhintSystem;
+    other: others;
+
+    modhint: modhint;
     console: consoleTools;
+    cheat: cheat;
 
     clone: typeof clone;
     merge: typeof merge;
@@ -469,36 +550,25 @@ declare global {
     either: typeof either;
     loadImage: typeof loadImageWithModLoader;
     convert: typeof convert;
-    
+
     constructor();
-    
+
     createLog(prefix: string): (message: string, level?: string, ...objects: any[]) => void;
     preInit(): Promise<void>;
     Init(): void;
     postInit(): void;
-    
-    static proto: {
-      modhit: typeof modhintSystem;
-      console: typeof consoleTools;
-      migration?: typeof migrationSystem;
-      rand?: typeof randomSystem;
-      widget?: typeof widgetSystem;
-      text?: typeof textSystem;
-      framework?: typeof frameworks;
-      other?: typeof othersSystem;
-    };
   }
 
-  class migrationSystem {
-    constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-    create(): MigrationInstance;
-  }
-
-  interface MigrationInstance {
+  class migration {
+    static logger: (message: string, level?: string, ...objects: any[]) => void;
+    static init(createLog: (logname: string) => (message: string, level?: string, ...objects: any[]) => void): void;
+    constructor();
+    log: (message: string, level?: string, ...objects: any[]) => void;
+    migrations: Array<{ fromVersion: string; toVersion: string; migrationFn: (data: any, utils: MigrationUtils) => void }>;
+    utils: MigrationUtils;
     add(fromVersion: string, toVersion: string, migrationFn: (data: any, utils: MigrationUtils) => void): void;
     run(data: any, targetVersion: string): void;
-    utils: MigrationUtils;
-    migrations: any[];
+    #compareVersions(a: string, b: string): number;
   }
 
   interface MigrationUtils {
@@ -510,34 +580,27 @@ declare global {
     fill: (target: any, defaults: any, options?: { arrayBehaviour?: string }) => void;
   }
 
-  class randomSystem {
+  declare class randSystem {
+    static logger: (message: string, level?: string, ...objects: any[]) => void;
+    static init(createLog: (logname: string) => (message: string, level?: string, ...objects: any[]) => void): void;
+    constructor();
+    log: (message: string, level?: string, ...objects: any[]) => void;
+    state: {
+      seed: number | null;
+      history: number[];
+      pointer: number;
+    };
+    Seed: number | null;
+    get(max: number): number;
+    readonly rng: number;
+    readonly history: number[];
+    readonly pointer: number;
+    backtrack(steps?: number): void;
+  }
+
+  class defineWidget {
     constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-    
-    get(options?: number | any[] | { min?: number; max?: number; float?: boolean }): number;
-    set Seed(newSeed: number);
-    get Seed(): number;
-    get State(): RandomState;
-    reset(): RandomState;
-    debug(): string;
-  }
 
-  interface RandomState {
-    seed: number;
-    callCount: number;
-    nextSeed: number | null;
-    history: RandomHistoryEntry[];
-  }
-
-  interface RandomHistoryEntry {
-    call: number;
-    value: number;
-    seed: number;
-    options: any;
-  }
-
-  class widgetSystem {
-    constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-    
     _getMacro(data: any): boolean;
     defineMacro(macroName: string, macroFunction: Function, tags?: any[], skipArgs?: boolean, isAsync?: boolean): void;
     defineMacroS(macroName: string, macroFunction: Function, tags?: any, skipArgs?: boolean, maintainContext?: boolean): void;
@@ -546,9 +609,9 @@ declare global {
     callStatFunction(name: string, ...args: any[]): DocumentFragment;
   }
 
-  class textSystem {
+  class htmlTools {
     constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-    
+
     _getWikifier(wikifier: any): boolean;
     reg(key: string, handler: Function, id?: string): string | false;
     unreg(key: string, idOrHandler?: string | Function): boolean;
@@ -560,7 +623,7 @@ declare global {
 
   class frameworks {
     constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-    
+
     data: FrameworkData;
     initFunction: any[];
     specialWidget: any[];
@@ -569,7 +632,7 @@ declare global {
     patchedPassage: Set<string>;
     locationPassage: any;
     widgetPassage: any;
-    
+
     onInit(...widgets: any[]): void;
     addTo(zone: string, ...widgets: any[]): void;
     storyInit(): void;
@@ -617,11 +680,27 @@ declare global {
     NPCspawn: any[];
   }
 
+  declare const applyLinkZone: typeof LinkZoneManager & {
+    apply(userConfig?: Partial<LinkZoneConfig>): boolean;
+    add(config: LinkZoneConfig): void;
+    removeZones(): void;
+    readonly defaultConfig: LinkZoneConfig;
+  };
+
   class LinkZoneManager {
-    constructor(containerId?: string, linkSelector?: string, logger?: any);
-    
+    constructor(containerId?: string, linkSelector?: string, logger?: (message: string, level?: string, ...objects: any[]) => void);
+
     detectLinks(): LinkDetectionResult | null;
     applyZones(config: LinkZoneConfig): boolean;
+
+    #resetState(): void;
+    #detectLineBreakBeforeFirstLink(): void;
+    #isLineBreakNode(node: Node): boolean;
+    #isElementVisible(element: Element): boolean;
+    #createZoneElement(id: string | null, config: LinkZoneConfig): HTMLDivElement;
+    #applyCustomLinkZone(position: number, config: LinkZoneConfig): HTMLDivElement | null;
+    #applyBeforeLinkZone(config: LinkZoneConfig): void;
+    #applyAfterLinkZone(config: LinkZoneConfig): void;
   }
 
   interface LinkDetectionResult {
@@ -632,36 +711,39 @@ declare global {
   }
 
   interface LinkZoneConfig {
-    containerId: string;
-    linkSelector: string;
-    beforeMacro: () => any;
-    afterMacro: () => any;
-    customMacro: () => any;
-    zoneStyle: any;
+    containerId?: string;
+    linkSelector?: string;
+    beforeMacro?: string | (() => string);
+    afterMacro?: string | (() => string);
+    customMacro?: string | (() => Array<{ position: number; macro: string }>);
+    zoneStyle?: Partial<CSSStyleDeclaration> | Record<string, string>;
     onBeforeApply?: () => void;
     onAfterApply?: (result: boolean, config: LinkZoneConfig) => void;
-    debug: boolean;
+    debug?: boolean;
   }
 
-  class othersSystem {
+  class others {
     constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-    
+
     static traitCategories: { [key: string]: string };
     static getTraitCategory(englishName: string): string;
-    
+
     traitsTitle: string[];
     traitsData: any[];
     locationUpdates: any;
-    
+
     addTraits(...data: any[]): void;
     initTraits(data: any): boolean;
     configureLocation(locationId: string, config: any, options?: { overwrite?: boolean; layer?: string; element?: string }): boolean;
-    applyLocationUpdates(): boolean;
+    applyLocation(): boolean;
+    addBodywriting(key: string, config: any): void;
+    delBodywriting(key: string): void;
+    applyBodywriting(): boolean;
   }
 
-  class modhintSystem {
+  class modhint {
     constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-    
+
     hintClicked(): void;
     searchButtonClicked(): void;
     clearButtonClicked(): void;
@@ -669,7 +751,7 @@ declare global {
 
   class consoleTools {
     constructor(logger: (message: string, level?: string, ...objects: any[]) => void, allowedObjects?: string[]);
-    
+
     enableFullAccess(): boolean;
     disableFullAccess(): boolean;
     allowObject(objectName: string): boolean;
@@ -678,25 +760,257 @@ declare global {
     execute(type: 'javascript' | 'twine'): { success: boolean; error?: string; message?: string; result?: any };
   }
 
-  const applyLinkZone: {
-    apply(userConfig?: any): boolean;
-    manager: typeof LinkZoneManager;
-    addContentToZones(config: any): void;
-    defaultConfig: any;
-    removeZones(): void;
-  };
+  declare class cheat {
+    constructor();
+    initDB(): Promise<void>;
+    refreshCache(): Promise<void>;
 
-  class NPCManager {
-    add(npcData: object, config: object, translationsData: object): void;
-    addStats(statsObject: object): void;
-    addClothes(...configs: object[]): void;
-    injectModNPCs(): void;
-    vanillaNPCConfig(npcConfig: object): object;
-    applyStatDefaults(statDefaults: object): object;
-    Sidebar: NPCSidebar
+    add(name: string, code: string): Promise<boolean>;
+    remove(name: string): Promise<boolean>;
+    execute(name: string): Promise<boolean>;
+
+    search(term: string): CheatEntry[];
+    searchAndDisplay(): void;
+    displayAll(): Promise<void>;
+    createFromForm(): Promise<void>;
+
+    clearAll(confirm?: boolean): string | void;
+    clearAllAsync(): Promise<void>;
+
+    deleteConfirm(name: string): string;
+    cancelDelete(name: string): void;
+
+    updateContainer(containerId: string, content: string): void;
+    HTML(cheats?: CheatEntry[]): string;
   }
 
-  class NPCSidebar {
+  interface CheatEntry {
+    name: string;
+    code: string;
+    type: 'javascript' | 'twine';
+  }
+
+  class variablesModule {
+    check(): void;
+    version: string;
+    tool: tools;
+    log: (message: string, level?: string, ...objects: any[]) => void;
+    migration: migration;
+    preInit(): void;
+    Init(): void;
+    loadInit(): void;
+    postInit(): void;
+    #mapProcessing(): void;
+  }
+
+  declare class NPCManager {
+    lang: LanguageManager;
+    tool: tools;
+    log: (message: string, level?: string, ...objects: any[]) => void;
+    data: Map<string, { Data: NamedNPC; Config: NPCConfig }>;
+    pregnancy: {
+      infertile: string[];
+      typesEnabled: string[];
+      canBePregnant: string[];
+    };
+    loveInterestNpcs: string[];
+    importantNPCs: string[];
+    specialNPCs: string[];
+    NPCNameList: string[];
+    customStats: Record<string, NPCStatConfig>;
+    Sidebar: NPCSidebar;
+    Clothes: typeof NPCClothes;
+    Schedules: typeof NPCSchedules;
+
+    constructor(manager: any);
+    add(npcData: NPCData, config?: NPCConfig, translationsData?: Record<string, any>): boolean;
+    addSchedule(npcName: string, scheduleConfig: ScheduleConfig, location: string | ((date: DateTime) => string), options?: ScheduleOptions): Schedule;
+    addStats(statsObject: Record<string, NPCStatConfig>): void;
+    addClothes(...configs: NPCClothesConfig[]): void;
+    injectModNPCs(): void;
+    vanillaNPCConfig(npcConfig: Record<string, any>): Record<string, any>;
+    applyStatDefaults(statDefaults: Record<string, any>): Record<string, any>;
+    _vanillaNPCInit(...args: any[]): void;
+    NPCSpawn(...args: any[]): void;
+    Init(): void;
+    loadInit(): void;
+    postInit(): void;
+  }
+
+  declare class NPCSchedules {
+    static schedules: Map<string, Schedule>;
+    static init(manager: NPCManager): boolean;
+    static add(npcName: string, scheduleConfig: ScheduleConfig, location: string | ((date: DateTime) => string), options?: ScheduleOptions): Schedule;
+    static get(npcName: string): Schedule;
+    static update(npcName: string, specialId: number, updates: Partial<ScheduleSpecial>): Schedule;
+    static remove(npcName: string, specialId: number): Schedule;
+    static check(): Record<string, string>;
+  }
+
+  declare class Schedule {
+    constructor();
+    daily: string[];
+    specials: ScheduleSpecial[];
+    location: string;
+    add(scheduleConfig: ScheduleConfig, location: string | ((date: DateTime) => string), options?: ScheduleOptions): Schedule;
+    update(specialId: number, updates: Partial<ScheduleSpecial>): Schedule;
+    remove(specialId: number): Schedule;
+  }
+
+  interface ScheduleConfig {
+    start?: number;
+    end?: number;
+    hour?: number;
+    condition?: (date: DateTime) => boolean;
+    [key: string]: any;
+  }
+
+  interface ScheduleOptions {
+    id?: string | number;
+    priority?: number;
+    [key: string]: any;
+  }
+
+  interface ScheduleSpecial {
+    id: number;
+    cond: (date: DateTime) => boolean;
+    location: string | ((date: DateTime) => string);
+    priority: number;
+  }
+
+  declare class NPCClothes {
+    static log: (msg: string, level?: string) => void;
+    manager: NPCManager;
+    clothes: Map<string, NPCClothingItem>;
+    outfits: string[];
+
+    constructor(manager?: NPCManager);
+
+    static add(...configs: NPCClothesConfig[]): void;
+    static merge(): void;
+    static init(manager: { log: (msg: string, level?: string) => void }): void;
+    importNPCClothesData(modName: string, filePath: string): Promise<boolean>;
+    static processClothesData(data: any): boolean;
+  }
+
+  interface NPCClothingItem {
+    over_upper?: any;
+    over_lower?: any;
+    upper?: any;
+    lower?: any;
+    under_upper?: any;
+    under_lower?: any;
+    over_head?: any;
+    head?: any;
+    face?: any;
+    neck?: any;
+    legs?: any;
+    feet?: any;
+    genital?: any;
+    [key: string]: any;
+  }
+
+  interface NPCData {
+    nam: string;
+    title?: string;
+    gender?: 'm' | 'f' | 'h' | 'n' | 't';
+    type?: string;
+    adult?: number;
+    teen?: number;
+    insecurity?: string;
+    chastity?: { penis: string; vagina: string; anus: string };
+    virginity?: Record<string, boolean>;
+    eyeColour?: string;
+    hairColour?: string;
+    pronoun?: string;
+    penissize?: number;
+    breastsize?: number;
+    ballssize?: number;
+    bottomsize?: number;
+    penisdesc?: string;
+    breastdesc?: string;
+    outfits?: string[];
+    pregnancy?: any;
+    skincolour?: number;
+    init?: number;
+    intro?: number;
+    description?: string;
+    [key: string]: any;
+  }
+
+  interface NPCConfig {
+    love?: { maxValue: number };
+    loveAlias?: [string, string] | (() => string);
+    important?: boolean | (() => boolean);
+    special?: boolean | (() => boolean);
+    loveInterest?: boolean | (() => boolean);
+    [key: string]: any;
+  }
+
+  interface NPCStatConfig {
+    position?: number | 'first' | 'last' | 'secondLast' | false;
+    [key: string]: any;
+  }
+
+  interface NPCClothesConfig {
+    name: string;
+    type?: string;
+    gender?: 'm' | 'f' | 'n';
+    outfit?: number;
+    upper: string | {
+      name: string;
+      integrity_max?: number;
+      word?: 'a' | 'n';
+      action?: string;
+      desc?: string;
+    };
+    lower: string | {
+      name: string;
+      integrity_max?: number;
+      word?: 'a' | 'n';
+      action?: string;
+      desc?: string;
+    };
+    desc?: string;
+  }
+
+  declare class NamedNPC {
+    nam: string;
+    gender: 'm' | 'f' | 'h' | 'n' | 't';
+    title: string;
+    description: string;
+    type: string;
+    adult: number;
+    teen: number;
+    insecurity: string;
+    chastity: { penis: string; vagina: string; anus: string };
+    virginity: Record<string, boolean>;
+    eyeColour: string;
+    hairColour: string;
+    pronoun: string;
+    penissize: number;
+    breastsize: number;
+    ballssize: number;
+    bottomsize: number;
+    penisdesc: string;
+    breastdesc: string;
+    outfits: string[];
+    pregnancy: any;
+    skincolour: number;
+    init: number;
+    intro: number;
+    pronouns: Record<string, string>;
+
+    static add: (manager: any, npcData: NPCData, config?: NPCConfig, translationsData?: Record<string, any>) => boolean;
+    static get: (manager: any) => NPCData[];
+    static clear: (manager: any) => boolean;
+    static update: (manager: any) => boolean;
+    static setup: (manager: any) => void;
+  }
+
+  declare class NPCSidebar {
+    init(force?: boolean): void;
+    static get ZIndices(): any;
     display: object;
   }
 
@@ -709,7 +1023,7 @@ declare global {
       };
     };
 
-    tool: any; // 根据实际使用情况，可以更具体地定义类型
+    tool: any;
     log: (message: string, level?: string, ...objects: any[]) => void;
     widgets: string[];
     passages: Array<{ name: string; content: string }>;
@@ -729,36 +1043,22 @@ declare global {
     beforePatchModToGame(): Promise<void>;
     preInit(): void;
   }
-  
-  const SugarCube: {
-    Macro: {
-      add(name: string, definition: any): void;
-      delete(name: string): void;
-      get(name: string): any;
-      has(name: string): boolean;
-      [key: string]: any;
-    };
-    Wikifier: new (...args: any[]) => any;
-    Engine: {
-      go(): any;
-      show(): void;
-      play(title: string, noHistory: boolean): void;
-    };
-    Save: {
-      autosave: any;
-      onSave: any;
-      onLoad: any;
-    };
-    setup: any;
-    State: any;
-    Story: {
-      title: string;
-      get(title: string): any;
-      has(title: string): boolean;
-    }
-    Config: any;
+
+  const yaml: {
+    load: (str: string) => any;
+    loadAll: (str: string) => any[];
+    dump: (obj: any, options?: any) => string;
+    safeLoad: (str: string) => any;
+    safeLoadAll: (str: string) => any[];
+    safeDump: (obj: any, options?: any) => string;
+    DEFAULT_FULL_SCHEMA: any;
+    DEFAULT_SAFE_SCHEMA: any;
+    JSON_SCHEMA: any;
+    CORE_SCHEMA: any;
   };
-  
+
+  const SugarCube: SugarCube;
+
   const setup: any;
   const Macro: {
     add(name: string, definition: any): void;
@@ -787,29 +1087,83 @@ declare global {
     [key: string]: any;
   };
   const Config: any;
-  const Wikifier: new (destination:any, source:string, options:Object|undefined, passageObj:Object|undefined, passageTitle:string|undefined) => any;
   const V: any;
   const T: any;
-  const Time: {
-    date: {
-      year: number;
-      month: number;
-      day: number;
-      hour: number;
-      minute: number;
-      second: number;
-    }
-    monthNames: any;
-    moonPhases: string[];
-    daysOfWeek: string[];
-    pass: any;
+  declare const Time: {
+    readonly date: DateTime;
+    readonly holidayMonths: number[];
+    readonly second: number;
+    readonly minute: number;
+    readonly hour: number;
+    readonly weekDay: number;
+    readonly weekDayName: string;
+    readonly monthDay: number;
+    readonly month: number;
+    readonly monthName: string;
+    readonly year: number;
+    readonly days: number;
+    readonly season: string;
+    readonly startDate: DateTime;
+    readonly tomorrow: DateTime;
+    readonly yesterday: DateTime;
+    readonly schoolTerm: boolean;
+    readonly schoolDay: boolean;
+    readonly schoolTime: boolean;
+    readonly dayState: 'night' | 'dusk' | 'day' | 'dawn';
+    readonly nextSchoolTermStartDate: DateTime;
+    readonly nextSchoolTermEndDate: DateTime;
+    readonly lastDayOfMonth: number;
+    readonly dayOfYear: number;
+    readonly secondsSinceMidnight: number;
+    readonly currentMoonPhase: string;
+    readonly moonPhases: Record<string, { start: number; end: number; description: string; endAlt?: number }>;
+    readonly daysOfWeek: string[];
+    set(time: number | DateTime): void;
+    setDate(date: DateTime): void;
+    setTime(hour: number, minute?: number): void;
+    setTimeRelative(hour: number, minute?: number): void;
+    pass(seconds: number): void;
+    isSchoolTerm(date: DateTime): boolean;
+    isSchoolDay(date: DateTime): boolean;
+    isSchoolTime(date: DateTime): boolean;
+    getDayOfYear(date: DateTime): number;
+    getSecondsSinceMidnight(date: DateTime): number;
+    getNextSchoolTermStartDate(date: DateTime): DateTime;
+    getNextSchoolTermEndDate(date: DateTime): DateTime;
+    nextMoonPhase(targetPhase: string): DateTime;
+    previousMoonPhase(targetPhase: string): DateTime;
+    isBloodMoon(date?: DateTime): boolean;
+    getSeason(date: DateTime): 'winter' | 'spring' | 'summer' | 'autumn';
+    getNextWeekdayDate(weekDay: number): DateTime;
+    getPreviousWeekdayDate(weekDay: number): DateTime;
+    isWeekEnd(): boolean;
+    readonly monthNames: string[];
   };
-  const Weather: any;
-  const Dynamic: any;
-  const TimeConstants: any;
-  
+  declare const Weather: {
+    rain: boolean;
+    thunder: boolean;
+    snow: boolean;
+    cloud: boolean;
+    windy: boolean;
+    fog: boolean;
+    [key: string]: any;
+  };
+
+  declare const Dynamic: {
+    [key: string]: any;
+  };
+
+  declare const TimeConstants: {
+    standardYearMonths: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    leapYearMonths: [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    secondsPerDay: 86400;
+    secondsPerHour: 3600;
+    secondsPerMinute: 60;
+    synodicMonth: 29.530588;
+  };
+
   const $: JQueryStatic;
-  
+
   interface JQueryStatic {
     (selector: string, context?: Element | JQuery): JQuery;
     (element: Element): JQuery;
@@ -820,8 +1174,12 @@ declare global {
     ajax?: any;
     get?: any;
     post?: any;
+    wiki(wikitext: string, ...args: any[]): JQuery;
+    wiki(executor: (fragment: DocumentFragment) => void): JQuery;
+    wiki(element: HTMLElement, wikitext: string, ...args: any[]): HTMLElement;
+    wiki(element: DocumentFragment, wikitext: string, ...args: any[]): DocumentFragment;
   }
-  
+
   interface JQuery {
     html(): string;
     html(htmlString: string): this;
@@ -829,50 +1187,35 @@ declare global {
     text(textString: string): this;
     val(): any;
     val(value: any): this;
-    
+
     addClass(className: string): this;
     removeClass(className?: string): this;
-    
+
     css(propertyName: string): string;
-    css(propertyName: string, value: string|number): this;
-    
+    css(propertyName: string, value: string | number): this;
+
     on(event: string, handler: Function): this;
     off(event: string, handler?: Function): this;
     click(handler: Function): this;
-    
+
     [key: string]: any;
   }
-  
-  class DateTime {
-    constructor(...any:any);
-    addDays: any;
-    year: number;
-    month: number;
-    day: number;
-    hour: number;
-    minute: number;
-    second: number;
-  } 
 
-  function ordinalSuffixOf(i:number): number;
+  function ordinalSuffixOf(i: number): number;
   function wikifier(widget: any, ...args: any[]): any;
   function drawCondition(): boolean;
 
   const ColourUtils: any;
 
-  function clone(source: any, options?: CloneOptions, map?: WeakMap<any, any>): any;
-  function merge(target: any, ...sources: any[]): any;
+  declare function clone<T>(source: T, options?: { deep?: boolean; preservePrototype?: boolean; }, map?: WeakMap<any, any>): T;
+  declare function merge<T, S1, S2, S3, S4, S5>(target: T, source1: S1, source2?: S2, source3?: S3, source4?: S4, source5?: S5): T & S1 & S2 & S3 & S4 & S5;
   function equal(a: any, b: any): boolean;
-  function contains(arr: any[], value: any, options?: ContainsOptions): boolean;
+  function contains(arr: any[], value: any, options?: ontainsOptions): boolean;
   function random(min?: any, max?: any, float?: boolean): number;
-  function either(itemsOrA: any, ...rest: any[]): any;
+  declare function either<T>(itemsOrA: T[] | T, ...rest: any[]): T;
+  declare function either<T>(itemsOrA: T[] | T, options?: { weights?: number[] }): T;
   function loadImageWithModLoader(src: string): Promise<string>;
-  function convert(str: string, mode?: string, options?: ConvertOptions): string;
-
-  interface CloneOptions {
-    deep?: boolean;
-    preservePrototype?: boolean;
-  }
+  function convert(str: string, mode?: string, options?: { delimiter?: string; preserveAcronyms?: boolean; }): string;
 
   interface ContainsOptions {
     mode?: 'any' | 'all' | 'none';
@@ -881,14 +1224,9 @@ declare global {
     deepEqual?: boolean;
   }
 
-  interface ConvertOptions {
-    delimiter?: string;
-    preserveAcronyms?: boolean;
-  }
-
   class SelectCase {
     constructor();
-    
+
     case(condition: any, result: any): SelectCase;
     casePredicate(fn: (input: any, meta: any) => boolean, result: any): SelectCase;
     caseRange(min: number, max: number, result: any): SelectCase;
@@ -900,9 +1238,14 @@ declare global {
     match(input: any, meta?: any): any;
   }
 
-  const Renderer: {
-    CanvasModels: object;
-  }
+  declare const Renderer: {
+    CanvasModels: {
+      main: any;
+    };
+    [key: string]: any;
+  };
+
+  const playerNormalPregnancyType: () => string;
 }
 
-export {};
+export { };

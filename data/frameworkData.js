@@ -618,7 +618,7 @@
       </div><hr>
       <div class='settingsGrid'>
         <div class='settingsHeader options'><<= maplebirch.tool.convert(maplebirch.t('Mods',true)+maplebirch.t('transformation'),'title')>></div>
-        <div class='settingsToggleItem'>
+        <<if Object.keys(V.maplebirch?.transformation).length>><div class='settingsToggleItem'>
           <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('Mods',true)+maplebirch.t('transformation',true)+maplebirch.t('type'),'title')>></span><br>
           <<for _modName range Object.keys(V.maplebirch?.transformation)>>
             <<capture _modName>>
@@ -652,7 +652,7 @@
               }>>
             <</capture>>
           <</for>>
-        </div>
+        </div><</if>>
       </div>`,
     NPCinit : `<<run maplebirch.npc._vanillaNPCInit(_nam)>>`,
     NPCspawn : `<<run maplebirch.npc.NPCSpawn(_nam, _npcno)>>`

@@ -9,18 +9,6 @@
   const currentVersion = '1.0.2';
 
   class variablesModule {
-    static check() {
-      if (typeof V.maplebirch !== 'object' || V.maplebirch === null) V.maplebirch = {};
-      if (typeof V.maplebirch.language !== 'string') V.maplebirch.language = maplebirch.Language;
-      if (!V.options) return;
-      if (typeof V.options?.maplebirch !== 'object' || V.options?.maplebirch === null) {
-        V.options.maplebirch = maplebirch.tool.clone(variablesModule.options);
-      } else {
-        const defaultOptions = variablesModule.options;
-        for (const key in defaultOptions) if (!(key in V.options.maplebirch)) V.options.maplebirch[key] = maplebirch.tool.clone(defaultOptions[key]);
-      }
-    }
-
     static options = {
       modHint: 'disable',
       debug: false,
@@ -93,7 +81,7 @@
       this.version = currentVersion;
       this.tool = maplebirch.tool;
       this.log = this.tool.createLog('var');
-      if (!this.migrationSystem) this.migrationSystem = this.tool.migration.create();;
+      if (!this.migration) this.migration = new this.tool.migration;
     }
 
     #mapProcessing() {
@@ -108,9 +96,21 @@
       });
     }
 
+    check() {
+      if (typeof V.maplebirch !== 'object' || V.maplebirch === null) V.maplebirch = {};
+      if (typeof V.maplebirch.language !== 'string') V.maplebirch.language = maplebirch.Language;
+      if (!V.options) return;
+      if (typeof V.options?.maplebirch !== 'object' || V.options?.maplebirch === null) {
+        V.options.maplebirch = maplebirch.tool.clone(variablesModule.options);
+      } else {
+        const defaultOptions = variablesModule.options;
+        for (const key in defaultOptions) if (!(key in V.options.maplebirch)) V.options.maplebirch[key] = maplebirch.tool.clone(defaultOptions[key]);
+      }
+    }
+
     preInit() { 
-      maplebirch.once(':passageinit', () => variablesModule.check());
-      maplebirch.once(':finally', () => variablesModule.check());
+      maplebirch.once(':passageinit', () => this.check());
+      maplebirch.once(':finally', () => this.check());
     }
 
     Init() {
@@ -123,7 +123,7 @@
           this.log(`新游戏数据初始化完成 (v${this.version})`, 'DEBUG');
           return;
         }
-        this.migrationSystem.run(V.maplebirch, this.version);
+        this.migration.run(V.maplebirch, this.version);
         $.wiki('<<maplebirchDataInit>>');
         this.log(`存档数据迁移完成 (→ v${this.version})`, 'DEBUG');
       } catch (e) {
@@ -134,8 +134,8 @@
 
     loadInit() {
       try {
-        variablesModule.check();
-        this.migrationSystem.run(V.maplebirch, this.version);
+        this.check();
+        this.migration.run(V.maplebirch, this.version);
         $.wiki('<<maplebirchDataInit>>');
         this.log(`读档迁移/修正完成 (→ v${this.version})`, 'DEBUG');
       } catch (e) {
@@ -147,7 +147,7 @@
     postInit() {
       if (!V.maplebirch?.version || V.maplebirch?.version !== this.version) {
         try {
-          this.migrationSystem.run(V.maplebirch, this.version);
+          this.migration.run(V.maplebirch, this.version);
           this.log(`存档数据修正完成 (→ v${this.version})`, 'DEBUG');
         } catch (e) {
           this.log(`后初始化迁移出错: ${e?.message || e}`, 'ERROR');

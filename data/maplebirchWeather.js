@@ -305,9 +305,9 @@
           return this.dayState;;
         },
       });
-      Object.defineProperty(Weather, 'solarEclipse', { get: function () { maplebirch.var.constructor.check(); return maplebirch.state.solarEclipse.solarEclipse; }, });
-      Object.defineProperty(Weather, 'solarEclipsePhase', { get: function () { maplebirch.var.constructor.check(); return maplebirch.state.solarEclipse.solarEclipsePhase; }, });
-      Object.defineProperty(Weather, 'solarEclipseStage', { get: function () { maplebirch.var.constructor.check(); return maplebirch.state.solarEclipse.solarEclipseStage; }, });
+      Object.defineProperty(Weather, 'solarEclipse', { get: function () { maplebirch.var.check(); return maplebirch.state.solarEclipse.solarEclipse; }, });
+      Object.defineProperty(Weather, 'solarEclipsePhase', { get: function () { maplebirch.var.check(); return maplebirch.state.solarEclipse.solarEclipsePhase; }, });
+      Object.defineProperty(Weather, 'solarEclipseStage', { get: function () { maplebirch.var.check(); return maplebirch.state.solarEclipse.solarEclipseStage; }, });
     }
 
     async modifyWeatherJavaScript() {
@@ -332,10 +332,9 @@
   }
 
   class EclipseSystem {
-    /** @param {{ regTimeEvent: (arg0: string, arg1: string, arg2: { action: () => void; cond: () => any; exact: boolean; }) => void; }} state @param {{ constructor: { proto: { rand: new (arg0: any) => any; }; }; createLog: (arg0: string) => (...data: any[]) => void; }} manger */
+    /** @param {{ regTimeEvent: (arg0: string, arg1: string, arg2: { action: () => void; cond: () => any; exact: boolean; }) => void; }} state @param { { rand: new () => any; createLog: (arg0: string) => (...data: any[]) => void;} } manger */
     constructor(state, manger) {
-      this.random = new manger.constructor.proto.rand(manger.createLog('eclipse'));
-      this.log = manger.createLog('eclipse') || console.log;
+      this.log = manger.createLog('eclipse');
       this.Config = {
         months: [3, 6, 9, 12],
         day: 15,
@@ -378,15 +377,13 @@
     #futureEclipses(count = 4) {
       const now = new DateTime(Time.date);
       const eclipses = [];
-      const originalSeed = this.random.Seed !== null && this.random.Seed !== undefined ? this.random.Seed : Date.now();
       for (let i = 1; i <= 12 && eclipses.length < count; i++) {
         const month = (now.month + i - 1) % 12 + 1;
         const year = now.year + Math.floor((now.month + i - 1) / 12);
         if (this.Config.months.includes(month)) {
-          const dateSeed = year * 10000 + month * 100 + this.Config.day;
-          this.random.Seed = dateSeed;
-          const startHour = this.random.get(33) === 0 ? 8 : 7;
-          const startMinute = this.random.get(60);
+          const dateHash = (year * 12 + month) % 100;
+          const startHour = 7 + (dateHash % 2);
+          const startMinute = (dateHash * 13) % 60;
           eclipses.push({
             year, month, day: this.Config.day,
             startHour, startMinute,
@@ -396,16 +393,14 @@
           });
         }
       }
-      if (originalSeed !== null && originalSeed !== undefined) this.random.Seed = originalSeed;
       return eclipses;
     }
 
     /** @param {{ year: number; month: number; day: number; }} date */
     #startTime(date) {
-      const dateSeed = date.year * 10000 + date.month * 100 + date.day;
-      if (dateSeed !== null && dateSeed !== undefined) this.random.Seed = dateSeed;
-      const minute = this.random.get(60);
-      const hour = this.random.get(33) === 0 ? 8 : 7;
+      const dateHash = (date.year * 12 + date.month) % 100;
+      const minute = (dateHash * 13) % 60;
+      const hour = 7 + (dateHash % 2);
       return {
         hour, minute,
         totalSeconds: hour * 3600 + minute * 60

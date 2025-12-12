@@ -14,7 +14,7 @@
   }
 
   // 模块提示系统 - 用于显示和搜索模块提示信息
-  class modhintSystem {
+  class modhint {
     /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
     constructor(logger) {
       this.log = logger;
@@ -343,7 +343,7 @@
   }
 
   // 作弊指令系统 - 用于管理和执行作弊指令
-  class cheatSystem {
+  class cheat {
     constructor() {
       this.db = null;
       /** @type {any[]} */
@@ -482,18 +482,12 @@
   }
 
   class tools {
-    static proto = {
-      modhit: modhintSystem,
-      console: consoleTools,
-      cheat: cheatSystem,
-    }
-
     createLog = createLog;
 
     constructor() {
-      this.modhint = new tools.proto.modhit(createLog('modhit'));
-      this.console = new tools.proto.console(createLog('console'));
-      this.cheat = new tools.proto.cheat();
+      this.modhint = new modhint(createLog('modhit'));
+      this.console = new consoleTools(createLog('console'));
+      this.cheat = new cheat();
       maplebirch.trigger(':tool-init', this);
     }
 

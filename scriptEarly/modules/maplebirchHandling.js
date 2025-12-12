@@ -674,5 +674,6 @@
     postInit() {
     }
   }
+  
   await maplebirch.register('processHandling', new processHandling(), ['tool']);
 })();

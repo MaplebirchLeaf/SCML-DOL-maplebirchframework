@@ -6,29 +6,37 @@
   const maplebirch = window.maplebirch;
 
   // 变量迁徙系统 - 用于管理数据迁移和版本控制
-  class migrationSystem {
-    /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
-    constructor(logger) {
-      this.log = logger;
+  class migration {
+    /** @type {Function} */
+    static logger = new Function;
+
+    /** @param {(arg0: string) => Function} createLog */
+    static init(createLog) {
+      if (typeof createLog === 'function') migration.logger = createLog('migration');
     }
 
-    create() {
+    static create() {
+      return new migration();
+    }
+
+    constructor() {
+      this.log = migration.logger;
       /** @type {{ fromVersion: string; toVersion: string; migrationFn: Function; }[]} */
-      const migrations = [];
+      this.migrations = [];
 
       const renameFunc = (/** @type {Object} */data, /** @type {string} */oldPath, /** @type {string} */newPath) => {
         /** @type {any} */
-        const source = utils.resolvePath(data, oldPath);
+        const source = this.utils.resolvePath(data, oldPath);
         if (!source?.parent[source.key]) return false;
         const value = source.parent[source.key];
         delete source.parent[source.key];
         /** @type {any} */
-        const target = utils.resolvePath(data, newPath, true);
+        const target = this.utils.resolvePath(data, newPath, true);
         target.parent[target.key] = value;
         return true;
       };
 
-      const utils = {
+      this.utils = {
         /**
          * 解析对象路径
          * @param {Object} obj - 目标对象
@@ -75,7 +83,7 @@
          */
         remove: (data, path) => {
           /** @type {any} */
-          const target = utils.resolvePath(data, path);
+          const target = this.utils.resolvePath(data, path);
           if (target?.parent[target.key] !== undefined) {
             delete target.parent[target.key];
             return true;
@@ -92,7 +100,7 @@
          */
         transform: (data, path, transformer) => {
           /** @type {any} */
-          const target = utils.resolvePath(data, path);
+          const target = this.utils.resolvePath(data, path);
           if (!target?.parent[target.key]) return false;
           try {
             target.parent[target.key] = transformer(target.parent[target.key]);
@@ -122,67 +130,7 @@
           }
         }
       };
-
-      return Object.freeze({
-        /**
-         * 添加迁移脚本
-         * @param {string} fromVersion - 起始版本号 (格式: 'x.y.z')
-         * @param {string} toVersion - 目标版本号 (格式: 'x.y.z')
-         * @param {Function} migrationFn - 迁移函数，格式: (data, utils) => void
-         */
-        add: (fromVersion, toVersion, migrationFn) => {
-          if (typeof migrationFn !== 'function') return;
-          const exists = migrations.some(m => m.fromVersion === fromVersion && m.toVersion === toVersion);
-          if (exists) { this.log(`重复迁移: ${fromVersion} -> ${toVersion}`, 'WARN'); return; }
-          migrations.push({ fromVersion, toVersion, migrationFn });
-        },
-
-        /**
-         * 执行数据迁移
-         * @param {Object} data - 待迁移的数据对象
-         * @param {string} targetVersion - 目标版本
-         */
-        run: (/** @type {any} */data, targetVersion) => {
-          data.version ||= '0.0.0';
-          let currentVersion = data.version;
-          if (!/^\d+(\.\d+){0,2}$/.test(targetVersion)) this.log(`警告: 目标版本格式无效 ${targetVersion}`, 'WARN');
-          if (this.#compareVersions(currentVersion, targetVersion) >= 0) return;
-
-          const sortedMigrations = [...migrations].sort((a, b) => this.#compareVersions(a.fromVersion, b.fromVersion) || this.#compareVersions(a.toVersion, b.toVersion));
-          let steps = 0;
-          const MAX_STEPS = 100;
-
-          while (this.#compareVersions(currentVersion, targetVersion) < 0 && steps++ < MAX_STEPS) {
-            const candidates = sortedMigrations.filter(m => this.#compareVersions(m.fromVersion, currentVersion) === 0 && this.#compareVersions(m.toVersion, targetVersion) <= 0);
-            /** @type {any} */
-            const migration = candidates.reduce((best, curr) => this.#compareVersions(curr.toVersion, best.toVersion) > 0 ? curr : best , { toVersion: currentVersion });
-            if (!migration || migration.toVersion === currentVersion) {
-              this.log(`迁移中断: ${currentVersion} -> ${targetVersion}`, 'WARN');
-              break;
-            }
-            try {
-              this.log(`迁移中: ${currentVersion} → ${migration.toVersion}`, 'DEBUG');
-              migration.migrationFn(data, utils);
-              data.version = currentVersion = migration.toVersion;
-            } catch (/** @type {any} */e) {
-              /** @type {any} */
-              const migrationError = new Error(`迁移失败 ${currentVersion}→${migration.toVersion}: ${e.message}`);
-              migrationError.fromVersion = currentVersion;
-              migrationError.toVersion = migration.toVersion;
-              migrationError.cause = e;
-              this.log('迁移失败', 'ERROR', migrationError.message);
-              throw migrationError;
-            }
-          }
-          if (this.#compareVersions(currentVersion, targetVersion) < 0) {
-            this.log(`强制设置版本: ${targetVersion}`, 'WARN');
-            data.version = targetVersion;
-          }
-        },
-
-        utils,
-        migrations
-      });
+      Object.freeze(this.utils);
     }
 
     /** @param {string} a @param {string} b */
@@ -196,159 +144,150 @@
       }
       return 0;
     }
+
+    /**
+     * 添加迁移脚本
+     * @param {string} fromVersion - 起始版本号 (格式: 'x.y.z')
+     * @param {string} toVersion - 目标版本号 (格式: 'x.y.z')
+     * @param {Function} migrationFn - 迁移函数，格式: (data, utils) => void
+     */
+    add(fromVersion, toVersion, migrationFn) {
+      if (typeof migrationFn !== 'function') return;
+      const exists = this.migrations.some(m => m.fromVersion === fromVersion && m.toVersion === toVersion);
+      if (exists) { this.log(`重复迁移: ${fromVersion} -> ${toVersion}`, 'WARN'); return; }
+      this.migrations.push({ fromVersion, toVersion, migrationFn });
+    }
+
+    /**
+     * 执行数据迁移
+     * @param {Object<any,any>} data - 待迁移的数据对象
+     * @param {string} targetVersion - 目标版本
+     */
+    run(data, targetVersion) {
+      data.version ||= '0.0.0';
+      let currentVersion = data.version;
+      if (!/^\d+(\.\d+){0,2}$/.test(targetVersion)) this.log(`警告: 目标版本格式无效 ${targetVersion}`, 'WARN');
+      if (this.#compareVersions(currentVersion, targetVersion) >= 0) return;
+
+      const sortedMigrations = [...this.migrations].sort((a, b) => this.#compareVersions(a.fromVersion, b.fromVersion) || this.#compareVersions(a.toVersion, b.toVersion));
+      let steps = 0;
+      const MAX_STEPS = 100;
+
+      while (this.#compareVersions(currentVersion, targetVersion) < 0 && steps++ < MAX_STEPS) {
+        const candidates = sortedMigrations.filter(m => this.#compareVersions(m.fromVersion, currentVersion) === 0 && this.#compareVersions(m.toVersion, targetVersion) <= 0);
+        /** @type {any} */
+        const migration = candidates.reduce((best, curr) => this.#compareVersions(curr.toVersion, best.toVersion) > 0 ? curr : best , { toVersion: currentVersion });
+        if (!migration || migration.toVersion === currentVersion) {
+          this.log(`迁移中断: ${currentVersion} -> ${targetVersion}`, 'WARN');
+          break;
+        }
+        try {
+          this.log(`迁移中: ${currentVersion} → ${migration.toVersion}`, 'DEBUG');
+          migration.migrationFn(data, this.utils);
+          data.version = currentVersion = migration.toVersion;
+        } catch (/** @type {any} */e) {
+          /** @type {any} */
+          const migrationError = new Error(`迁移失败 ${currentVersion}→${migration.toVersion}: ${e.message}`);
+          migrationError.fromVersion = currentVersion;
+          migrationError.toVersion = migration.toVersion;
+          migrationError.cause = e;
+          this.log('迁移失败', 'ERROR', migrationError.message);
+          throw migrationError;
+        }
+      }
+      if (this.#compareVersions(currentVersion, targetVersion) < 0) {
+        this.log(`强制设置版本: ${targetVersion}`, 'WARN');
+        data.version = targetVersion;
+      }
+    }
   }
 
-  // 随机数生成系统 - 提供伪随机数生成和状态管理
-  class randomSystem {
-    /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
-    constructor(logger) {
-      this.log = logger;
-      /** @type {any} */
+  // 随机数系统 - 用于生成可控的随机数序列
+  class randSystem {
+    /** @type {Function} */
+    static logger = new Function;
+
+    /** @param {(arg0: string) => Function} createLog */
+    static init(createLog) {
+      if (typeof createLog === 'function') randSystem.logger = createLog('rand');
+    }
+
+    constructor() {
+      this.log = randSystem.logger;
+      /** @type {{ seed: any , history: number[], pointer: number}} */
       this.state = {
         seed: null,       // 当前种子值
-        a: 1664525,       // LCG乘数
-        c: 1013904223,    // LCG增量
-        m: 0x100000000,   // 模数 (2^32)
-        callCount: 0,     // 调用计数器
-        history: []       // 历史记录
+        history: [],      // 历史记录
+        pointer: 0        // 当前位置指针
       };
     }
-    
-    #initSeed() {
-      const timeSeed = Date.now();
-      const randomSeed = Math.floor(Math.random() * 0xFFFFFF);
-      this.state.seed = (timeSeed ^ randomSeed) >>> 0; // 保证32位无符号整数
-      this.state.callCount = 0;
-      this.state.history = [];
-      this.log(`随机种子初始化: ${this.state.seed}`, 'DEBUG');
-    }
-    
-    /**
-     * 生成随机数（内部方法）
-     * @param {*} [options] - 随机数选项
-     * @returns {number} 生成的随机数
-     */
-    #generate(options) {
-      if (this.state.seed === null) {
-        this.#initSeed();
-      }
 
-      this.state.seed = (this.state.a * this.state.seed + this.state.c) % this.state.m;
-      const randomValue = this.state.seed / this.state.m; // 转换为[0,1)范围
-      this.state.callCount++;
-      
-      let result;
-      /** @type {any} */
-      let details = { type: "default" };
-      
-      // 根据选项处理不同生成模式
-      if (typeof options === 'undefined') {
-        // 默认: 1-100的整数
-        result = Math.floor(randomValue * 100) + 1;
-        details = { min: 1, max: 100, float: false };
-      } 
-      else if (typeof options === 'number') {
-        // 指定上限的整数
-        result = Math.floor(randomValue * options);
-        details = { min: 0, max: options - 1, float: false };
-      } 
-      else if (Array.isArray(options)) {
-        // 从数组中随机选择
-        result = maplebirch.tool.either(options);
-        details = { type: "array", length: options.length };
-      } 
-      else if (typeof options === 'object') {
-        // 范围随机数（整数或浮点数）
-        const min = options.min || 0;
-        const max = options.max || (options.min ? options.min + 1 : 100);
-        const float = !!options.float;
-        
-        if (float) {
-          result = randomValue * (max - min) + min;
-          details = { min, max, float: true };
-        } else {
-          result = Math.floor(randomValue * (max - min + 1)) + min;
-          details = { min, max, float: false };
-        }
-      } else {
-        result = Math.floor(randomValue * 100) + 1;
-        details = { error: "Invalid options", value: options };
-      }
-      
-      this.state.history.push({
-        call: this.state.callCount,
-        value: result,
-        seed: this.state.seed,
-        options: details
-      });
-      if (this.state.history.length > 50) this.state.history.shift();
-      
-      if (typeof V.maplebirch !== 'object') V.maplebirch = {};
-      if (V.maplebirch) V.maplebirch.rng = result;
-      
-      return result;
-    }
-    
-    /**
-     * 获取随机数
-     * @param {*} [options] - 随机数选项
-     * @returns {number} 生成的随机数
-     * @example
-     * random.get(); // 1-100之间的随机整数
-     * random.get(10); // 0-9之间的随机整数
-     * random.get({min:5, max:10}); // 5-10之间的随机整数
-     * random.get({min:1, max:5, float:true}); // 1-5之间的随机浮点数
-     * random.get(['a','b','c']); // 随机选择数组元素
-     */
-    get(options) {
-      return this.#generate(options);
-    }
-    
-    set Seed(newSeed) {
-      const parsedSeed = parseInt(newSeed);
-      if (isNaN(parsedSeed)) { this.log(`设置种子失败: 无效的种子值 ${newSeed}`, 'WARN'); }
-      this.state.seed = parsedSeed >>> 0;
-      this.state.callCount = 0;
+    set Seed(seed) {
+      this.state.seed = parseInt(seed) & 0x7FFFFFFF;
       this.state.history = [];
-      this.log(`种子已设置为: ${this.state.seed}`, 'DEBUG');
+      this.state.pointer = 0;
     }
-    
+
     get Seed() {
       return this.state.seed;
     }
-    
-    get State() {
-      return {
-        seed: this.state.seed,
-        callCount: this.state.callCount,
-        nextSeed: this.state.seed ? (this.state.a * this.state.seed + this.state.c) % this.state.m : null,
-        history: [...this.state.history]
-      };
-    }
-    
-    reset() {
-      this.#initSeed();
-      return this.State;
-    }
-    
-    debug() {
-      const output = [
-        `随机系统状态:`,
-        `- 当前种子: ${this.state.seed || "未初始化"}`,
-        `- 调用次数: ${this.state.callCount}`,
-        `- 历史记录: ${this.state.history.length} 条`,
-        `- 下一个种子: ${this.state.seed ? (this.state.a * this.state.seed + this.state.c) % this.state.m : "N/A"}`
-      ];
-      if (this.state.history.length > 0) {
-        output.push("\n最近5次调用:");
-        this.state.history.slice(-5).forEach((/** @type {{ call: any; value: any; seed: any; }} */entry) => { output.push(`#${entry.call}: ${entry.value} (种子: ${entry.seed})`); });
+
+    /** @param {number} max */
+    get(max) {
+      if (this.state.seed === null) this.state.seed = Date.now() & 0x7FFFFFFF;
+      if (this.state.pointer < this.state.history.length) {
+        const value = this.state.history[this.state.pointer];
+        this.state.pointer++;
+        return (value % (max + 1));
       }
-      return output.join("\n");
+      this.state.seed = (this.state.seed * 1103515245 + 12345) & 0x7FFFFFFF;
+      const value = Math.floor((this.state.seed / 0x7FFFFFFF) * 101);
+      this.state.history.push(value);
+      if (this.state.history.length > 100) {
+        this.state.history.shift();
+        this.state.pointer = Math.max(0, this.state.pointer - 1);
+      }
+
+      this.state.pointer++;
+      return (value % (max + 1));
+    }
+
+    get rng() {
+      if (this.state.seed === null) this.state.seed = Date.now() & 0x7FFFFFFF;
+      if (this.state.pointer < this.state.history.length) {
+        const value = this.state.history[this.state.pointer];
+        this.state.pointer++;
+        return (value % 100) + 1;
+      }
+      this.state.seed = (this.state.seed * 1103515245 + 12345) & 0x7FFFFFFF;
+      const value = Math.floor((this.state.seed / 0x7FFFFFFF) * 101);
+      this.state.history.push(value);
+      if (this.state.history.length > 100) {
+        this.state.history.shift();
+        this.state.pointer = Math.max(0, this.state.pointer - 1);
+      }
+      this.state.pointer++;
+      return (value % 100) + 1;
+    }
+
+    get history() {
+      return [...this.state.history];
+    }
+
+    get pointer() {
+      return this.state.pointer;
+    }
+
+    backtrack(steps = 1) {
+      if (steps <= 0) return;
+      let newPointer = this.state.pointer - steps;
+      if (newPointer < 0) newPointer = 0;
+      this.state.pointer = newPointer;
     }
   }
 
   // 部件系统 - 用于定义和管理宏部件
-  class widgetSystem {
+  class defineWidget {
     /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
     constructor(logger) {
       this.log = logger;
@@ -471,7 +410,7 @@
   }
 
   // 文本系统 - 用于注册和渲染文本片段
-  class textSystem {
+  class htmlTools {
     /** @param {{ (message: string, level?: string, ...objects: any[]): void; (msg: string, level?: string, ...objs: any[]): void; }} logger */
     constructor(logger) {
       this.log = logger;
@@ -1441,21 +1380,22 @@
       }
     }
 
-    return {
-      apply,
-      manager: LinkZoneManager,
-      addContentToZones,
-      get defaultConfig() { return { ...defaultConfig }; },
-      removeZones: () => {
+    Object.defineProperties(LinkZoneManager, {
+      apply:          { value: apply },
+      add:            { value: addContentToZones },
+      defaultConfig:  { get: () => defaultConfig },
+      removeZones:    { value: () => {
         document.getElementById('beforeLinkZone')?.remove();
         document.getElementById('afterLinkZone')?.remove();
         document.querySelectorAll('[data-link-zone-position]').forEach(zone => zone.remove());
-      }
-    }
+      } },
+    });
+
+    return LinkZoneManager
   })()
 
   // 其他系统工具 - 用于管理特质和地点配置
-  class othersSystem {
+  class others {
     static get traitCategories() {
       return {
         "General Traits"   : "一般特质",
@@ -1494,7 +1434,7 @@
       const titleMap = {};
       const traitLists = maplebirch.tool.clone(data);
       traitLists.forEach((/** @type {{ title: { [x: string]: string; }; }} */ category, /** @type {any} */ index) => {
-        const mappedTitle = othersSystem.getTraitCategory(category.title);
+        const mappedTitle = others.getTraitCategory(category.title);
         titleMap[mappedTitle] = index;
         if (!this.traitsTitle.includes(mappedTitle)) this.traitsTitle.push(mappedTitle);
       });
@@ -1505,7 +1445,7 @@
     addTraits(...data) {
       data.forEach(traits => {
         if (traits && traits.title && traits.name) {
-          const mappedTitle = othersSystem.getTraitCategory(traits.title);
+          const mappedTitle = others.getTraitCategory(traits.title);
           const nameValue = typeof traits.name === 'function' ? traits.name() : traits.name;
           const existingIndex = this.traitsData.findIndex(t => t.title === mappedTitle && t.name === nameValue);
           if (existingIndex >= 0) {
@@ -1683,26 +1623,17 @@
     }
   }
 
-  const tools = {
-    migration: Object.freeze(migrationSystem),
-    rand: Object.freeze(randomSystem),
-    widget: Object.freeze(widgetSystem),
-    text: Object.freeze(textSystem),
-    framework: Object.freeze(frameworks),
-    linkzone: Object.freeze(applyLinkZone),
-    other: Object.freeze(othersSystem)
-  };
-
   maplebirch.once(':tool-init', (/** @type {{ createLog: (arg0: string) => { (msg: string, level?: string, ...objs: any[]): void; }; constructor: { proto: any; }; }} */data) => {
+    migration.init(data.createLog);
+    randSystem.init(data.createLog);
     Object.assign(data, {
-      migration: new migrationSystem(data.createLog('migration')),
-      rand: new randomSystem(data.createLog('rand')),
-      widget: new widgetSystem(data.createLog('widget')),
-      text: new textSystem(data.createLog('text')),
+      migration,
+      rand: randSystem,
+      widget: new defineWidget(data.createLog('widget')),
+      text: new htmlTools(data.createLog('text')),
       framework: new frameworks(data.createLog('framework')),
       linkzone: applyLinkZone,
-      other: new othersSystem(data.createLog('other')),
+      other: new others(data.createLog('other')),
     });
-    Object.assign(data.constructor.proto, tools);
   });
 })();

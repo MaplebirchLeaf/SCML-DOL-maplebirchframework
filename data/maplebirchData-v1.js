@@ -4,10 +4,10 @@
   if (modUtils.getNowRunningModName() !== 'maplebirch' || !window.maplebirch) return;
   const maplebirch = window.maplebirch;
   const variable = maplebirch.var;
-  const migrationSystem = variable.migrationSystem;
+  const migration = variable.migration;
 
   // v1.0.0版本
-  migrationSystem.add('0.0.0', '1.0.0', (data, utils) => {
+  migration.add('0.0.0', '1.0.0', (data, utils) => {
     const defaults = variable.tool.clone(variable.constructor.defaultVar);
     if (!data || Object.keys(data).length === 0 || !data.version || data.version === '0.0.0') {
       Object.assign(data, defaults);
@@ -23,7 +23,7 @@
   });
 
   // v1.0.1版本数据修正
-  migrationSystem.add('1.0.0', '1.0.1', (data, utils) => {
+  migration.add('1.0.0', '1.0.1', (data, utils) => {
     if (data.effect) utils.remove(data, 'effect');
     if (data.effect) utils.remove(data, 'effect');
     if (data.location) utils.remove(data, 'location');
@@ -34,7 +34,7 @@
   });
 
   // v1.0.2版本数据更新
-  migrationSystem.add('1.0.1', '1.0.2', (data, utils) => {
+  migration.add('1.0.1', '1.0.2', (data, utils) => {
     if (!data.transformation) data.transformation = {};
     if (!data.hintlocation) data.hintlocation = 'maplebirchModHint';
     data.version = '1.0.2';

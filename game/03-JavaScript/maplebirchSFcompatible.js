@@ -3,7 +3,7 @@
   const modUtils = window.modUtils;
   if (modUtils.getNowRunningModName() !== 'maplebirch' || !window.maplebirch) return;
   const maplebirch = window.maplebirch;
-  
+
   const zoneMap = {
     ModStatusBar:   'StatusBar',
     ModMenuBig:     'MenuBig',
@@ -32,7 +32,6 @@
     addAudio:      'audio.importAllAudio',        // 导入音频
     getPlayer:     'audio.getPlayer',             // 获取播放器
     migration:     'tool.migration.create',       // 创建迁移
-    getRand:       'tool.rand.get',               // 获取随机值
     addText:       'tool.text.reg',               // 注册文本片段
     addto:         'tool.framework.addTo',        // 添加到区域
     onInit:        'tool.framework.onInit',       // 初始化回调
@@ -70,7 +69,7 @@
       return true;
     }
   });
-  
+
   window.simpleFrameworks = createFrameworkProxy();
   window.maplebirchFrameworks = createFrameworkProxy();
 

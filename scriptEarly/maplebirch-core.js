@@ -2,10 +2,10 @@
 /// <reference path='../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  const frameworkVersion = '2.5.8';
+  const frameworkVersion = '2.5.9';
   const lastUpdate = '2025.11.29';
   const lastModifiedBy = '楓樺葉';
-  const DEBUGMODE = false;
+  const DEBUGMODE = true;
 
   const ModuleState = {
     PENDING: 0,

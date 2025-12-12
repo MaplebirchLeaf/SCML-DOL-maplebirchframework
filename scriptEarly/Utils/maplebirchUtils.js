@@ -296,7 +296,7 @@
         const { min: mn = 0, max: mx = 1, float: flt = false } = min;
         return flt ? (Math.random() * (mx - mn) + mn) : Math.floor(Math.random() * (mx - mn + 1)) + mn;
       }
-      return Math.floor(Math.random() * /** @type {number} */(min));
+      return Math.floor(Math.random() * (/** @type {number} */(min) + 1));
     }
     return float ? 
     (Math.random() * (/** @type {number} */(max) - /** @type {number} */(min)) + /** @type {number} */(min)) : 

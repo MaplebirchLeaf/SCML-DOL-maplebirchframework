@@ -1261,10 +1261,7 @@
     }
   }
 
-  maplebirch.once(':npc-init', (data) => {
-    Object.assign(data, {Sidebar: new NPCSidebar(data)});
-    Object.assign(data.constructor, NPCSidebar);
-  });
+  maplebirch.once(':npc-init', (data) => { Object.assign(data, {Sidebar: new NPCSidebar(data)}); });
 })();
 
 /*
