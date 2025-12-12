@@ -35,7 +35,6 @@
         - [变量迁徙使用示例](#变量迁徙使用示例)
         - [主要方法](#主要方法)
         - [工具集](#工具集)
-    - [随机数生成](#随机数生成)
     - [文本片段](#文本片段)
         - [文本替换](#文本替换)
         - [注册文本](#注册文本)
@@ -87,8 +86,7 @@
 | 时间旅行 | `maplebirchFrameworks.timeTravel` / `simplebirchFrameworks.timeTravel` | `maplebirch.state.timeTravel` |
 | 导入音频文件 | `maplebirchFrameworks.addAudio` / `simplebirchFrameworks.addAudio` | `maplebirch.audio.importAllAudio` |
 | 获取音频播放实例 | `maplebirchFrameworks.getPlayer` / `simplebirchFrameworks.getPlayer` | `maplebirch.audio.getPlayer` |
-| 变量迁徙实例 | `maplebirchFrameworks.migration` / `simplebirchFrameworks.migration` | `maplebirch.tool.migration.create` |
-| 获取随机值 | `maplebirchFrameworks.getRand` / `simplebirchFrameworks.getRand` | `maplebirch.tool.rand.get` |
+| 变量迁徙类 | `maplebirchFrameworks.migration` / `simplebirchFrameworks.migration` | `maplebirch.tool.migration` |
 | 注册文本片段 | `maplebirchFrameworks.addText` / `simplebirchFrameworks.addText` | `maplebirch.tool.text.reg` |
 | addto区域注册 | `maplebirchFrameworks.addto` / `simplebirchFrameworks.addto` | `maplebirch.tool.framework.addTo` |
 | 初始化函数脚本 | `maplebirchFrameworks.onInit` / `simplebirchFrameworks.onInit` | `maplebirch.tool.framework.onInit` |
@@ -114,7 +112,6 @@
 | 时间旅行​ | 实现游戏内时间跳跃功能 |
 | 音频管理​ | 处理音频资源的加载和播放 |
 | ​​变量迁徙​ | 处理数据迁移和版本兼容性​ |
-| 随机数生成​​ | ​​提供可控的伪随机数生成​ |
 | ​​文本片段 | ​​动态注册和渲染文本片段​ |
 | 作弊控制台 | ​​提供游戏内的代码执行环境​ |
 | ​​区域注册​ | 动态注册界面部件区域​ |
@@ -1064,7 +1061,7 @@ colorSelector.match('yellow'); // '#FFFFFF'
   #### 变量迁徙使用示例
 ```
 // 创建迁移系统（带日志记录）
-const migrator = maplebirchFrameworks.migration.create();
+const migrator = new maplebirchFrameworks.migration;
 
 // 添加迁移脚本（1.0.0 → 1.1.0）
 migrator.add('1.0.0', '1.1.0', (data, utils) => {
@@ -1082,7 +1079,6 @@ migrator.run(userData, '2.0.0');
 migrator.utils.fill(userData, { settings: { theme: 'dark' } });
 ```
   #### 主要方法
-- `create()`: 创建迁移器实例，返回包含add/run/utils的对象
 - `add(fromVersion, toVersion, migrationFn)`: 添加迁移脚本
 - `run(data, targetVersion)`: 执行数据迁移
   #### 工具集
@@ -1091,12 +1087,7 @@ migrator.utils.fill(userData, { settings: { theme: 'dark' } });
 - `remove(data, path)`: 删除属性
 - `transform(data, path, transformer)`: 转换属性值
 - `fill(target, defaults, options)`: 填充缺失属性
- ### 随机数生成
-  + `const num1 = maplebirchFrameworks.getRand();` // 1-100的随机整数  
-  + `const num2 = maplebirchFrameworks.getRand(10);` // 0-9的随机整数  
-  + `const num3 = maplebirchFrameworks.getRand({min:5, max:10});` // 5-10的随机整数  
-  + `const num4 = maplebirchFrameworks.getRand({min:1, max:5, float:true});` // 1-5的随机浮点数  
-  + `const item = maplebirchFrameworks.getRand(['a','b','c']);` // 随机选择数组元素  
+
  ### 文本片段
  + 核心方法
 ```
@@ -2132,4 +2123,5 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
+
 
