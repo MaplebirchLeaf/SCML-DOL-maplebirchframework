@@ -249,8 +249,8 @@
   - 使用 `maplebirch.trigger(evt[触发的时机], ...args[需要传导的上下文变量])` 进行触发以及传递环境变量
 
 <details>
-  <summary>框架默认的事件类型(慎用不稳定!)</summary>
-  <img width="788" height="490" alt="image" src="https://github.com/user-attachments/assets/eafee98a-0400-403d-839b-984050f59f48" />
+  <summary>框架默认的事件类型**(别炸了就行)**</summary>
+  <img width="820" height="553" alt="image" src="https://github.com/user-attachments/assets/862527f8-1b0d-4729-a0e3-263ac35b7570" />
 </details>
 
  ### 模块管理
@@ -2123,4 +2123,5 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
+
 
