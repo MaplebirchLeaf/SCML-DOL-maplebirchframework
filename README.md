@@ -250,8 +250,7 @@
 
 <details>
   <summary>框架默认的可用事件类型(别炸了就行)</summary>
-  <img width="774" height="492" alt="image" src="https://github.com/user-attachments/assets/4eb559d9-0790-4047-bcd9-8358ac679dfc" />
-
+  <img width="766" height="481" alt="image" src="https://github.com/user-attachments/assets/3efe488f-d2a2-4e87-8180-cacae121e0ab" />
 </details>
 
  ### 模块管理
@@ -2124,3 +2123,4 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
+
