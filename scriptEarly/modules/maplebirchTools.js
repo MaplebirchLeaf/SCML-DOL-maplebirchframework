@@ -1,4 +1,5 @@
 // @ts-check
+/// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
   if (!window.maplebirch) {

@@ -7,6 +7,21 @@
 
   const maplebirch = window.maplebirch;
 
+  function Schedules(npcName, original) {
+    const scheduleMap = {
+      'Robin': 'robin_location',
+      'Sydney': 'sydney_location'
+    };
+    const property = scheduleMap[npcName];
+    if (!property) return original;
+    return function () {
+      const location = maplebirch.npc.Schedules.get(npcName)?.location;
+      const result = original();
+      T[property] = V.options.maplebirch.npcschedules ? location : result ?? location;
+      return T[property];
+    };
+  }
+
   class processHandling {
     static getTranslation(key, core = maplebirch) {
       try { key = String(key); }
@@ -17,9 +32,9 @@
       return (result[0] === '[' && result[result.length - 1] === ']') ? autoTranslated : result;
     }
 
-    constructor() {
-      this.lang = maplebirch.lang;
-      this.tool = maplebirch.tool;
+    constructor(manager) {
+      this.lang = manager.lang;
+      this.tool = manager.tool;
       this.log = this.tool.createLog('widget');
       this.updateTimer = null;
     }
@@ -589,7 +604,7 @@
         condition: () => Weather.bloodMoon && Weather.isSnow
       }, { layer: 'base', element: 'bloodmoon_snow' });
 
-      maplebirch.once(':definewidget', () => {
+      maplebirch.once(':defineSugarcube', () => {
         this.tool.widget.defineMacro('language', this._language, ['option'], false, false);
         this.tool.widget.defineMacro('lanSwitch', this._languageSwitch);
         this.tool.widget.defineMacro('langbutton', this._languageButton, null, false, true);
@@ -669,11 +684,13 @@
     Init() {
       Dynamic.task = (fn, name) => this._fixDynamicTask(fn, name);
       if (maplebirch.gameVersion >= '0.5.6.10') this.compatibleModI18N();
+      getRobinLocation = Schedules('Robin', getRobinLocation);
+      sydneySchedule = Schedules('Sydney', sydneySchedule);
     }
 
     postInit() {
     }
   }
   
-  await maplebirch.register('processHandling', new processHandling(), ['tool']);
+  await maplebirch.register('processHandling', new processHandling(maplebirch), ['tool']);
 })();

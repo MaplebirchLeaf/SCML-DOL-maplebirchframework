@@ -3,9 +3,9 @@
 (async() => {
   'use strict';
   const frameworkVersion = '2.5.9';
-  const lastUpdate = '2025.11.29';
+  const lastUpdate = '2025.12.14';
   const lastModifiedBy = '楓樺葉';
-  const DEBUGMODE = true;
+  const DEBUGMODE = false;
 
   const ModuleState = {
     PENDING: 0,
@@ -601,11 +601,10 @@
       this.isProcessing = new Map();
       /** @type {Object<string, Array<{callback: Function, description: string, internalId: string}>>} 事件监听器集合，使用字符串索引签名 */
       this.events = {
-        ':coreReady':           [], // (本)框架核心完成
-        ':expectedmodulecount': [], // (本)框架模块就绪
-        ':dataImport':          [], // 数据导入时机(即modloader可用时机)
+        ':allModuleRegistered': [], // 所有模块注册完成时机
+        ':dataImport':          [], // 数据导入时机
         ':dataInit':            [], // 框架提供的模组V变量注册接口
-        ':onSave':              [], // 保存
+        ':onSave':              [], // 存档
         ':loadSaveData':        [], // 加载存档数据
         ':onLoad':              [], // 读档
         ':oncloseoverlay':      [], // 关闭窗口
@@ -616,7 +615,7 @@
         ':passagerender':       [], // 段落渲染
         ':passagedisplay':      [], // 段落显示
         ':passageend':          [], // 段落结束
-        ':definewidget':        [], // (本)框架宏定义时机
+        ':defineSugarcube':     [], // 框架获取SugarCube时机
         ':finally':             [], // 最后时机
       };
     }
@@ -1128,7 +1127,7 @@
     constructor() {
       this.meta = {
         state: ModuleState.PENDING,
-        coreModules: ['state', 'audio', 'tool', 'var', 'npc', 'char', 'shop'],
+        coreModules: ['state', 'tool', 'audio', 'var', 'npc', 'char', 'shop'],
         earlyMount: ['state', 'tool'],
         initializedAt: new Date().toLocaleString(),
       };
@@ -1264,7 +1263,6 @@
       await maplebirch.lang.preloadAllTranslations();
       await maplebirch.lang.importAllLanguages('maplebirch');
     });
-
     maplebirch.once(':allModuleRegistered', async () => {
       maplebirch.log('所有模块注册完成，开始预初始化', 'INFO');
       maplebirch.trigger(':dataImport');

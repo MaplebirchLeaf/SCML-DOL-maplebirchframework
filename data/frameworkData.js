@@ -553,9 +553,13 @@
           <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'Customized bodywriting can be created at the mirror after activation.' '启用后在镜子处可定制涂鸦。'>></span>">(?)</span>
         </div>
         <div class='settingsToggleItem'>
-          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('celestial phenomenons settings'),'capitalize')>></span><br>
+          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('celestial phenomenons settings'),'capitalize')>></span>
           <label><<checkbox '$options.maplebirch.solarEclipse' false true autocheck>><<= maplebirch.t('solar eclipse')>></label>
           <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'When enabled, a solar eclipse will occur in the specified month.' '启用后将在指定月份出现日蚀。'>></span>">(?)</span>
+        </div>
+        <div class='settingsToggleItem'>
+          <label><<checkbox '$options.maplebirch.npcschedules' false true autocheck>><<lanSwitch 'NPC Schedules' 'NPC 日程表'>></label>
+          <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'After enabling, it overrides the original schedule location detection for Robin and Sydney.' '启用后覆盖原版的罗宾和悉尼的日程地点检测。'>></span>">(?)</span>
         </div>
         <div class='settingsToggleItem'>
           <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('total number of status displays'),'capitalize')>></span>

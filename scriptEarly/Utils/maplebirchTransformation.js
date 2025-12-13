@@ -328,10 +328,12 @@
 					if (name !== 'cow' && V.worn.neck.name !== 'cow bell') V.cowbuild = Math.clamp(V.cowbuild - absChange, 0, 100);
 					break;
 				case 'bird':
-					if (name !== 'bird' && V.worn.head.name !== 'feathered hair clip') V.birdbuild = Math.clamp(V.birdbuild - absChange, 0, 100);
+					// 0.5.6：羽毛项链检查
+					if (name !== 'bird' && V.worn.head.name !== 'feathered hair clip' && V.worn.neck.name !== 'feather necklace') V.birdbuild = Math.clamp(V.birdbuild - absChange, 0, 100);
 					break;
 				case 'fox':
-					if (name !== 'fox' && V.worn.head.name !== 'spirit mask') V.foxbuild = Math.clamp(V.foxbuild - absChange, 0, 100);
+					// 0.5.6：碧玉吊坠检查
+					if (name !== 'fox' && V.worn.head.name !== 'spirit mask' && V.worn.neck.name !== 'jasper pendant') V.foxbuild = Math.clamp(V.foxbuild - absChange, 0, 100);
 					break;
 			}
 		}
@@ -420,25 +422,52 @@
 		}
 
 		_transformationStateUpdate() {
-			if (V.wolfbuild >= 1 && V.worn.neck.name !== 'spiked collar' && V.worn.neck.name !== 'spiked collar with leash' && playerNormalPregnancyType() !== 'wolf') {
-				this._transform('wolf', -1);
+			// 0.5.6：熟悉项圈检查
+			if (!(V.worn.neck.name === 'familiar collar' && V.worn.neck.cursed === 1)) {
+				if (V.wolfbuild >= 1 && V.worn.neck.name !== 'spiked collar' && V.worn.neck.name !== 'spiked collar with leash' && playerNormalPregnancyType() !== 'wolf') {
+					this._transform('wolf', -1);
+				}
+				if (V.catbuild >= 1 && V.worn.neck.name !== 'cat bell collar' && playerNormalPregnancyType() !== 'cat') {
+					this._transform('cat', -1);
+				}
+				if (V.cowbuild >= 1 && V.worn.neck.name !== 'cow bell' && playerNormalPregnancyType() !== 'cow') {
+					this._transform('cow', -1);
+				}
+				// 0.5.6：鸟类变形检查羽毛项链
+				if (V.birdbuild >= 1 && V.worn.head.name !== 'feathered hair clip' && V.worn.neck.name !== 'feather necklace' && playerNormalPregnancyType() !== 'hawk') {
+					this._transform('bird', -1);
+				}
+				// 0.5.6：狐狸变形检查碧玉吊坠
+				if (V.foxbuild >= 1 && V.worn.head.name !== 'spirit mask' && V.worn.neck.name !== 'jasper pendant' && playerNormalPregnancyType() !== 'fox') {
+					this._transform('fox', -1);
+				}
 			}
-			if (V.catbuild >= 1 && V.worn.neck.name !== 'cat bell collar' && playerNormalPregnancyType() !== 'cat') {
-				this._transform('cat', -1);
-			}
-			if (V.cowbuild >= 1 && V.worn.neck.name !== 'cow bell' && playerNormalPregnancyType() !== 'cow') {
-				this._transform('cow', -1);
-			}
-			if (V.birdbuild >= 1 && V.worn.head.name !== 'feathered hair clip' && playerNormalPregnancyType() !== 'hawk') {
-				this._transform('bird', -1);
-			}
-			if (V.foxbuild >= 1 && V.worn.head.name !== 'spirit mask' && playerNormalPregnancyType() !== 'fox') {
-				this._transform('fox', -1);
-			}
+			
 			if (V.wolfgirl >= 6) this.#wikifier('def', 5);
 			this._transformationAlteration();
 			V.physicalTransform = this.#checkPhysicalTransformations() ? 1 : 0;
-			if (V.physicalTransform === 1 || V.specialTransform === 1) this.#handleWingExclusion();
+			
+			// 0.5.6：检查催眠特质
+			const hasHypnosisPeace = V.hypnosis_traits?.peace && V.settings?.hypnosisEnabled;
+			if ((V.physicalTransform === 1 || V.specialTransform === 1) && !hasHypnosisPeace) this.#handleWingExclusion();
+			
+			// 0.5.6：更新变形历史记录
+			this.#updateTransformationHistory();
+		}
+		
+		// 0.5.6：更新变形历史记录
+		#updateTransformationHistory() {
+			if (!V.transformationHistory || !Array.isArray(V.transformationHistory)) V.transformationHistory = [];
+			const vanillaTfs = ['angel', 'fallenangel', 'demon', 'dryad', 'wolfgirl', 'cat', 'cow', 'harpy', 'fox'];
+			for (let i = 0; i < vanillaTfs.length; i++) {
+				const tf = vanillaTfs[i];
+				const threshold = tf === 'fallenangel' ? 2 : 6;
+				if (V[tf] >= threshold) if (!V.transformationHistory.includes(tf)) V.transformationHistory.push(tf);
+			}
+			Object.entries(this.config).forEach(([name, config]) => {
+				const data = V.maplebirch.transformation[name];
+				if (data && data.level >= 6) if (!V.transformationHistory.includes(name)) V.transformationHistory.push(name);
+			});
 		}
 
 		#handleWingExclusion() {
@@ -472,8 +501,11 @@
 			if (V.panicattacks >= 2) {
 				for (let i = 0; i < keys.length; i++) {
 					const key = keys[i];
+					// 0.5.6：排除'traits'键
+					if (key === 'traits') continue;
 					for (const [label, value] of Object.entries(V.transformationParts[key])) {
-						if (value === 'hidden' && !['pubes', 'pits', 'cheeks', 'flaunting'].includes(label) &&
+						// 0.5.6变更：从['pubes', 'pits', 'cheeks', 'flaunting']变为['pubes', 'pits']
+						if (value === 'hidden' && !['pubes', 'pits'].includes(label) &&
 							!(label === 'wings' && excludeWings)) {
 							V.transformationParts[key][label] = 'default';
 							V.effectsmessage = 1;
@@ -484,8 +516,11 @@
 			} else {
 				for (let i = 0; i < keys.length; i++) {
 					const key = keys[i];
+					// 0.5.6：排除'traits'键
+					if (key === 'traits') continue;
 					for (const [label, value] of Object.entries(V.transformationParts[key])) {
-						if (value === 'hidden' && !['pubes', 'pits', 'cheeks', 'flaunting'].includes(label) &&
+						// 0.5.6变更：从['pubes', 'pits', 'cheeks', 'flaunting']变为['pubes', 'pits']
+						if (value === 'hidden' && !['pubes', 'pits'].includes(label) &&
 							!(label === 'wings' && excludeWings)) {
 							this.#wikifier('trauma', 15);
 							V.effectsmessage = 1;
@@ -548,4 +583,3 @@
 
 	maplebirch.once(':char-init', (/**@type {{ log: any; }}*/data) => Object.assign(data, { transformation: new Transformation(data) }));
 })();
-

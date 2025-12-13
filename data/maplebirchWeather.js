@@ -12,7 +12,7 @@
       this.layerModifications = new Map();
       this.effectModifications = new Map();
       this.weathertrigger = false;
-      maplebirch.once(':definewidget', () => {
+      maplebirch.once(':defineSugarcube', () => {
         this.#modifyDescriptions();
         this.#modifyProperty();
       });

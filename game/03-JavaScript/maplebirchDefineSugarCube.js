@@ -8,7 +8,7 @@
   widget._getMacro(Macro);
   text._getWikifier(Wikifier);
   maplebirch.SugarCube = { Macro, Wikifier, Engine, Story, Config, State, Util, Scripting };
-  maplebirch.trigger(':definewidget');
+  maplebirch.trigger(':defineSugarcube');
 
   maplebirch.once(':storyready', () => {
     setup.maplebirch.content.push(`

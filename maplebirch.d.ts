@@ -24,6 +24,7 @@ declare global {
     lanSwitch(text: any): string;
     lanSwitch(english: string, chinese: string, ...args: any[]): string;
     lanSwitch(options: { EN: string; CN: string; [key: string]: string }): string;
+    between: typeof between;
   }
 
   interface SugarCube {
@@ -164,7 +165,7 @@ declare global {
     set ExModCount(count: number): number;
 
     getModule(name: string): any;
-    get Language(): string;
+    get Language(): 'CN'|'EN';
     get LogLevel(): string;
     get expectedModuleCount(): number;
     get registeredModuleCount(): number;
@@ -560,6 +561,7 @@ declare global {
   }
 
   class migration {
+    static create(): migration;
     static logger: (message: string, level?: string, ...objects: any[]) => void;
     static init(createLog: (logname: string) => (message: string, level?: string, ...objects: any[]) => void): void;
     constructor();
@@ -808,14 +810,18 @@ declare global {
     tool: tools;
     log: (message: string, level?: string, ...objects: any[]) => void;
     data: Map<string, { Data: NamedNPC; Config: NPCConfig }>;
+    NamedNPC: typeof NamedNPC;
+    Schedules: typeof NPCSchedules;
     pregnancy: {
       infertile: string[];
       typesEnabled: string[];
       canBePregnant: string[];
     };
-    loveInterestNpcs: string[];
-    importantNPCs: string[];
-    specialNPCs: string[];
+    type: {
+      loveInterestNpcs: string[];
+      importantNPCs: string[];
+      specialNPCs: string[];
+    };
     NPCNameList: string[];
     customStats: Record<string, NPCStatConfig>;
     Sidebar: NPCSidebar;
@@ -824,7 +830,6 @@ declare global {
 
     constructor(manager: any);
     add(npcData: NPCData, config?: NPCConfig, translationsData?: Record<string, any>): boolean;
-    addSchedule(npcName: string, scheduleConfig: ScheduleConfig, location: string | ((date: DateTime) => string), options?: ScheduleOptions): Schedule;
     addStats(statsObject: Record<string, NPCStatConfig>): void;
     addClothes(...configs: NPCClothesConfig[]): void;
     injectModNPCs(): void;
@@ -835,16 +840,28 @@ declare global {
     Init(): void;
     loadInit(): void;
     postInit(): void;
+    
+    // 新增日程管理方法
+    addSchedule(npcName: string, scheduleConfig: ScheduleConfig, location: string | ((date: EnhancedDate) => string), options?: ScheduleOptions): Schedule;
+    getSchedule(npcName: string): Schedule;
+    updateSchedule(npcName: string, specialId: number, updates: Partial<ScheduleSpecial>): Schedule;
+    removeSchedule(npcName: string, specialId: number): Schedule;
+    checkSchedules(): Record<string, string>;
+    clearSchedule(npcName: string): Schedule;
+    clearAllSchedules(): void;
   }
 
   declare class NPCSchedules {
     static schedules: Map<string, Schedule>;
     static init(manager: NPCManager): boolean;
-    static add(npcName: string, scheduleConfig: ScheduleConfig, location: string | ((date: DateTime) => string), options?: ScheduleOptions): Schedule;
+    static add(npcName: string, scheduleConfig: ScheduleConfig, location: string | ((date: EnhancedDate) => string), options?: ScheduleOptions): Schedule;
     static get(npcName: string): Schedule;
     static update(npcName: string, specialId: number, updates: Partial<ScheduleSpecial>): Schedule;
     static remove(npcName: string, specialId: number): Schedule;
-    static check(): Record<string, string>;
+    static clear(npcName: string): Schedule;
+    static clearAll(): void;
+    static npcList: string[];
+    static location: Record<string, string>;
   }
 
   declare class Schedule {
@@ -852,18 +869,91 @@ declare global {
     daily: string[];
     specials: ScheduleSpecial[];
     location: string;
-    add(scheduleConfig: ScheduleConfig, location: string | ((date: DateTime) => string), options?: ScheduleOptions): Schedule;
+    sortedSpecials: ScheduleSpecial[] | null;
+    
+    add(
+      scheduleConfig: ScheduleConfig, 
+      location: string | Schedule | ((date: EnhancedDate) => string | Schedule), 
+      options?: ScheduleOptions
+    ): Schedule;
+    
+    set(
+      scheduleConfig: ScheduleConfig, 
+      location: string | Schedule | ((date: EnhancedDate) => string | Schedule), 
+      options?: ScheduleOptions
+    ): Schedule;
+    
+    if(
+      condition: (date: EnhancedDate) => boolean, 
+      location: string | Schedule | ((date: EnhancedDate) => string | Schedule), 
+      options?: ScheduleOptions
+    ): Schedule;
+    
     update(specialId: number, updates: Partial<ScheduleSpecial>): Schedule;
     remove(specialId: number): Schedule;
+    resolveLocation(
+      loc: string | Schedule | ((date: EnhancedDate) => string | Schedule), 
+      date: EnhancedDate
+    ): string;
+    createEnhancedDate(date: DateTime): EnhancedDate;
+    buildEnhancedDateProto(): EnhancedDateProto;
   }
 
-  interface ScheduleConfig {
-    start?: number;
-    end?: number;
-    hour?: number;
-    condition?: (date: DateTime) => boolean;
+  interface ScheduleSpecial {
+    id: number;
+    condition: (date: EnhancedDate) => boolean;
+    location: string | Schedule | ((date: EnhancedDate) => string | Schedule);
+    priority: number;
+  }
+
+  declare interface EnhancedDate extends DateTime {
+    readonly schedule: Schedule;
+    isAt(time: [number, number] | number): boolean;
+    isAfter(time: [number, number] | number): boolean;
+    isBefore(time: [number, number] | number): boolean;
+    isBetween(startTime: [number, number] | number, endTime: [number, number] | number): boolean;
+    isHour(...hours: number[]): boolean;
+    isHourBetween(start: number, end: number): boolean;
+    isMinuteBetween(start: number, end: number): boolean;
+    readonly schoolDay: boolean;
+    readonly spring: boolean;
+    readonly summer: boolean;
+    readonly autumn: boolean;
+    readonly winter: boolean;
+    readonly dawn: boolean;
+    readonly day: boolean;
+    readonly dusk: boolean;
+    readonly night: boolean;
+    readonly weekEnd: boolean;
+    
     [key: string]: any;
   }
+
+  declare interface EnhancedDateProto {
+    isAt(time: [number, number] | number): boolean;
+    isAfter(time: [number, number] | number): boolean;
+    isBefore(time: [number, number] | number): boolean;
+    isBetween(startTime: [number, number] | number, endTime: [number, number] | number): boolean;
+    isHour(...hours: number[]): boolean;
+    isHourBetween(start: number, end: number): boolean;
+    isMinuteBetween(start: number, end: number): boolean;
+    readonly schoolDay: boolean;
+    readonly spring: boolean;
+    readonly summer: boolean;
+    readonly autumn: boolean;
+    readonly winter: boolean;
+    readonly dawn: boolean;
+    readonly day: boolean;
+    readonly dusk: boolean;
+    readonly night: boolean;
+    readonly weekEnd: boolean;
+  }
+
+  type ScheduleConfig = 
+    | [number, number]  // 时间范围 [开始小时, 结束小时]
+    | number            // 具体小时
+    | ((date: EnhancedDate) => boolean)  // 条件函数
+    | { condition: (date: EnhancedDate) => boolean };
 
   interface ScheduleOptions {
     id?: string | number;
@@ -873,8 +963,8 @@ declare global {
 
   interface ScheduleSpecial {
     id: number;
-    cond: (date: DateTime) => boolean;
-    location: string | ((date: DateTime) => string);
+    condition: (date: EnhancedDate) => boolean;
+    location: string | ((date: EnhancedDate) => string);
     priority: number;
   }
 
@@ -887,10 +977,9 @@ declare global {
     constructor(manager?: NPCManager);
 
     static add(...configs: NPCClothesConfig[]): void;
-    static merge(): void;
     static init(manager: { log: (msg: string, level?: string) => void }): void;
     importNPCClothesData(modName: string, filePath: string): Promise<boolean>;
-    static processClothesData(data: any): boolean;
+    #processClothesData(data: any): boolean;
   }
 
   interface NPCClothingItem {
@@ -1089,6 +1178,7 @@ declare global {
   const Config: any;
   const V: any;
   const T: any;
+  const C: any;
   declare const Time: {
     readonly date: DateTime;
     readonly holidayMonths: number[];
@@ -1246,6 +1336,9 @@ declare global {
   };
 
   const playerNormalPregnancyType: () => string;
+  function between(x: any, min: number, max: number): boolean;
+  function getRobinLocation(): string;
+  function sydneySchedule(): void;
 }
 
 export { };

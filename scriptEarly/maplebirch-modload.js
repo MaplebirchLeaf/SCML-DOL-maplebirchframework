@@ -162,7 +162,7 @@
     async beforePatchModToGame() {
       await this.#vanillaDataReplace();
       await this.#processInit();
-      await this.core.shop.beforePatchModToGame();
+      try { await this.core.shop.beforePatchModToGame();; } catch (/** @type {any} */e) { this.core.log(`商店数据注入失败: ${e.message}`, 'ERROR'); }
     }
 
     async #processInit() {

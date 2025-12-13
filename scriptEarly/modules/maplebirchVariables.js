@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
   if (!window.maplebirch) {
@@ -6,7 +8,7 @@
   }
 
   const maplebirch = window.maplebirch;
-  const currentVersion = '1.0.2';
+  const currentVersion = '1.0.3';
 
   class variablesModule {
     static options = {
@@ -26,14 +28,15 @@
       },
       relationcount: 4,
       solarEclipse: true,
-      bodywriting: false
+      bodywriting: false,
+      npcschedules: false
     }
 
     static audio = {
       playlist: null,
       currentTrack: null,
       currentIndex: -1,
-      loopMode: "none",
+      loopMode: 'none',
       currentAudio: null,
       storage: {}
     }
@@ -77,11 +80,12 @@
       transformation: {},
     };
     
-    constructor() {
+    /** @param {MaplebirchCore} manager */
+    constructor(manager) {
       this.version = currentVersion;
-      this.tool = maplebirch.tool;
+      this.tool = manager.tool;
       this.log = this.tool.createLog('var');
-      if (!this.migration) this.migration = new this.tool.migration;
+      this.migration = new this.tool.migration();
     }
 
     #mapProcessing() {
@@ -101,10 +105,10 @@
       if (typeof V.maplebirch.language !== 'string') V.maplebirch.language = maplebirch.Language;
       if (!V.options) return;
       if (typeof V.options?.maplebirch !== 'object' || V.options?.maplebirch === null) {
-        V.options.maplebirch = maplebirch.tool.clone(variablesModule.options);
+        V.options.maplebirch = this.tool.clone(variablesModule.options);
       } else {
-        const defaultOptions = variablesModule.options;
-        for (const key in defaultOptions) if (!(key in V.options.maplebirch)) V.options.maplebirch[key] = maplebirch.tool.clone(defaultOptions[key]);
+        /**@type {any}*/const defaultOptions = variablesModule.options;
+        for (const key in defaultOptions) if (!(key in V.options.maplebirch)) V.options.maplebirch[key] = this.tool.clone(defaultOptions[key]);
       }
     }
 
@@ -126,10 +130,9 @@
         this.migration.run(V.maplebirch, this.version);
         $.wiki('<<maplebirchDataInit>>');
         this.log(`存档数据迁移完成 (→ v${this.version})`, 'DEBUG');
-      } catch (e) {
+      } catch (/**@type {any}*/e) {
         this.log(`出现错误：${e?.message || e}`, 'ERROR');
       }
-      
     }
 
     loadInit() {
@@ -138,7 +141,7 @@
         this.migration.run(V.maplebirch, this.version);
         $.wiki('<<maplebirchDataInit>>');
         this.log(`读档迁移/修正完成 (→ v${this.version})`, 'DEBUG');
-      } catch (e) {
+      } catch (/**@type {any}*/e) {
         this.log(`读档迁移出错: ${e?.message || e}`, 'ERROR');
       }
       
@@ -149,7 +152,7 @@
         try {
           this.migration.run(V.maplebirch, this.version);
           this.log(`存档数据修正完成 (→ v${this.version})`, 'DEBUG');
-        } catch (e) {
+        } catch (/**@type {any}*/e) {
           this.log(`后初始化迁移出错: ${e?.message || e}`, 'ERROR');
         }
       }
@@ -157,5 +160,5 @@
     }
   }
 
-  await maplebirch.register('var', new variablesModule(), ['tool']);
+  await maplebirch.register('var', new variablesModule(maplebirch), ['tool']);
 })();

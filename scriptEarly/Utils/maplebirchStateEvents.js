@@ -148,7 +148,7 @@
     }
 
     initialize() {
-      maplebirch.once(':definewidget', () => {
+      maplebirch.once(':defineSugarcube', () => {
         maplebirch.tool.widget.defineMacro('maplebirchMonitor', this._makeMacroHandler());
       });
     }

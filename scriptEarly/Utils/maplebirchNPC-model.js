@@ -1213,7 +1213,7 @@
     constructor(manager) {
       this.manager = manager;
       this.display = {};
-      maplebirch.once(':definewidget', () => this.init(true));
+      maplebirch.once(':defineSugarcube', () => this.init(true));
     }
 
     init(model=false) {

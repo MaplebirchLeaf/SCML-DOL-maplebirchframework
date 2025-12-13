@@ -25,7 +25,6 @@
   // v1.0.1版本数据修正
   migration.add('1.0.0', '1.0.1', (data, utils) => {
     if (data.effect) utils.remove(data, 'effect');
-    if (data.effect) utils.remove(data, 'effect');
     if (data.location) utils.remove(data, 'location');
     if (data.orchard) utils.remove(data, 'orchard');
     if (data.enemy) utils.remove(data, 'enemy');
@@ -38,5 +37,11 @@
     if (!data.transformation) data.transformation = {};
     if (!data.hintlocation) data.hintlocation = 'maplebirchModHint';
     data.version = '1.0.2';
+  });
+
+  // v1.0.3版本数据更新
+  migration.add('1.0.2', '1.0.3', (data, utils) => {
+    if (data.npc) for (const npcName in data.npc) if (Object.prototype.hasOwnProperty.call(data.npc, npcName)) utils.remove(data.npc, `${npcName}.location`);
+    data.version = '1.0.3';
   });
 })();

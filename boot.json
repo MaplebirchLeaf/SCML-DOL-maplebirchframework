@@ -16,14 +16,13 @@
     "styles/maplebirchPanel​.css"
   ],
   "scriptFileList": [
-    "game/03-JavaScript/maplebirchDefineSugarCube.js"
+    "game/03-JavaScript/maplebirchDefineSugarCube.js",
+    "data/maplebirchVanillaSchedule.js"
   ],
   "scriptFileList_preload":[
     "data/maplebirchData-v1.js"
   ],
   "scriptFileList_earlyload": [
-    "scriptEarly/modules/maplebirchVariables.js",
-    "scriptEarly/modules/maplebirchNPCs.js",
     "scriptEarly/modules/maplebirchShop.js",
     "scriptEarly/modules/maplebirchHandling.js",
     "scriptEarly/modules/maplebirchCharacter.js",
@@ -44,7 +43,9 @@
     "scriptEarly/modules/maplebirchTimeState.js",
     "scriptEarly/modules/maplebirchTools.js",
     "game/03-JavaScript/maplebirchSFcompatible.js",
-    "scriptEarly/modules/maplebirchAudio.js"
+    "scriptEarly/modules/maplebirchAudio.js",
+    "scriptEarly/modules/maplebirchVariables.js",
+    "scriptEarly/modules/maplebirchNPCs.js"
   ],
   "tweeFileList": [
 
