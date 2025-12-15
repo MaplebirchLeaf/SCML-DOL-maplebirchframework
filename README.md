@@ -71,7 +71,7 @@
 - [未实现的功能构想](#未实现的功能构想)
 
 ## 基本介绍
-- 本框架写成于 **Degrees-of-Lewdity-v0.5.4.9** 版本，将会持续随着游戏版本而更新。如 **Degrees-of-Lewdity-v0.5.4.9** 往前的版本不会考虑兼容。  
+- 本框架目前最低使用版本为 **`Degrees-of-Lewdity-v0.5.6.10`** 版本，因历史版本丢失，如有一定问题，请**自行修改**。
 
 - 对于原来使用[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的模组，可以直接将[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)替换成[**秋枫白桦框架**](https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchframework)尝试执行，基本兼容了原依赖[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的模组(如: [**猫咖出租屋**](https://github.com/Maomaoi/Degrees-of-Lewdity-Cattery))，但不兼容强依赖的模组(即**秋枫白桦拓展**，除此之外基本兼容)。  
 
@@ -2123,4 +2123,5 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
+
 
