@@ -723,7 +723,7 @@ play() 方法选项:
  ### 框架的实用工具
  + 可在 **非 `scriptFileList_inject_early` 时机** 使用如下逻辑，或 **确保可以使用的情况下** 使用。
  #### 一般实用工具
- + **`lanSwitch`** 函数，根据当前语言输出内容
+ + **`lanSwitch`** 函数 - 根据当前语言输出内容
 ```
 参数格式：
 1. 对象格式：{ EN: '英文内容', CN: '中文内容', ... }
@@ -734,206 +734,102 @@ lanSwitch({ EN: 'Hello', CN: '你好' });
 lanSwitch('Hello' '你好');
 lanSwitch(['Hello', '你好']);
 ```
- + **`clone`** 函数
+ + **`clone`** 函数 - 深度克隆对象
 ```
- - Date对象：创建新实例
- - RegExp对象：复制正则表达式
- - Map/Set对象：递归克隆元素
- - ArrayBuffer和TypedArray：复制底层缓冲区
- - 函数：直接返回原函数
- - 数组：递归克隆元素
- - 普通对象：复制所有可枚举属性（包括符号属性）
-@param {any} source - 要克隆的对象（任意类型）
-@param {Object} [options={}] - 克隆选项
-@param {boolean} [options.deep=true] - 是否深克隆（默认true）
-@param {boolean} [options.preservePrototype=true] - 是否保留原型链（默认true）
-@param {WeakMap<object,any>} [map=new WeakMap()] - 内部WeakMap(处理循环引用，用户通常无需传递)
+@param {any} source - 要克隆的对象
+@param {Object} [opt={}] - 选项
+@param {boolean} [opt.deep=true] - 是否深克隆
+@param {boolean} [opt.proto=true] - 是否保留原型链
+@param {WeakMap<object,any>} [map=new WeakMap()] - 内部使用(处理循环引用)
 @returns {any} 克隆后的对象
-@example
-// 深克隆对象
-const obj = { a: 1, b: { c: 2 } };
-const cloned = clone(obj);
-obj.b.c = 3; // 不影响克隆对象
-console.log(cloned.b.c); // 2
-@example
-// 浅克隆数组
-const arr = [1, [2, 3]];
-const shallowCopy = clone(arr, { deep: false });
-arr[1][0] = 99; // 影响克隆数组
-console.log(shallowCopy[1][0]); // 99
-   */
+@example clone({a:1, b:{c:2}}) // 深克隆对象
+@example clone([1,[2,3]], {deep:false}) // 浅克隆数组
+@example clone(new Date(), {proto:false}) // 克隆Date对象
 ```
- + **`equal`** 函数
+ + **`equal`** 函数 - 深度比较两个值
 ```
- - 基本类型：直接使用 === 比较
- - 日期对象：比较时间戳
- - 正则表达式：比较source和flags
- - 数组：递归比较每个元素
- - 普通对象：递归比较所有自身可枚举属性
- - 其他对象类型：使用默认比较规则
-@param {any} a - 第一个比较值
-@param {any} b - 第二个比较值
+深度比较两个值
+@param {any} a - 第一个值
+@param {any} b - 第二个值
 @returns {boolean} 是否相等
-@example
-// 比较日期对象
-equal(new Date(2023, 0, 1), new Date(2023, 0, 1)); // true
-@example
-// 比较嵌套对象
-equal({ a: [1, { b: 2 }] }, { a: [1, { b: 2 }] }); // true
-@example
-// 比较正则表达式
-equal(/abc/i, /abc/i); // true
+@example equal(new Date(2023,0,1), new Date(2023,0,1)) // true
+@example equal({a:[1,{b:2}]}, {a:[1,{b:2}]}) // true
+@example equal(/abc/i, /abc/i) // true
+@example equal({a:1}, {a:2}) // false
 ```
- + **`merge`** 函数
+ + **`merge`** 函数 - 递归合并对象
 ```
-- 基本类型（string、number、boolean、function等）：直接覆盖目标值
-- 对象：递归合并所有可枚举属性
-- 数组：根据 arrayBehaviour 选项处理：
-  - 'replace'：用源数组替换目标数组（默认）
-  - 'concat'：将源数组连接到目标数组末尾
-  - 'merge'：递归合并对应索引位置的数组元素
-@param {Object} target - 目标对象（将被修改）
-@param {...Object} sources - 要合并的源对象
-@param {Object} [options] - 合并选项
-@param {string} [options.arrayBehaviour='replace'] - 数组合并策略
-@param {Function} [options.filterFn] - 属性过滤函数
-@returns {Object} 合并后的目标对象
-@example
-// 基本合并
-const target = { a: 1, b: { c: 2 } };
-merge(target, { a: 3, b: { d: 4 } });
-// 结果: { a: 3, b: { c: 2, d: 4 } }
-@example
-// 数组合并 - 替换策略
-merge({ arr: [1, 2] }, { arr: [3, 4] });
-// 结果: { arr: [3, 4] }
-@example
-// 数组合并 - 连接策略
-merge({ arr: [1, 2] }, { arr: [3, 4] }, { arrayBehaviour: 'concat' });
-// 结果: { arr: [1, 2, 3, 4] }
-@example
-// 数组合并 - 合并策略
-const target = { arr: [{ a: 1 }, { b: 2 }] };
-merge(target, { arr: [{ c: 3 }, { d: 4 }] }, { arrayBehaviour: 'merge' });
-// 结果: { arr: [{ a: 1, c: 3 }, { b: 2, d: 4 }] }
-@example
-// 使用属性过滤
-merge({}, { public: 'info', secret: 'data' }, {
-  filterFn: (key) => key !== 'secret'
-});
-// 结果: { public: 'info' }
-@example
-// 合并多个源对象
-merge({ a: 1 }, { b: 2 }, { c: 3 });
-// 结果: { a: 1, b: 2, c: 3 }
+@param {Object} target - 目标对象
+@param {...Object} sources - 源对象
+@param {Object} [opt] - 选项
+@param {string} [opt.mode='replace'] - 数组合并策略: 'replace'|'concat'|'merge'
+@param {Function} [opt.filterFn] - 属性过滤函数
+@returns {Object} 合并后的对象
+@example merge({a:1}, {b:2}) // {a:1, b:2}
+@example merge({arr:[1,2]}, {arr:[3,4]}, {mode:'concat'}) // {arr:[1,2,3,4]}
+@example merge({arr:[1,2]}, {arr:[3]}, {mode:'merge'}) // {arr:[3,2]}
+@example merge({obj:{x:1}}, {obj:{y:2}}) // {obj:{x:1, y:2}}
 ```
- + **`contains`** 函数
+ + **`contains`** 函数 - 检查数组是否包含指定元素
 ```
- - 'any': 包含任意一个元素即返回true
- - 'all': 必须包含所有元素才返回true（默认）
- - 'none': 不包含任何元素才返回true
-@param {Array<number|string>} arr - 目标数组
-@param {any|Array<number|string>} value - 要查找的值或值数组
-@param {Object} [options={}] - 配置选项
-@param {string} [options.mode='any'] - 匹配模式('any', 'all', 'none')
-@param {boolean} [options.caseSensitive=true] - 字符串是否区分大小写
-@param {Function} [options.comparator] - 自定义比较函数(item, value) => boolean
-@param {boolean} [options.deepEqual=false] - 是否使用深度相等比较
+@param {Array<any>} arr - 目标数组
+@param {any|Array<any>} value - 要查找的值或值数组
+@param {string} [mode='all'] - 匹配模式: 'all'|'any'|'none'
+@param {Object} [opt={}] - 选项
+@param {boolean} [opt.case=true] - 字符串是否区分大小写
+@param {Function} [opt.compare] - 自定义比较函数
+@param {boolean} [opt.deep=false] - 是否深度比较
 @returns {boolean} 检查结果
-@example
-// 检查单个元素
-contains([1, 2, 3], 2); // true
-@example
-// 检查多个元素(all模式)
-contains([1, 2, 3], [1, 2], { mode: 'all' }); // true
-@example
-// 检查多个元素(none模式)
-contains([1, 2, 3], [4, 5], { mode: 'none' }); // true
-@example
-// 不区分大小写检查
-contains(['a', 'B'], 'b', { caseSensitive: false }); // true
-@example
-// 深度对象检查
-contains([{ a: 1 }], { a: 1 }, { deepEqual: true }); // true
+@example contains([1,2,3], [1,2]) // true (all模式)
+@example contains([1,2,3], [1,5], 'any') // true
+@example contains(['A','B'], 'a', 'all', {case:false}) // true
+@example contains([{x:1}], {x:1}, 'all', {deep:true}) // true
 ```
- + **`random`** 函数
+ + **`random`** 函数 - 生成随机数
 ```
- - random()：返回0-1之间的随机浮点数
- - random(max)：返回0-max之间的随机整数
- - random(min, max)：返回min-max之间的随机整数
- - random(min, max, true)：返回min-max之间的随机浮点数
- - random({ min, max, float })：使用配置对象
 @param {number|Object} [min] - 最小值或配置对象
 @param {number} [max] - 最大值
-@param {boolean} [float=false] - 是否生成浮点数（默认false）
+@param {boolean} [float=false] - 是否生成浮点数
 @returns {number} 随机数
-@example
-// 生成0-1之间的随机浮点数
-random(); // 0.756
-@example
-// 生成10-20之间的整数
-random(10, 20); // 15
-@example
-// 生成5-10之间的浮点数
-random(5, 10, true); // 7.231
-@example
-// 使用配置对象
-random({ min: 5, max: 10, float: true }); // 7.231
+@example random() // 0-1之间的浮点数
+@example random(10) // 0-10的整数
+@example random(5, 10) // 5-10的整数
+@example random(5, 10, true) // 5-10的浮点数
+@example random({min:5, max:10, float:true}) // 5-10的浮点数
 ```
- + **`either`** 函数
+ + **`either`** 函数 - 从选项中随机选择一个
 ```
- - either([item1, item2, ...], options)
- - either(item1, item2, ..., options)
-@param {Array<number|string>|any} itemsOrA - 选项数组或第一个选项
-@param {...any} rest - 其他选项或配置对象
-@param {Object} [options] - 配置选项
-@param {number[]} [options.weights] - 选项权重数组（长度必须与选项一致）
-@param {boolean} [options.allowNull=false] - 是否允许返回null（默认false）
-@returns {any} 随机选择的选项（可能为null）
-@example
-// 简单随机选择
-either(['a', 'b', 'c']); // 'b'
-@example
-// 加权随机选择
-either(['a', 'b'], { weights: [0.8, 0.2] }); // 80%概率选'a'
-@example
-// 允许返回空值
-either(['a', 'b'], { allowNull: true }); // 33%概率返回null
-@example
-// 直接传递选项
-either('cat', 'dog', { weights: [0.3, 0.7] });
+@param {Array<any>|any} itemsOrA - 选项数组或第一个选项
+@param {...any} rest - 其他选项或配置
+@param {Object} [opt] - 配置
+@param {number[]} [opt.weights] - 权重数组
+@param {boolean} [opt.null=false] - 是否允许返回null
+@returns {any} 随机选择的选项
+@example either(['a','b','c']) // 随机返回其中一个
+@example either('a','b',{weights:[0.8,0.2]}) // 80%返回'a'，20%返回'b'
+@example either(['a','b'],{null:true}) // 33%返回null，33%'a'，33%'b'
 ```
- + **`convert`** 函数
+ + **`convert`** 函数 - 字符串格式转换
 ```
- @param {string} str - 要转换的字符串
- @param {string} [mode='lower'] - 转换模式:
-   - 'upper': 全大写 (HELLO WORLD)
-   - 'lower': 全小写 (hello world)
-   - 'capitalize': 首字母大写 (Hello world)
-   - 'title': 标题格式 (Hello World)
-   - 'camel': 驼峰命名法 (helloWorld)
-   - 'pascal': 帕斯卡命名法 (HelloWorld)
-   - 'snake': 蛇形命名法 (hello_world)
-   - 'kebab': 烤肉串命名法 (hello-world)
-   - 'constant': 常量命名法 (HELLO_WORLD)
- @param {Object} [options={}] - 可选配置
- @param {string} [options.delimiter=' '] - 单词分隔符（用于title/camel/pascal模式）
- @param {boolean} [options.preserveAcronyms=true] - 是否保留首字母缩略词的大写
- @returns {string} 转换后的字符串
- @example
- // 基本用法
- convert('hello world', 'upper'); // 'HELLO WORLD'
- convert('Hello World', 'snake'); // 'hello_world'
- @example
- // 标题格式转换
- convert('the lord of the rings', 'title'); // 'The Lord of the Rings'
- @example
- // 驼峰命名法
- convert('user_profile_data', 'camel', { delimiter: '_' }); // 'userProfileData'
- @example
- // 保留首字母缩略词
- convert('NASA space program', 'title'); // 'NASA Space Program'
- convert('NASA space program', 'title', { preserveAcronyms: false }); // 'Nasa Space Program'
+@param {string} str - 原始字符串
+@param {string} [mode='lower'] - 转换模式
+@param {Object} [opt={}] - 选项
+@param {string} [opt.delimiter=' '] - 单词分隔符
+@param {boolean} [opt.acronym=true] - 是否保留首字母缩略词
+@returns {string} 转换后的字符串
+@example convert('Hello World') // 'hello world' (默认lower)
+@example convert('hello world', 'upper') // 'HELLO WORLD'
+@example convert('Hello World', 'capitalize') // 'Hello world'
+@example convert('hello world', 'title') // 'Hello World'
+@example convert('hello world', 'camel') // 'helloWorld'
+@example convert('hello world', 'pascal') // 'HelloWorld'
+@example convert('hello world', 'snake') // 'hello_world'
+@example convert('hello world', 'kebab') // 'hello-world'
+@example convert('hello world', 'constant') // 'HELLO_WORLD'
+@example convert('userProfile', 'camel') // 'userProfile' (保持不变)
+@example convert('user_profile', 'camel', {delimiter:'_'}) // 'userProfile'
+@example convert('HTTP API', 'title', {acronym:false}) // 'Http Api'
+@example convert('HTTP API', 'title', {acronym:true}) // 'HTTP API'
 ```
  #### 灵活的条件匹配
 + 这个类提供了多种匹配模式，包括精确匹配、范围匹配、集合匹配、子串匹配、正则匹配和比较匹配以及自定义条件函数匹配
@@ -2123,6 +2019,7 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
+
 
 
 
