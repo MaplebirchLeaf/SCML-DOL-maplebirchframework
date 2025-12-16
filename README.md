@@ -829,8 +829,8 @@ merge({ a: 1 }, { b: 2 }, { c: 3 });
 ```
  + **`contains`** 函数
 ```
- - 'any': 包含任意一个元素即返回true（默认）
- - 'all': 必须包含所有元素才返回true
+ - 'any': 包含任意一个元素即返回true
+ - 'all': 必须包含所有元素才返回true（默认）
  - 'none': 不包含任何元素才返回true
 @param {Array<number|string>} arr - 目标数组
 @param {any|Array<number|string>} value - 要查找的值或值数组
@@ -2123,5 +2123,6 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
+
 
 
