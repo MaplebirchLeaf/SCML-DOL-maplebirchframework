@@ -32,9 +32,9 @@
       return (result[0] === '[' && result[result.length - 1] === ']') ? autoTranslated : result;
     }
 
-    constructor(manager) {
-      this.lang = manager.lang;
-      this.tool = manager.tool;
+    constructor(core) {
+      this.lang = core.lang;
+      this.tool = core.tool;
       this.log = this.tool.createLog('widget');
       this.updateTimer = null;
     }

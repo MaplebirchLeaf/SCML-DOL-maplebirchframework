@@ -1,4 +1,4 @@
-(() => {
+(async() => {
   'use strict';
   const modUtils = window.modUtils;
   if (modUtils.getNowRunningModName() !== 'maplebirch' || !window.maplebirch) return;

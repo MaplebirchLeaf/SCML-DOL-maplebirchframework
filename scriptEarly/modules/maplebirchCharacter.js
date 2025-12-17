@@ -8,10 +8,10 @@
   const maplebirch = window.maplebirch;
 
   class CharacterManager {
-    constructor() {
-      this.tool = maplebirch.tool;
-      this.log = this.tool.createLog('char');
-      maplebirch.trigger(':char-init', this);
+    constructor(core) {
+      this.core = core;
+      this.log = core.tool.createLog('char');
+      core.trigger(':char-init', this);
     }
 
     /* 渲染角色到容器 */
@@ -70,7 +70,7 @@
       const rightContainer = document.createElement('div');
       rightContainer.className = 'maplebirch-overlay-right';
       // 渲染避孕套
-      if (V.condomLvl >= 1 && V.condoms != null) {
+      if (V.settings.condomLevel >= 1 && V.condoms != null) {
         const condomContainer = document.createElement('div');
         condomContainer.className = 'maplebirch-condom-display';
         condomContainer.setAttribute('tooltip', `<span class='meek'>避孕套总数：${V.condoms}</span>`);
@@ -162,5 +162,5 @@
     }
   }
 
-  await maplebirch.register('char', new CharacterManager(), ['var']);
+  await maplebirch.register('char', new CharacterManager(maplebirch), ['var']);
 })();

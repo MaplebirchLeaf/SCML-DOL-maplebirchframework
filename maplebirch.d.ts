@@ -123,24 +123,31 @@ declare global {
     meta: {
       state: number;
       coreModules: string[];
+      earlyMount: string[];
       initializedAt: string;
     };
     modList: string[];
+    onLoad: boolean;
+
     logger: Logger;
-    lang: LanguageManager;
     events: EventEmitter;
-    modules: ModuleManager;
+    idb: IndexedDBService;
+    lang: LanguageManager;
+    modules: ModuleSystem;
+    
+    state: TimeStateManager;
+    tool: tools;
+    audio: AudioManager;
+    var: variablesModule;
+    char: CharacterManager;
+    npc: NPCManager;
+    combat: CombatManager;
+    shop: ShopManager;
+    
     modLoader: any;
     modUtils: any;
     SugarCube: SugarCube;
-    addonPlugin: any;
-    onLoad: boolean;
-    state: TimeStateManager;
-    audio: AudioManager;
-    tool: tools;
-    var: variablesModule;
-    npc: NPCManager;
-    shop: ShopManager;
+    addonPlugin: MaplebirchFrameworkAddon;
 
     constructor();
 
@@ -148,44 +155,30 @@ declare global {
     on(evt: string, handler: Function, desc?: string): boolean;
     off(evt: string, identifier: string | Function): boolean;
     once(evt: string, handler: Function, desc?: string): boolean;
-    trigger(evt: string, ...args: any[]): void;
+    trigger(evt: string, ...args: any[]): Promise<void>;
     register(name: string, module: any, dependencies?: string[]): Promise<boolean>;
-
     preInit(): Promise<void>;
     init(): Promise<void>;
     loadInit(): Promise<void>;
     postInit(): Promise<void>;
-
     t(key: string, space?: boolean): string;
     autoTranslate(text: string): string;
-
-
-    set Language(lang: string): string;
-    set LogLevel(level: string): string;
-    set ExModCount(count: number): number;
+    set Language(lang: string);
+    set LogLevel(level: string);
+    set ExModCount(count: number);
 
     getModule(name: string): any;
-    get Language(): 'CN'|'EN';
+    get Language(): 'CN' | 'EN';
     get LogLevel(): string;
     get expectedModuleCount(): number;
     get registeredModuleCount(): number;
     get dependencyGraph(): any;
-    get yaml(): typeof yaml;
+    get yaml(): any;
     get modLoader(): any;
     get modUtils(): any;
     get gameVersion(): string;
 
-    static Manager: {
-      Logger: typeof Logger;
-      LanguageManager: typeof LanguageManager;
-      EventEmitter: typeof EventEmitter;
-      ModuleManager: typeof ModuleManager;
-    };
-
-    static constants: {
-      ModuleState: typeof ModuleState;
-      LogLevel: any;
-    };
+    #Ready(): void;
 
     static meta: {
       version: string;
@@ -205,30 +198,8 @@ declare global {
     set LevelName(levelName: string);
     get LevelName(): string;
 
-    static LogConfig: any;
-    static LogLevel: any;
-  }
-
-  class LanguageManager {
-    constructor(core: MaplebirchCore);
-    translations: Map<string, string>;
-
-    setLanguage(lang: string): void;
-    initDatabase(): Promise<void>;
-    importAllLanguages(modName: string, languages?: string[]): Promise<boolean>;
-    loadTranslations(modName: string, languageCode: string, filePath: string): Promise<boolean>;
-    t(key: string, space?: boolean): string;
-    autoTranslate(sourceText: string): string;
-    preloadAllTranslations(): Promise<void>;
-    clearDatabase(): Promise<void>;
-    cleanOldVersions(): Promise<void>;
-
-    get language(): string;
-
-    static DEFAULT_LANGS: string[];
-    static DEFAULT_IMPORT_CONCURRENCY: number;
-    static DEFAULT_BATCH_SIZE: number;
-    static DEFAULT_PRELOAD_YIELD: number;
+    static LogConfig: Record<string, {level: number, tag: string, style: string}>;
+    static LogLevel: Record<string | number, string | number>;
   }
 
   class EventEmitter {
@@ -245,7 +216,40 @@ declare global {
     };
   }
 
-  class ModuleManager {
+  class IndexedDBService {
+    static DATABASE_NAME: string;
+    static DATABASE_VERSION: number;
+    constructor(core: MaplebirchCore);
+    register(name: string, options?: IDBObjectStoreParameters, indexes?: Array<{name: string, keyPath: string|string[], options?: IDBIndexParameters}>): boolean;
+    init(): Promise<void>;
+    withTransaction(storeNames: string|string[], mode: IDBTransactionMode, callback: (tx: any) => Promise<any>): Promise<any>;
+    clearStore(storeName: string): Promise<void>;
+  }
+
+  class LanguageManager {
+    static DEFAULT_LANGS: string[];
+    static DEFAULT_IMPORT_CONCURRENCY: number;
+    static DEFAULT_BATCH_SIZE: number;
+    static DEFAULT_PRELOAD_YIELD: number;
+    
+    constructor(core: MaplebirchCore);
+    translations: Map<string, string>;
+    setLanguage(lang: string): void;
+    t(key: string, space?: boolean): string;
+    autoTranslate(sourceText: string): string;
+    importAllLanguages(modName: string, languages?: string[]): Promise<boolean>;
+    loadTranslations(modName: string, languageCode: string, filePath: string): Promise<boolean>;
+    preloadAllTranslations(): Promise<void>;
+    clearDatabase(): Promise<void>;
+    cleanOldVersions(): Promise<void>;
+    get language(): string;
+  }
+
+  class ModuleSystem {
+    static streamConfig: {
+      batchSize: number;
+      yieldInterval: number;
+    };
     constructor(core: MaplebirchCore);
     initPhase: {
       preInitCompleted: boolean;
@@ -256,19 +260,79 @@ declare global {
       registeredModuleCount: number;
       allModuleRegisteredTriggered: boolean;
     };
-
     register(name: string, module: any, dependencies?: string[]): Promise<boolean>;
     setExpectedModuleCount(count: number): void;
-    getDependencyGraph(): any;
+    getDependencyGraph(): Record<string, {
+      dependencies: string[];
+      dependents: string[];
+      state: string;
+      allDependencies: string[];
+    }>;
     preInit(): Promise<void>;
     init(): Promise<void>;
     loadInit(): Promise<void>;
     postInit(): Promise<void>;
+  }
 
-    static streamConfig: {
-      batchSize: number;
-      yieldInterval: number;
+  class MaplebirchFrameworkAddon {
+    constructor(core: MaplebirchCore, gSC2DataManager: any, gModUtils: any);
+    
+    core: MaplebirchCore;
+    gSC2DataManager: any;
+    gModUtils: any;
+    addonTweeReplacer: any;
+    addonReplacePatcher: any;
+    modifyWeather: {
+      modifyWeatherJavaScript: () => any;
     };
+    info: Map<string, {
+      addonName: string;
+      mod: any;
+      modZip: any;
+    }>;
+    logger: {
+      log: (message: string) => void;
+      error: (message: string) => void;
+    };
+    supportedConfigs: string[];
+    queue: Record<string, Array<{
+      modName: string;
+      modZip: any;
+      config: any;
+    }>>;
+    processed: Record<string, boolean>;
+    nowModName: string;
+    
+    #vanillaDataReplace(): Promise<void>;
+    #getModConfig(modInfo: { bootJson: { addonPlugin?: any[] } }): any;
+    #simpleFrameworkCheck(): Promise<boolean>;
+    #processInit(): Promise<void>;
+    #processLanguage(): Promise<void>;
+    #processAudio(): Promise<void>;
+    #processFramework(): Promise<void>;
+    #addWidgetWithConditions(modName: string, zone: string, widget: string | {
+      widget: string;
+      exclude?: string[];
+      match?: RegExp;
+      passage?: string[];
+    }): void;
+    #handleTraits(modName: string, traitsConfig: any[]): void;
+    #addTrait(traitConfig: {
+      title: string | Function;
+      name: string | Function;
+      colour?: string | Function;
+      has?: boolean | string | Function;
+      text?: string | Function;
+    }): void;
+    #processNpc(): Promise<void>;
+    #processShop(): Promise<void>;
+    #processNpcSidebar(): Promise<void>;
+    #injectBSAImages(modName: string, modZip: any, imgPaths: string[]): Promise<void>;
+    
+    registerMod(addonName: string, mod: { name: string; bootJson: { addonPlugin?: any[] } }, modZip: any): Promise<void>;
+    InjectEarlyLoad_start(): Promise<void>;
+    afterPatchModToGame(): Promise<void>;
+    beforePatchModToGame(): Promise<void>;
   }
 
   class TimeStateManager {
@@ -449,16 +513,16 @@ declare global {
 
   class AudioManager {
     static ModAudioPlayer: typeof ModAudioPlayer;
-
+    
+    constructor(core: MaplebirchCore);
+    
     log: (message: string, level?: string, ...objects: any[]) => void;
     audioContext: AudioContext | null;
     idbManager: AudioIDBManager;
     modPlayers: Map<string, ModAudioPlayer>;
     allAudioKeysCache: string[];
     volume: number;
-
-    constructor();
-
+    
     initAudioContext(): void;
     decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer>;
     loadAudio(key: string, arrayBuffer: ArrayBuffer, modName?: string): Promise<boolean>;
@@ -466,24 +530,33 @@ declare global {
     addAudioFromFile(file: File, modName?: string): Promise<boolean>;
     getPlayer(modName: string): ModAudioPlayer;
     getModAudioKeys(modName: string): Promise<string[]>;
-    getAllAudioKeys(): Promise<string[]>;
     refreshCache(modName?: string): Promise<void>;
     refreshAllCache(): Promise<void>;
-
+    
     set Volume(volume: number);
     get Volume(): number;
     get allAudioKeys(): string[];
-
+    
     preInit(): Promise<void>;
+    
+    #refreshAllAudioKeys(): Promise<void>;
+    #playWithBuffer(audioBuffer: AudioBuffer, key: string, options: any): any;
   }
 
   class AudioIDBManager {
+    static DATABASE_NAME: string;
+    static DATABASE_VERSION: number;
+    
     constructor(core: MaplebirchCore);
-
+    
     init(): Promise<void>;
     store(key: string, arrayBuffer: ArrayBuffer, modName: string): Promise<boolean>;
     get(key: string): Promise<ArrayBuffer | null>;
     getModKeys(modName: string): Promise<string[]>;
+    clearStore(storeName?: string): Promise<void>;
+    withTransaction(storeNames: string|string[], mode: IDBTransactionMode, callback: (tx: any) => Promise<any>): Promise<any>;
+    
+    #initIndexedDB(): void;
   }
 
   class ModAudioPlayer {
@@ -579,7 +652,7 @@ declare global {
     move: (data: any, oldPath: string, newPath: string) => boolean;
     remove: (data: any, path: string) => boolean;
     transform: (data: any, path: string, transformer: (value: any) => any) => boolean;
-    fill: (target: any, defaults: any, options?: { arrayBehaviour?: string }) => void;
+    fill: (target: any, defaults: any, options?: { arr?: string }) => void;
   }
 
   declare class randSystem {
@@ -764,24 +837,22 @@ declare global {
 
   declare class cheat {
     constructor();
+    
+    cache: CheatEntry[];
+    
     initDB(): Promise<void>;
     refreshCache(): Promise<void>;
-
     add(name: string, code: string): Promise<boolean>;
     remove(name: string): Promise<boolean>;
     execute(name: string): Promise<boolean>;
-
     search(term: string): CheatEntry[];
     searchAndDisplay(): void;
     displayAll(): Promise<void>;
     createFromForm(): Promise<void>;
-
     clearAll(confirm?: boolean): string | void;
     clearAllAsync(): Promise<void>;
-
     deleteConfirm(name: string): string;
     cancelDelete(name: string): void;
-
     updateContainer(containerId: string, content: string): void;
     HTML(cheats?: CheatEntry[]): string;
   }
@@ -803,6 +874,20 @@ declare global {
     loadInit(): void;
     postInit(): void;
     #mapProcessing(): void;
+  }
+
+  class CharacterManager {
+    tool: tools;
+    log: (message: string, level?: string, ...objects: any[]) => void;
+    transformation: { inject: () => void; };
+    constructor();
+    #renderCharacter(): Promise<void>;
+    #renderOverlay(): Promise<void>;
+    #adjustCanvasSize(container: HTMLElement): void;
+    render(): Promise<void>;
+    preInit(): Promise<void>;
+    Init(): void;
+    loadInit(): void;
   }
 
   declare class NPCManager {
@@ -841,7 +926,6 @@ declare global {
     loadInit(): void;
     postInit(): void;
     
-    // 新增日程管理方法
     addSchedule(npcName: string, scheduleConfig: ScheduleConfig, location: string | ((date: EnhancedDate) => string), options?: ScheduleOptions): Schedule;
     getSchedule(npcName: string): Schedule;
     updateSchedule(npcName: string, specialId: number, updates: Partial<ScheduleSpecial>): Schedule;
@@ -1297,24 +1381,34 @@ declare global {
 
   const ColourUtils: any;
 
-  declare function clone<T>(source: T, options?: { deep?: boolean; preservePrototype?: boolean; }, map?: WeakMap<any, any>): T;
-  declare function merge<T, S1, S2, S3, S4, S5>(target: T, source1: S1, source2?: S2, source3?: S3, source4?: S4, source5?: S5): T & S1 & S2 & S3 & S4 & S5;
-  function equal(a: any, b: any): boolean;
-  function contains(arr: any[], value: any, options?: ontainsOptions): boolean;
-  function random(min?: any, max?: any, float?: boolean): number;
-  declare function either<T>(itemsOrA: T[] | T, ...rest: any[]): T;
-  declare function either<T>(itemsOrA: T[] | T, options?: { weights?: number[] }): T;
-  function loadImageWithModLoader(src: string): Promise<string>;
-  function convert(str: string, mode?: string, options?: { delimiter?: string; preserveAcronyms?: boolean; }): string;
+  declare function clone<T>(source: T, opt?: { deep?: boolean; proto?: boolean; }, map?: WeakMap<any, any>): T;
 
-  interface ContainsOptions {
-    mode?: 'any' | 'all' | 'none';
-    caseSensitive?: boolean;
-    comparator?: (item: any, value: any) => boolean;
-    deepEqual?: boolean;
+  declare function merge(target: any, ...sources: any[]): any;
+
+  declare function equal(a: any, b: any): boolean;
+
+  declare function contains<T>(arr: T[], value: T, mode?: 'all' | 'any' | 'none', opt?: ContainsOptions<T>): boolean;
+  declare function contains<T>(arr: T[], value: T[], mode?: 'all' | 'any' | 'none', opt?: ContainsOptions<T>): boolean;
+
+  declare function random(): number;
+  declare function random(max: number): number;
+  declare function random(min: number, max: number, float?: boolean): number;
+  declare function random(opt: { min?: number; max?: number; float?: boolean }): number;
+
+  declare function either(items: any[], opt?: { weights?: number[]; null?: boolean }): any;
+  declare function either(...args: any[]): any;
+
+  declare function loadImage(src: string): Promise<string>;
+
+  declare function convert(str: string, mode?: 'upper' | 'lower' | 'capitalize' | 'title' | 'camel' | 'pascal' | 'snake' | 'kebab' | 'constant', opt?: { delimiter?: string; acronym?: boolean }): string;
+
+  interface ContainsOptions<T> {
+    case?: boolean;
+    compare?: (item: T, value: T) => boolean;
+    deep?: boolean;
   }
 
-  class SelectCase {
+  declare class SelectCase {
     constructor();
 
     case(condition: any, result: any): SelectCase;
@@ -1323,7 +1417,7 @@ declare global {
     caseIn(values: any[], result: any): SelectCase;
     caseIncludes(substrings: string | string[], result: any): SelectCase;
     caseRegex(regex: RegExp, result: any): SelectCase;
-    caseCompare(comparator: string, value: number, result: any): SelectCase;
+    caseCompare(comparator: '<' | '<=' | '>' | '>=', value: number, result: any): SelectCase;
     else(result: any): SelectCase;
     match(input: any, meta?: any): any;
   }
@@ -1341,4 +1435,4 @@ declare global {
   function sydneySchedule(): void;
 }
 
-export { };
+export {};

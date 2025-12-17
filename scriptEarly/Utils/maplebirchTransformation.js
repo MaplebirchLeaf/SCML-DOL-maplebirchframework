@@ -5,9 +5,9 @@
 	const maplebirch = window.maplebirch;
 
 	class Transformation {
-		/** @param {{ log: any; }} manager */
+		/** @param {{ log: any; core: MaplebirchCore; }} manager */
 		constructor(manager) {
-			this.lang = maplebirch.lang;
+			this.lang = manager.core.lang;
 			this.log = manager.log;
 			/** @type {any} */
 			this.transformation = {};
@@ -18,15 +18,15 @@
 			this.defaultOptions = () => { return this.defaultCallback.reduce((result, callback) => {return { ...result, ...callback() }; }, {});};
 			this.preprocess = (/**@type {any}*/opts) => { this.preCallback.forEach(callback => callback(opts)); };
 			this.layers = {};
-			maplebirch.once(':passagestart', () => {
+			manager.core.once(':passagestart', () => {
 				this.canvas();
-				if (maplebirch.tool.contains(['Start', 'Downgrade Waiting Room'], [maplebirch.state.passage.title], { mode: 'any' })) return;
+				if (['Start', 'Downgrade Waiting Room'].includes(manager.core.state.passage.title)) return;
 				this.inject();
 			});
-			maplebirch.once(':finally', () => {
-				maplebirch.tool.widget.defineMacro('transform', (/**@type {String}*/name, /**@type {Number}*/change) => this._transform(name, change));
-				maplebirch.tool.widget.defineMacro('transformationAlteration', () => this._transformationAlteration());
-				maplebirch.tool.widget.defineMacro('transformationStateUpdate', () => this._transformationStateUpdate());
+			manager.core.once(':finally', () => {
+				manager.core.tool.widget.defineMacro('transform', (/**@type {String}*/name, /**@type {Number}*/change) => this._transform(name, change));
+				manager.core.tool.widget.defineMacro('transformationAlteration', () => this._transformationAlteration());
+				manager.core.tool.widget.defineMacro('transformationStateUpdate', () => this._transformationStateUpdate());
 			});
 		}
 
@@ -355,7 +355,7 @@
 		}
 
 		_transformationAlteration() {
-			if (V.transformdisabledivine === 'f') {
+			if (V.settings.transformDivineEnabled) {
 				if ((V.demonbuild >= 5 && V.specialTransform !== 1) || (V.demon >= 1 && V.specialTransform === 1)) {
 					this.#wikifier('demonTransform', V.demon);
 				} else if ((V.angelbuild >= 5 && V.specialTransform !== 1) || (V.angel >= 1 && V.specialTransform === 1)) {
@@ -365,7 +365,7 @@
 				}
 			}
 
-			if (V.transformdisable === 'f') {
+			if (V.settings.transformAnimalEnabled) {
 				const manifestArray = [V.wolfgirl, V.cat, V.cow, V.harpy, V.fox];
 				const highestManifestIndex = manifestArray.indexOf(Math.max(...manifestArray));
 
@@ -581,5 +581,5 @@
 		}
 	}
 
-	maplebirch.once(':char-init', (/**@type {{ log: any; }}*/data) => Object.assign(data, { transformation: new Transformation(data) }));
+	maplebirch.once(':char-init', (/**@type {{ log: any; core: MaplebirchCore; }}*/data) => Object.assign(data, { transformation: new Transformation(data) }));
 })();

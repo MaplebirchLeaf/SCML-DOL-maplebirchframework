@@ -30,8 +30,8 @@
       genital:    { icon: "strapon",  text: "View Genital Wear",  widget: "GenitalShop" }
     };
 
-    constructor() {
-      this.tool = maplebirch.tool;
+    constructor(core) {
+      this.tool = core.tool;
       this.log = this.tool.createLog('shop');
       this.widgets = [];
       this.passages = [];
@@ -298,5 +298,5 @@
     }
   }
 
-  await maplebirch.register('shop', new ShopManager(), ['tool']);
+  await maplebirch.register('shop', new ShopManager(maplebirch), ['tool']);
 })();

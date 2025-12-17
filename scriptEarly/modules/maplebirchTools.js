@@ -346,63 +346,83 @@
   // 作弊指令系统 - 用于管理和执行作弊指令
   class cheat {
     constructor() {
-      this.db = null;
       /** @type {any[]} */
       this.cache = [];
-      maplebirch.once(':dataImport', async() => await this.initDB());
+      maplebirch.once(':IDB-register', async() => await this.initDB());
     }
 
     async initDB() {
-      const idbRef = maplebirch.modUtils.getIdbRef();
-      this.db = await idbRef.idb_openDB('maplebirch-cheats', 1, {
-        upgrade: (/** @type {{objectStoreNames: { contains: (arg0: string) => any; }; createObjectStore: (arg0: string, arg1: { keyPath: string; }) => void; }}*/db) => { if (!db.objectStoreNames.contains('cheats')) db.createObjectStore('cheats', { keyPath: 'name' }); }
-      });
+      maplebirch.idb.register('cheats', { keyPath: 'name' });
       await this.refreshCache();
     }
 
     async refreshCache() {
-      if (!this.db) return;
-      const tx = this.db.transaction('cheats', 'readonly');
-      const store = tx.objectStore('cheats');
-      this.cache = await store.getAll();
+      try {
+        this.cache = await maplebirch.idb.withTransaction(['cheats'], 'readonly', async (/**@type {{ objectStore: (arg0: string) => any; }}*/tx) => {
+          const store = tx.objectStore('cheats');
+          return await store.getAll();
+        });
+      } catch (/**@type {any}*/err) {
+        maplebirch.logger.log(`刷新作弊指令缓存失败: ${err?.message || err}`, 'ERROR');
+        this.cache = [];
+      }
     }
 
     /** @param {string} name @param {string} code */
     async add(name, code) {
       if (!name?.trim() || !code?.trim()) return false;
-      const tx = this.db.transaction('cheats', 'readwrite');
-      const store = tx.objectStore('cheats');
-      const existing = await store.get(name.trim());
-      if (existing) return false;
-      await store.put({
-        name: name.trim(),
-        code: code.trim(),
-        type: code.trim().startsWith('<<') ? 'twine' : 'javascript',
-      });
-      await this.refreshCache();
-      return true;
+      try {
+        const existing = this.cache.find(c => c.name === name.trim());
+        if (existing) return false;
+        await maplebirch.idb.withTransaction(['cheats'], 'readwrite', async (/**@type {{ objectStore: (arg0: string) => any; }}*/tx) => {
+          const store = tx.objectStore('cheats');
+          const dbCheck = await store.get(name.trim());
+          if (dbCheck) throw new Error('作弊指令已存在');
+          await store.put({
+            name: name.trim(),
+            code: code.trim(),
+            type: code.trim().startsWith('<<') ? 'twine' : 'javascript',
+          });
+        });
+        await this.refreshCache();
+        return true;
+      } catch (/**@type {any}*/err) {
+        maplebirch.logger.log(`添加作弊指令失败: ${name} - ${err?.message || err}`, 'ERROR');
+        return false;
+      }
     }
 
     /** @param {any} name */
     async remove(name) {
-      const tx = this.db.transaction('cheats', 'readwrite');
-      const store = tx.objectStore('cheats');
-      await store.delete(name);
-      await this.refreshCache();
-      return true;
+      try {
+        await maplebirch.idb.withTransaction(['cheats'], 'readwrite', async (/**@type {{ objectStore: (arg0: string) => any; }}*/tx) => {
+          const store = tx.objectStore('cheats');
+          await store.delete(name);
+        });
+        await this.refreshCache();
+        return true;
+      } catch (/**@type {any}*/err) {
+        maplebirch.logger.log(`删除作弊指令失败: ${name} - ${err?.message || err}`, 'ERROR');
+        return false;
+      }
     }
 
     /** @param {any} name */
     async execute(name) {
-      const cheat = this.cache.find(c => c.name === name);
-      if (!cheat) return false;
-      if (cheat.type === 'javascript') { T.maplebirchJSCheatConsole = cheat.code; }
-      else { T.maplebirchTwineCheatConsole = cheat.code; }
-      const result = maplebirch.tool.console.execute(cheat.type);
+      const cheatItem = this.cache.find(c => c.name === name);
+      if (!cheatItem) return false;
+      if (cheatItem.type === 'javascript') { T.maplebirchJSCheatConsole = cheatItem.code; }
+      else { T.maplebirchTwineCheatConsole = cheatItem.code; }
+      const result = maplebirch.tool.console.execute(cheatItem.type);
       if (result?.success) {
-        const tx = this.db.transaction('cheats', 'readwrite');
-        const store = tx.objectStore('cheats');
-        await store.put(cheat);
+        try {
+          await maplebirch.idb.withTransaction(['cheats'], 'readwrite', async (/**@type {{ objectStore: (arg0: string) => any; }}*/tx) => {
+            const store = tx.objectStore('cheats');
+            await store.put(cheatItem);
+          });
+        } catch (/**@type {any}*/err) {
+          maplebirch.logger.log(`更新作弊指令失败: ${name} - ${err?.message || err}`, 'ERROR');
+        }
       }
       return result.success || false;
     }
@@ -411,7 +431,7 @@
     search(term) {
       if (!term?.trim()) return this.cache;
       const searchTerm = term.toLowerCase();
-      return this.cache.filter(cheat => cheat.name.toLowerCase().includes(searchTerm));
+      return this.cache.filter(item => item.name.toLowerCase().includes(searchTerm));
     }
 
     searchAndDisplay() {
@@ -442,42 +462,42 @@
     }
 
     async clearAllAsync() {
-      const tx = this.db.transaction('cheats', 'readwrite');
-      const store = tx.objectStore('cheats');
-      await store.clear();
-      this.cache = [];
-      this.displayAll();
+      try {
+        await maplebirch.idb.clearStore('cheats');
+        this.cache = [];
+        this.displayAll();
+      } catch (/**@type {any}*/err) {}
     }
 
     /** @param {string} containerId @param {string} content */
     updateContainer(containerId, content) {
       if (!containerId) return;
       try { new maplebirch.SugarCube.Wikifier(null, `<<replace "#${containerId}">>${content}<</replace>>`); }
-      catch (error) {}
+      catch (/**@type {any}*/error) {}
     }
 
     /** @param {any} name */
     deleteConfirm(name) {
-      const cheat = this.cache.find(c => c.name === name);
-      if (!cheat) return '';
-      const itemId = `cheat-item-${cheat.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
-      return `<span class='red'><<lanSwitch 'Confirm to clear' '确认清除'>> "${cheat.name}"?</span><br><<langlink 'confirm' null 'capitalize'>><<run maplebirch.tool?.cheat.remove('${cheat.name.replace(/'/g, "\\'")}')>><<run maplebirch.tool?.cheat.displayAll()>><</langlink>> | <<langlink 'cancel' null 'capitalize'>><<run maplebirch.tool?.cheat.cancelDelete('${cheat.name.replace(/'/g, "\\'")}')>><</langlink>>`;
+      const cheatItem = this.cache.find(c => c.name === name);
+      if (!cheatItem) return '';
+      const itemId = `cheat-item-${cheatItem.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+      return `<span class='red'><<lanSwitch 'Confirm to clear' '确认清除'>> "${cheatItem.name}"?</span><br><<langlink 'confirm' null 'capitalize'>><<run maplebirch.tool?.cheat.remove('${cheatItem.name.replace(/'/g, "\\'")}')>><<run maplebirch.tool?.cheat.displayAll()>><</langlink>> | <<langlink 'cancel' null 'capitalize'>><<run maplebirch.tool?.cheat.cancelDelete('${cheatItem.name.replace(/'/g, "\\'")}')>><</langlink>>`;
     }
 
     /** @param {any} name */
     cancelDelete(name) {
-      const cheat = this.cache.find(c => c.name === name);
-      if (!cheat) return;
-      const itemId = `cheat-item-${cheat.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
-      const normalHTML = `<span class='teal'>${cheat.name}</span><br><<langlink 'execute' null 'capitalize'>><<run maplebirch.tool?.cheat.execute('${cheat.name.replace(/'/g, "\\'")}')>><</langlink>> | <<langlink 'delete' null 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${cheat.name.replace(/'/g, "\\'")}'))>><</langlink>>`;
+      const cheatItem = this.cache.find(c => c.name === name);
+      if (!cheatItem) return;
+      const itemId = `cheat-item-${cheatItem.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+      const normalHTML = `<span class='teal'>${cheatItem.name}</span><br><<langlink 'execute' null 'capitalize'>><<run maplebirch.tool?.cheat.execute('${cheatItem.name.replace(/'/g, "\\'")}')>><</langlink>> | <<langlink 'delete' null 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${cheatItem.name.replace(/'/g, "\\'")}'))>><</langlink>>`;
       this.updateContainer(itemId, normalHTML);
     }
 
     HTML(cheats = this.cache) {
       if (cheats.length === 0) return '';
-      return cheats.map(cheat => {
-        const itemId = `cheat-item-${cheat.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
-        return `<div id="${itemId}" class='settingsToggleItem'><span class='teal'>${cheat.name}</span><br><<langlink 'execute' null 'capitalize'>><<run maplebirch.tool?.cheat.execute('${cheat.name.replace(/'/g, "\\'")}')>><</langlink>> | <<langlink 'delete' null 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${cheat.name.replace(/'/g, "\\'")}'))>><</langlink>></div>`;
+      return cheats.map(item => {
+        const itemId = `cheat-item-${item.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        return `<div id="${itemId}" class='settingsToggleItem'><span class='teal'>${item.name}</span><br><<langlink 'execute' null 'capitalize'>><<run maplebirch.tool?.cheat.execute('${item.name.replace(/'/g, "\\'")}')>><</langlink>> | <<langlink 'delete' null 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${item.name.replace(/'/g, "\\'")}'))>><</langlink>></div>`;
       }).join('');
     }
   }
@@ -485,11 +505,13 @@
   class tools {
     createLog = createLog;
 
-    constructor() {
+    /** @param {MaplebirchCore} core */
+    constructor(core) {
+      this.core = core;
       this.modhint = new modhint(createLog('modhit'));
       this.console = new consoleTools(createLog('console'));
       this.cheat = new cheat();
-      maplebirch.trigger(':tool-init', this);
+      core.trigger(':tool-init', this);
     }
 
     async preInit() {
@@ -511,5 +533,5 @@
     }
   }
 
-  await maplebirch.register('tool', new tools(), ['state']);
+  await maplebirch.register('tool', new tools(maplebirch), ['state']);
 })();

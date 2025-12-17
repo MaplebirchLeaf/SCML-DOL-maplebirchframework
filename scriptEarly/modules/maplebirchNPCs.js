@@ -190,10 +190,10 @@
         const typeEnabled = manager.pregnancy.typesEnabled.includes(this.type);
         const canBePregnant = manager.pregnancy.canBePregnant.includes(this.nam);
         const pregnancyEnabledUndefined = this.pregnancy.enabled == undefined;
-        const incompletePregnancyDisable = V.incompletePregnancyDisable;
+        const incompletePregnancyEnabled = V.settings.incompletePregnancyEnabled;
 
         const shouldInitialize = !isInfertile && typeEnabled &&
-        ((incompletePregnancyDisable === 'f' && pregnancyEnabledUndefined &&
+        ((incompletePregnancyEnabled && pregnancyEnabledUndefined &&
         !setup.pregnancy.ignoresIncompleteCheck.includes(this.nam)) || (canBePregnant &&
         pregnancyEnabledUndefined));
 
@@ -215,7 +215,7 @@
           this.pregnancy.potentialFathers = []; // 潜在父亲列表
           this.pregnancy.nonCycleRng = [random(3), random(3)];  // 非周期随机因子
           this.pregnancy.pills = null; // 药物使用情况
-        } else if (isInfertile || (!canBePregnant && incompletePregnancyDisable !== 'f')) {
+        } else if (isInfertile || (!canBePregnant && !incompletePregnancyEnabled)) {
           this.pregnancy = {};
         }
         if (!this.pregnancyAvoidance || V.objectVersion?.pregnancyAvoidance == undefined) this.pregnancyAvoidance = 100;
@@ -323,12 +323,12 @@
       return [...NewNPCNameList];
     }
 
-    /** @param {{ data: any[]; log: (arg0: string, arg1: string, arg2?: undefined, arg3?: undefined) => void; tool: { clone: (arg0: any) => any; contains: (arg0: any, arg1: any, arg2: { mode: string; }) => any; }; NPCNameList: any[]; }} manager */
+    /** @param {{ data: any[]; log: (arg0: string, arg1: string, arg2?: undefined, arg3?: undefined) => void; tool: { clone: (arg0: any) => any; contains: typeof contains; }; NPCNameList: any[]; }} manager */
     function clearInvalidNpcs(manager) {
       setup.NPCNameList = [...new Set([...setup.NPCNameList, ...Array.from(manager.data.keys())])];
       manager.log(`开始解析NPC...`, 'DEBUG', manager.tool.clone(V.NPCName), manager.tool.clone(setup.NPCNameList));
       const Names = (V.NPCName || []).map((/**@type {{ nam: any; }}*/npc) => npc.nam);
-      const needCleaning = !manager.tool.contains(Names, setup.NPCNameList, { mode: 'all' }) || !manager.tool.contains(setup.NPCNameList, Names, { mode: 'all' });
+      const needCleaning = !manager.tool.contains(Names, setup.NPCNameList) || !manager.tool.contains(setup.NPCNameList, Names);
       if (!needCleaning) return false;
       const validNamesSet = new Set(setup.NPCNameList);
       V.NPCName = (V.NPCName || []).filter((/**@type {{ nam: any; }}*/npc) => validNamesSet.has(npc.nam));
@@ -640,42 +640,22 @@
   })()
 
   class NPCUtils {
-    // 基本一般NPC数据
-    static baseNPC = {
-      'chastity': { penis: '', vagina: '', anus: '' },
-      'location': {},
-      'skills': {},
-      'pronouns': {},
-      'traits': []
-    }
-
-    /** @param {string} name */
-    static npcSeenProperty(name) {
-      const npcName = name.replace(/\s+/g, '');
-      const SeenName = npcName + 'Seen';
-      const FirstSeenName = npcName + 'FirstSeen';
-      if (V[SeenName] !== undefined) {
-        let seenValue = V[SeenName];
-        Object.defineProperty(V.maplebirch.npc[name], 'Seen', {
-          get: () => seenValue,
-          set: (val) => { seenValue = val; V[SeenName] = val; }
-        });
-        Object.defineProperty(V, SeenName, {
-          get: () => seenValue,
-          set: (val) => { seenValue = val; V.maplebirch.npc[name].Seen = val; }
-        });
-      }
-      if (V[FirstSeenName] !== undefined) {
-        let firstSeenValue = V[FirstSeenName];
-        Object.defineProperty(V.maplebirch.npc[name], 'FirstSeen', {
-          get: () => firstSeenValue,
-          set: (val) => { firstSeenValue = val; V[FirstSeenName] = val; }
-        });
-        Object.defineProperty(V, FirstSeenName, {
-          get: () => firstSeenValue,
-          set: (val) => { firstSeenValue = val; V.maplebirch.npc[name].FirstSeen = val; }
-        });
-      }
+    /** @param {string} npcName */
+    static npcSeenProperty(npcName) {
+      const npcNameNoSpace = npcName.replace(/\s+/g, '');
+      const SeenName = npcNameNoSpace + 'Seen';
+      const FirstSeenName = npcNameNoSpace + 'FirstSeen';
+      if (!V.maplebirch.npc[npcName]) V.maplebirch.npc[npcName] = {};
+      if (V[SeenName] == null) V[SeenName] = [];
+      if (V[FirstSeenName] == null) V[FirstSeenName] = '';
+      Object.defineProperty(V.maplebirch.npc[npcName], 'Seen', {
+        get: () => V[SeenName],
+        set: (val) => { V[SeenName] = val; },
+      });
+      Object.defineProperty(V.maplebirch.npc[npcName], 'FirstSeen', {
+        get: () => V[FirstSeenName],
+        set: (val) => { V[FirstSeenName] = val; },
+      });
     }
 
     /** @param {string} npcName */
@@ -711,23 +691,6 @@
       });
     }
 
-    /** @param {NPCManager} manager @param {any} maxValue */
-    static npcList(manager, maxValue) {
-      const maxNPC = (typeof maxValue === 'number') ? maxValue : 7;
-      const NPCList = [];
-      const existingNPCs = V.maplebirch.combat.npcList || [];
-      for (let idx = 0; idx < maxNPC; ++idx) {
-        NPCList.push(manager.tool.clone(NPCUtils.baseNPC));
-        if (existingNPCs.length > idx && existingNPCs[idx].description) {
-          /**@type {any} */const npc = NPCList[idx];
-          Object.assign(npc, existingNPCs[idx]);
-          npc.index = idx;
-          if (!npc.type) npc.type = 'human';
-        }
-      }
-      V.maplebirch.combat.npcList = manager.tool.clone(NPCList);
-    }
-
     /** @param {NPCManager} manager */
     static setupNpcData(manager, phase = 'init') {
       const NPCNameList = manager.NPCNameList;
@@ -735,8 +698,6 @@
       NPCNameList.forEach(npcName => {
         const name = npcName.toLowerCase();
         if (!V.maplebirch.npc[name]) V.maplebirch.npc[name] = {};
-        if (!V.maplebirch.npc[name].Seen) V.maplebirch.npc[name].Seen = [];
-        if (!V.maplebirch.npc[name].FirstSeen) V.maplebirch.npc[name].FirstSeen = '';
         if (!V.maplebirch.npc[name].bodydata) V.maplebirch.npc[name].bodydata = {};
         if (!V.maplebirch.npc[name].outfits) V.maplebirch.npc[name].outfits = [];
         if (!V.maplebirch.npc[name].clothes) V.maplebirch.npc[name].clothes = {};
@@ -744,7 +705,7 @@
           Object.defineProperty(V.maplebirch.npc[name], 'location', {
             // @ts-ignore
             get: () => manager.Schedules.location[npcName],
-            set: (value) => maplebirch.log(` 禁止直接设置 NPC ${npcName} 的位置，请通过日程系统管理`, 'WARN'),
+            set: (value) => maplebirch.log(`警告：禁止直接设置 NPC ${npcName} 的位置，请通过日程系统管理`),
           });
         }
         if (phase === 'postInit') {
@@ -757,10 +718,10 @@
   }
 
   class NPCManager {
-    /** @param {MaplebirchCore} manager */
-    constructor(manager) {
-      this.lang = manager.lang;
-      this.tool = manager.tool;
+    /** @param {MaplebirchCore} core */
+    constructor(core) {
+      this.lang = core.lang;
+      this.tool = core.tool;
       this.log = this.tool.createLog('npc');
       this.data = new Map();
       this.NamedNPC = NamedNPC;
@@ -779,9 +740,9 @@
       this.NPCNameList = [];
       /** @type {{[x: string]: any}} */
       this.customStats = {};
-      maplebirch.trigger(':npc-init', this);
-      maplebirch.once(':passagestart',() => {
-        if (this.tool.contains(['Start', 'Downgrade Waiting Room'], [maplebirch.state.passage.title], { mode: 'any' })) return;
+      core.trigger(':npc-init', this);
+      core.once(':passagestart',() => {
+        if (['Start', 'Downgrade Waiting Room'].includes(core.state.passage.title)) return;
         this.injectModNPCs();
       });
     }
@@ -890,7 +851,7 @@
     /** @param {any} base @param {any} mod */
     #mergeConfigs(base, mod) {
       const filterFn = (/**@type {any}*/key, /**@type {any}*/ value, /**@type {any}*/ depth) => {return Object.prototype.hasOwnProperty.call(mod, key);}
-      return this.tool.merge(base, mod, {arrayBehaviour: 'replace', filterFn});
+      return this.tool.merge(base, mod, {mode: 'replace', filterFn});
     }
 
     /** @param {any} npcConfig */
@@ -953,7 +914,7 @@
 
     /** @param {number[]} args */
     NPCSpawn(...args) {
-      NPCUtils.npcList(this, args[1]+1);
+      
     }
 
     Init() {

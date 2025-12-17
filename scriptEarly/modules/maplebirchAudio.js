@@ -13,62 +13,68 @@
     /** @param {MaplebirchCore} core */
     constructor(core) {
       this.core = core;
-      this.db = null;
+      this.core.once(':IDB-register', () => this.#initIndexedDB());
     }
 
-    async init() {
-      if (this.db) return;
-      try {
-        const idbRef = this.core.modUtils.getIdbRef();
-        this.db = await idbRef.idb_openDB('maplebirch_audios', 1, {
-          upgrade: (/** @type {{ objectStoreNames: { contains: (arg0: string) => any; }; createObjectStore: (arg0: string, arg1: { keyPath: string; }) => any; }} */db) => {
-            if (!db.objectStoreNames.contains('audioBuffers')) {
-              const store = db.createObjectStore('audioBuffers', { keyPath: 'key' });
-              store.createIndex('mod', 'mod', { unique: false });
-            }
-          }
-        });
-      } catch (/** @type {any} */err) {
-        this.core.logger.log(`音频数据库初始化失败: ${err?.message || err}`, 'ERROR');
-      }
+    #initIndexedDB() {
+      this.core.idb.register('audioBuffers', { keyPath: 'key' }, [
+        { name: 'mod', keyPath: 'mod', options: { unique: false } }
+      ]);
     }
 
-    /** @param {any} key @param {any} arrayBuffer @param {string} modName */
+    /**
+     * 存储音频缓冲区
+     * @param {string} key 音频键
+     * @param {ArrayBuffer} arrayBuffer 音频数据
+     * @param {string} modName 模块名称
+     * @returns {Promise<boolean>} 是否成功
+     */
     async store(key, arrayBuffer, modName) {
-      if (!this.db) return false;
       try {
-        const tx = this.db.transaction('audioBuffers', 'readwrite');
-        const store = tx.objectStore('audioBuffers');
-        await store.put({ key, arrayBuffer, mod: modName });
+        await this.core.idb.withTransaction(['audioBuffers'], 'readwrite', async (tx) => {
+          const store = tx.objectStore('audioBuffers');
+          await store.put({ key, arrayBuffer, mod: modName });
+        });
         return true;
-      } catch (err) {
+      } catch (/**@type {any}*/err) {
+        this.core.logger.log(`存储音频失败: ${key} - ${err?.message || err}`, 'ERROR');
         return false;
       }
     }
 
-    /** @param {any} key */
+    /**
+     * 获取音频缓冲区
+     * @param {string} key 音频键
+     * @returns {Promise<ArrayBuffer|null>} 音频数据或null
+     */
     async get(key) {
-      if (!this.db) return null;
       try {
-        const tx = this.db.transaction('audioBuffers', 'readonly');
-        const store = tx.objectStore('audioBuffers');
-        const record = await store.get(key);
-        return record ? record.arrayBuffer : null;
-      } catch (err) {
+        return await this.core.idb.withTransaction(['audioBuffers'], 'readonly', async (tx) => {
+          const store = tx.objectStore('audioBuffers');
+          const record = await store.get(key);
+          return record ? record.arrayBuffer : null;
+        });
+      } catch (/**@type {any}*/err) {
+        this.core.logger.log(`获取音频失败: ${key} - ${err?.message || err}`, 'ERROR');
         return null;
       }
     }
 
-    /** @param {string} modName */
+    /**
+     * 获取模块的所有音频键
+     * @param {string} modName 模块名称
+     * @returns {Promise<string[]>} 音频键列表
+     */
     async getModKeys(modName) {
-      if (!this.db) return [];
       try {
-        const tx = this.db.transaction('audioBuffers', 'readonly');
-        const store = tx.objectStore('audioBuffers');
-        const index = store.index('mod');
-        const records = await index.getAll(modName);
-        return records.map((/** @type {{ key: any; }} */record) => record.key);
-      } catch (err) {
+        return await this.core.idb.withTransaction(['audioBuffers'], 'readonly', async (tx) => {
+          const store = tx.objectStore('audioBuffers');
+          const index = store.index('mod');
+          const records = await index.getAll(modName);
+          return records.map((/**@type {{ key: any; }}*/record) => record.key);
+        });
+      } catch (/**@type {any}*/err) {
+        this.core.logger.log(`获取模块音频键失败: ${modName} - ${err?.message || err}`, 'ERROR');
         return [];
       }
     }
@@ -366,15 +372,16 @@
   class AudioManager {
     static ModAudioPlayer = ModAudioPlayer;
 
-    constructor() {
-      this.log = maplebirch.tool.createLog('audio');
+    /** @param {MaplebirchCore} core */
+    constructor(core) {
+      this.core = core;
+      this.log = core.tool.createLog('audio');
       this.audioContext = null;
-      this.idbManager = new AudioIDBManager(maplebirch);
+      this.idbManager = new AudioIDBManager(core);
       this.modPlayers = new Map();
       /** @type {any[]} */
       this.allAudioKeysCache = [];
       this.initAudioContext();
-      maplebirch.once(':dataImport', async() => await this.idbManager.init());
     }
 
     initAudioContext() {
@@ -490,7 +497,6 @@
       return this.allAudioKeysCache;
     }
 
-
     set Volume(volume) {
       // @ts-ignore
       const volumeValue = Number(volume);
@@ -527,5 +533,5 @@
     }
   }
 
-  await maplebirch.register('audio', new AudioManager(), ['tool']);
+  await maplebirch.register('audio', new AudioManager(maplebirch), ['tool']);
 })();

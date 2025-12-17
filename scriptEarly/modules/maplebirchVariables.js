@@ -80,23 +80,20 @@
       transformation: {},
     };
     
-    /** @param {MaplebirchCore} manager */
-    constructor(manager) {
+    /** @param {MaplebirchCore} core */
+    constructor(core) {
       this.version = currentVersion;
-      this.tool = manager.tool;
+      this.tool = core.tool;
       this.log = this.tool.createLog('var');
       this.migration = new this.tool.migration();
+      core.once(':passageinit', () => this.check());
+      core.once(':finally', () => this.check());
     }
 
     #mapProcessing() {
-      let worn = V.worn;
       Object.defineProperty(V.maplebirch.player, 'clothing', {
-        get: () => worn,
-        set: (val) => { worn = val; V.worn = val; },
-      });
-      Object.defineProperty(V, 'worn', {
-        get: () => worn,
-        set: (val) => { worn = val; V.maplebirch.player.clothing = val; },
+        get: () => V.worn,
+        set: (val) => maplebirch.log('V.maplebirch.player.clothing 是 V.worn 的只读镜像。请直接修改 V.worn', 'WARN'),
       });
     }
 
@@ -110,11 +107,6 @@
         /**@type {any}*/const defaultOptions = variablesModule.options;
         for (const key in defaultOptions) if (!(key in V.options.maplebirch)) V.options.maplebirch[key] = this.tool.clone(defaultOptions[key]);
       }
-    }
-
-    preInit() { 
-      maplebirch.once(':passageinit', () => this.check());
-      maplebirch.once(':finally', () => this.check());
     }
 
     Init() {

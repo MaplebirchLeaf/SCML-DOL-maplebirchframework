@@ -19,16 +19,16 @@
     }
 
     /** @param {string} effectName @param {object} patch */
-    addEffect(effectName, patch, arrayBehaviour = 'replace') {
+    addEffect(effectName, patch, mode = 'replace') {
       if (!this.effectModifications.has(effectName)) this.effectModifications.set(effectName, []);
-      this.effectModifications.get(effectName).push({ patch, arrayBehaviour });
+      this.effectModifications.get(effectName).push({ patch, mode });
       return this;
     }
 
     /** @param {string} layerName @param {object} patch */
-    addLayer(layerName, patch, arrayBehaviour = 'replace') {
+    addLayer(layerName, patch, mode = 'replace') {
       if (!this.layerModifications.has(layerName)) this.layerModifications.set(layerName, []);
-      this.layerModifications.get(layerName).push({ patch, arrayBehaviour });
+      this.layerModifications.get(layerName).push({ patch, mode });
       return this;
     }
 
@@ -38,8 +38,8 @@
       if (!this.weathertrigger) { maplebirch.trigger(':weather'); this.weathertrigger = true; }
       if (this.layerModifications.has(layerName)) {
         const modifications = this.layerModifications.get(layerName);
-        for (const { patch, arrayBehaviour } of modifications) {
-          const options = { arrayBehaviour };
+        for (const { patch, mode } of modifications) {
+          const options = { mode };
           merge(params, patch, options);
         }
         this.layerModifications.delete(layerName);
@@ -49,8 +49,8 @@
         for (const [effectName, modifications] of this.effectModifications) {
           const effect = Weather.Renderer.Effects.effects.get(effectName);
           if (effect) {
-            for (const { patch, arrayBehaviour } of modifications) {
-              const options = { arrayBehaviour };
+            for (const { patch, mode } of modifications) {
+              const options = { mode };
               merge(effect, patch, options);
             }
             maplebirch.log(`[weather] 修改效果 ${effectName}: 应用了 ${modifications.length} 个修改`, 'DEBUG');

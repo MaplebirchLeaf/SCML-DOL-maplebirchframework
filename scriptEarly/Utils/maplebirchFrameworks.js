@@ -115,16 +115,16 @@
          * @param {Object} target - 目标对象
          * @param {Object} defaults - 默认值模板对象
          * @param {Object} [options] - 配置选项
-         * @param {string} [options.arrayBehaviour="merge"] - 数组处理方式 ("merge" 或 "replace")
+         * @param {string} [options.mode="merge"] - 数组处理方式 ("merge" 或 "replace")
          */
         fill: (target, defaults, options = {}) => {
-          const arrayBehaviour = options.arrayBehaviour || "merge";
+          const mode = options.mode || "merge";
           const filterFn = (/** @type {string} */key, /** @type {any} */value, /** @type {any} */depth) => {
             if (key === "version") return false;
             return !Object.prototype.hasOwnProperty.call(target, key);
           }
           try {
-            maplebirch.tool.merge(target, defaults, { arrayBehaviour, filterFn });
+            maplebirch.tool.merge(target, defaults, { mode, filterFn });
           } catch (/** @type {any} */err) {
             this.log(`属性填充失败: ${err?.message || err}`, 'ERROR');
           }
@@ -889,8 +889,7 @@
         const { exclude, match, passage, widget: widgetName } = widget;
 
         if (exclude) {
-          const shouldExclude = maplebirch.tool.contains(exclude, title);
-          if (!shouldExclude) return `<<${widgetName}>>`;
+          if (!exclude.includes(title)) return `<<${widgetName}>>`;
           return '';
         }
 
@@ -911,27 +910,6 @@
     }
 
     /**
-     * 私有方法：应用文本替换
-     * @param {string} source - 原始文本
-     * @param {string|RegExp} pattern - 匹配模式
-     * @param {Object<any,any>} set - 替换配置
-     * @returns {string} 替换后文本
-     */
-    #applyReplacement(source, pattern, set) {
-      if (!pattern) return source;
-      const original = source;
-      let result = source;
-      if (set.to) result = source.replace(pattern, set.to);
-      if (set.applyafter) result = source.replace(pattern, (match) => match + set.applyafter);
-      if (set.applybefore) result = source.replace(pattern, (match) => set.applybefore + match);
-      if (result === original) {
-        const patternType = pattern instanceof RegExp ? '正则' : '字符串';
-        this.log(`替换失败: 未找到匹配 (${patternType}: ${pattern})`, 'WARN');
-      }
-      return result;
-    }
-
-    /**
      * 私有方法：匹配并应用替换规则
      * @param {Object<any,any>} set - 替换配置
      * @param {string} source - 原始文本
@@ -943,35 +921,45 @@
         { type: 'srcmatch', pattern: set.srcmatch },
         { type: 'srcmatchgroup', pattern: set.srcmatchgroup },
       ];
-
       for (const { type, pattern } of patterns) {
         if (!pattern) continue;
         let matched = false;
         switch (type) {
+          case 'src': if (typeof pattern === 'string' && source.includes(pattern)) matched = true; break;
+          case 'srcmatch': if (pattern instanceof RegExp) matched = pattern.test(source); break;
+          case 'srcmatchgroup': if (pattern instanceof RegExp) matched = pattern.test(source); break;
+        }
+        if (!matched) continue;
+        let result = source;
+        switch (type) {
           case 'src':
-            if (source.includes(pattern)) {
-              source = this.#applyReplacement(source, pattern, set);
-              matched = true;
-            }
+            if (set.to) result = source.replace(pattern, set.to);
+            if (set.applyafter) result = source.replace(pattern, (match) => match + set.applyafter);
+            if (set.applybefore) result = source.replace(pattern, (match) => set.applybefore + match);
             break;
           case 'srcmatch':
-            if (pattern instanceof RegExp && pattern.test(source)) {
-              source = this.#applyReplacement(source, pattern, set);
-              matched = true;
-            }
+            if (set.to) result = source.replace(pattern, set.to);
+            if (set.applyafter) result = source.replace(pattern, (match) => match + set.applyafter);
+            if (set.applybefore) result = source.replace(pattern, (match) => set.applybefore + match);
             break;
           case 'srcmatchgroup':
             if (pattern instanceof RegExp) {
               const matches = source.match(pattern) || [];
               if (matches.length > 0) {
-                matches.forEach(match => source = this.#applyReplacement(source, match, set));
-                matched = true;
+                matches.forEach(match => {
+                  if (set.to) { result = result.replace(match, set.to); }
+                  else if (set.applyafter) { result = result.replace(match, match + set.applyafter); }
+                  else if (set.applybefore) { result = result.replace(match, set.applybefore + match); }
+                });
               }
             }
             break;
         }
-        if (matched) break;
+        if (result !== source) return result;
       }
+      const patternType = set.src ? '字符串' : set.srcmatch ? '正则' : set.srcmatchgroup ? '正则组' : '未知';
+      const pattern = set.src || set.srcmatch?.toString() || set.srcmatchgroup?.toString() || '无';
+      this.log(`替换失败: 未找到匹配 (${patternType}: ${pattern})`, 'WARN');
       return source;
     }
 
@@ -986,7 +974,7 @@
         'StoryCaption': (/**@type {string}*/content) => content,
         'PassageHeader': (/**@type {string}*/content) => `<div id="passage-header">\n${content}\n<<maplebirchHeader>>\n</div>`,
         'PassageFooter': (/**@type {string}*/content) => `<div id="passage-footer">\n<<maplebirchFooter>>\n${content}\n</div>`,
-        'default': (/**@type {string}*/content) => `<div id="passage-content">\n<<if maplebirch.SugarCube.Macro.has('maplebirchMonitor')>><<maplebirchMonitor "interrupt">><</if>>\n${content}\n<<if maplebirch.SugarCube.Macro.has('maplebirchMonitor')>><<maplebirchMonitor "overlay">><</if>>\n</div>`
+        'default': (/**@type {string}*/content) => `<div id="passage-content">\n<<= maplebirch.state.StateManager.trigger('interrupt')>>\n${content}\n<<= maplebirch.state.StateManager.trigger('overlay')>>\n</div>`
       };
       // @ts-ignore
       const wrapper = wrappers[title] || wrappers.default;
@@ -1004,11 +992,7 @@
     #applyContentPatches(passage, title, patchSets) {
       if (!patchSets || !patchSets[title]) return passage;
       let source = String(passage.content);
-      for (const set of patchSets[title]) {
-        const before = source;
-        source = this.#matchAndApply(set, source);
-        if (source === before) this.log(`段落 "${title}" 替换未生效`, 'ERROR');
-      }
+      for (const set of patchSets[title]) source = this.#matchAndApply(set, source);
       passage.content = source;
       return passage;
     }
@@ -1566,7 +1550,7 @@
         if (depth === 1) return key === "folder" || ['base', 'emissive', 'reflective', 'layerTop'].includes(key);
         return true;
       }
-      return maplebirch.tool.merge(target, source, { arrayBehaviour: "merge", filterFn });
+      return maplebirch.tool.merge(target, source, { mode: "merge", filterFn });
     }
 
     /**

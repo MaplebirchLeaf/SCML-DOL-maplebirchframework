@@ -12,18 +12,6 @@
   const maplebirch = window.maplebirch;
   logger.log('[maplebirchMod] 开始执行');
 
-  /*async function fixDolGlitch() {
-    const Widget_Named_NPCsPassagePath = 'Widgets Named Npcs';
-    const passage1 = modUtils.getPassageData(Widget_Named_NPCsPassagePath);
-    if (modUtils.getMod('ModI18N')) {
-    modUtils.updatePassageData(
-      passage1.name,
-      passage1.content.replace(/rank: "见习教徒",/, 'rank: "initiate",'),
-      passage1.tags,
-      passage1.id);
-    }
-  }*/
-
   async function modifyEffect() {
     const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
     const SCdata = oldSCdata.cloneSC2DataInfo();
@@ -59,19 +47,6 @@
     addonTweeReplacer.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);  
   }
 
-  async function modifyJournalTime() {
-    const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
-    const SCdata = oldSCdata.cloneSC2DataInfo();
-    const passageData = SCdata.passageDataItems.map;
-    const JournalTwinePath = 'Widgets Journal';
-    const modify = passageData.get(JournalTwinePath);
-    const regex = /<<print\s*("It is "\s*\+\s*getFormattedDate\(Time\.date\)\s*\+\s*",\s*"\s*\+\s*Time\.year\s*\+\s*"\."|"今天是"\s*\+\s*Time\.year\s*\+\s*"年"\s*\+\s*getFormattedDate\(Time\.date\)\s*\+\s*"。"|ordinalSuffixOf\(Time\.monthDay\)\s*\+\s*"\s*"\s*\+\s*Time\.monthName\.slice\(0,3\)|Time\.month\s*\+\s*"月"\s*\+\s*ordinalSuffixOf\(Time\.monthDay\)\s*\+\s*"日")\s*>>/;
-    if (regex.test(modify.content)) modify.content = modify.content.replace(regex,`<<= maplebirch.state.TimeManager.updateTimeLanguage('JournalTime')>>`);
-    passageData.set(JournalTwinePath, modify);
-    SCdata.passageDataItems.back2Array();
-    addonTweeReplacer.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);  
-  }
-
   async function joinNPCSidebar() {
     const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
     const SCdata = oldSCdata.cloneSC2DataInfo();
@@ -99,6 +74,7 @@
       this.info = new Map();
       this.logger = gModUtils.getLogger();
       this.gModUtils.getAddonPluginManager().registerAddonPlugin('maplebirch', 'maplebirchAddon', this);
+      this.gSC2DataManager.getModLoadController().addLifeTimeCircleHook('maplebirchFramework', this);
       this.supportedConfigs = ['language', 'audio', 'framework', 'npc', 'shop', 'npcSidebar'];
       /** @type {Object<any, {modName: string, mod: any, modZip: any}>} */
       this.queue = {};
@@ -122,7 +98,6 @@
       this.core.log('开始执行正则替换', 'DEBUG');
       try { await modifyEffect(); } catch (e) { this.core.log('modifyEffect 出错', 'ERROR'); }
       try { await modifyOptionsDateFormat(); } catch (e) { this.core.log('modifyOptionsDateFormat 出错', 'ERROR'); }
-      try { await modifyJournalTime(); } catch (e) { this.core.log('modifyJournalTime 出错', 'ERROR'); }
       try { await joinNPCSidebar(); } catch (e) { this.core.log('joinNPCSidebar 出错', 'ERROR'); }
       try { await this.modifyWeather.modifyWeatherJavaScript(); } catch (e) { this.core.log('modifyWeatherJavaScript 出错', 'ERROR'); }
     }
@@ -143,16 +118,14 @@
       const config = this.#getModConfig(mod);
       if (Object.keys(config.params || {}).length > 0) if (!this.core.modList.includes(mod.name)) this.core.modList.push(mod.name);
       this.supportedConfigs.forEach(type => {
-        if (config.params?.[type]) {
-          this.queue[type].push({
-            modName: mod.name,
-            modZip: modZip,
-            config: config.params[type]
-          });
-        }
+        if (config.params?.[type]) this.queue[type].push({modName: mod.name,modZip: modZip,config: config.params[type]});
       });
       this.core.log(`[MaplebirchAddonPlugin] 注册Mod: ${mod.name}`, 'DEBUG');
       this.logger.log(`[MaplebirchAddonPlugin] 注册Mod: ${mod.name}`);
+    }
+
+    async InjectEarlyLoad_start() {
+      try { await this.#simpleFrameworkCheck() } catch {};
     }
 
     async afterPatchModToGame() {
@@ -163,6 +136,23 @@
       await this.#vanillaDataReplace();
       await this.#processInit();
       try { await this.core.shop.beforePatchModToGame();; } catch (/** @type {any} */e) { this.core.log(`商店数据注入失败: ${e.message}`, 'ERROR'); }
+    }
+
+    async #simpleFrameworkCheck() {
+      const modLoadController = modUtils.getModLoadController();
+      const [enabledMods, disabledMods] = await Promise.all([
+        modLoadController.listModIndexDB(),
+        modLoadController.loadHiddenModList()
+      ]);
+      const modName = 'Simple Frameworks';
+      if (!enabledMods.includes(modName)) return false;
+      enabledMods.splice(enabledMods.indexOf(modName), 1);
+      if (!disabledMods.includes(modName)) disabledMods.push(modName);
+      await Promise.all([
+        modLoadController.overwriteModIndexDBModList(enabledMods),
+        modLoadController.overwriteModIndexDBHiddenModList(disabledMods)
+      ]);
+      location.reload();
     }
 
     async #processInit() {
@@ -296,7 +286,7 @@
         name: name,
         colour: colour || '',
         has: hasCondition,
-        text: text || ''
+        text: text || '',
       };
       this.core.tool.other.addTraits(trait);
     }
@@ -407,15 +397,7 @@
           'BeautySelectorAddon',
           {
             name: 'maplebirch',
-            bootJson: {
-              addonPlugin: [
-                {
-                  modName: 'BeautySelectorAddon',
-                  addonName: 'BeautySelectorAddon',
-                  params: { type: `npc-sidebar-[${modName}]` }
-                }
-              ]
-            },
+            bootJson: { addonPlugin: [{ modName: 'BeautySelectorAddon', addonName: 'BeautySelectorAddon', params: { type: `npc-sidebar-[${modName}]` } }] },
             imgs: imgs
           },
           modZip
@@ -427,5 +409,6 @@
     }
   }
 
+  // @ts-ignore
   maplebirch.addonPlugin = new MaplebirchFrameworkAddon(maplebirch, modSC2DataManager, modUtils);
 })();
