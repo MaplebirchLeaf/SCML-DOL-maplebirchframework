@@ -1906,6 +1906,8 @@ modifyWeather.addLayer('sun', {
 @param {Function} [options.preprocess] - 侧边栏画布预处理函数
 @param {Function} [options.defaultOptions] - 侧边栏画布默认选项函数
 @param {Object} [options.layers] - 侧边栏画布图层配置
+@param {boolean} [options.decay=true] - 是否启用衰变，默认为true
+@param {Array<Function>} [options.decayConditions] - 自定义衰变条件数组，每个条件为返回布尔值的函数，所有条件满足时触发衰变
 @param {Object} [options.translations] - 多语言翻译注入
 @param {Object.<string, Object>} options.translations
 maplebirchFramework.addTransform(name, type, options);
@@ -2012,10 +2014,3 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
-
-
-
-
-
-
-
