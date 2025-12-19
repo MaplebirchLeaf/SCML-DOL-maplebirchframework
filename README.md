@@ -129,7 +129,7 @@
 
 - 在侧边／底部的 **Releases** 中下载最新版的 `maplebirchframework.zip` 文件。
 
-- 第一种依赖申明(依赖模组加载器申明依赖): 在模组 `boot.js` 文件中的 `dependenceInfo` 区域添加下方内容。
+- 依赖申明(依赖模组加载器申明依赖: 可选): 在模组 `boot.js` 文件中的 `dependenceInfo` 区域添加下方内容。
   
 ```
 "dependenceInfo": [
@@ -144,14 +144,7 @@
   <img width="654" height="1102" alt="image" src="https://github.com/user-attachments/assets/9a38dde3-6812-4627-811b-2f11751919a9" />
 </details>
 
-
-- 第二种依赖申明(利用模组加载器的钩子): 这种方法可以让依赖框架的模组在框架之前加载。 
-<details>
-  <summary>点击查看图片</summary>
-  <img width="1848" height="1192" alt="image" src="https://github.com/user-attachments/assets/dd8aca44-0619-4f1f-bec5-8d1f2f30f5f4" />
-</details>
-
-- 第三种自助 `addonPlugin` 声明依赖只要用到了其中的功能框架就能检测，**详情**看对应区块说明 **(如果支持，推荐使用第三种声明方式)**。
+- `addonPlugin` 的功能注册，**详情**看对应区块说明*。
 
 ```
 "addonPlugin": [
@@ -2019,6 +2012,7 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
+
 
 
 
