@@ -2,7 +2,6 @@
 declare global {
   interface Window {
     maplebirch: MaplebirchCore;
-    jsyaml: typeof yaml;
     StartConfig: {
       debug: boolean,
       enableImages: boolean,
@@ -13,6 +12,7 @@ declare global {
       socialMediaEnabled: boolean,
       sourceLinkEnabled: boolean,
     };
+    jQuery: typeof jQuery;
     modSC2DataManager: any;
     modUtils: any;
     addonBeautySelectorAddon: any;
@@ -173,7 +173,7 @@ declare global {
     get expectedModuleCount(): number;
     get registeredModuleCount(): number;
     get dependencyGraph(): any;
-    get yaml(): any;
+    get yaml(): typeof yaml;
     get modLoader(): any;
     get modUtils(): any;
     get gameVersion(): string;
@@ -626,6 +626,7 @@ declare global {
     convert: typeof convert;
 
     constructor();
+    core: MaplebirchCore;
 
     createLog(prefix: string): (message: string, level?: string, ...objects: any[]) => void;
     preInit(): Promise<void>;
@@ -825,13 +826,7 @@ declare global {
   }
 
   class consoleTools {
-    constructor(logger: (message: string, level?: string, ...objects: any[]) => void, allowedObjects?: string[]);
-
-    enableFullAccess(): boolean;
-    disableFullAccess(): boolean;
-    allowObject(objectName: string): boolean;
-    disallowObject(objectName: string): boolean;
-    setAllowedObjects(objects: string[]): boolean;
+    constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
     execute(type: 'javascript' | 'twine'): { success: boolean; error?: string; message?: string; result?: any };
   }
 
@@ -1337,13 +1332,14 @@ declare global {
   };
 
   const $: JQueryStatic;
+  const jQuery: JQueryStatic;
 
   interface JQueryStatic {
-    (selector: string, context?: Element | JQuery): JQuery;
-    (element: Element): JQuery;
-    (object: any): JQuery;
-    (func: Function): JQuery;
-    (array: any[]): JQuery;
+    (selector: string, context?: Element | Document | JQuery): JQuery;
+    (element: Element | Document | Window): JQuery;
+    (html: string, ownerDocument?: Document): JQuery;
+    (callback: (this: Document, $: JQueryStatic) => void): JQuery;
+    (arrayLike: ArrayLike<Element>): JQuery;
     (): JQuery;
     ajax?: any;
     get?: any;
@@ -1356,23 +1352,99 @@ declare global {
 
   interface JQuery {
     html(): string;
-    html(htmlString: string): this;
+    html(htmlString: string | ((index: number, oldhtml: string) => string)): this;
     text(): string;
-    text(textString: string): this;
+    text(textString: string | ((index: number, text: string) => string)): this;
     val(): any;
-    val(value: any): this;
-
-    addClass(className: string): this;
-    removeClass(className?: string): this;
-
+    val(value: any | ((index: number, value: any) => any)): this;
+    addClass(className: string | ((index: number, currentClassName: string) => string)): this;
+    removeClass(className?: string | ((index: number, className: string) => string)): this;
+    toggleClass(className: string, state?: boolean): this;
+    hasClass(className: string): boolean;
     css(propertyName: string): string;
     css(propertyName: string, value: string | number): this;
-
-    on(event: string, handler: Function): this;
-    off(event: string, handler?: Function): this;
-    click(handler: Function): this;
-
+    css(properties: Record<string, string | number>): this;
+    on(
+      events: string,
+      handler: (event: JQueryEventObject, ...args: any[]) => void
+    ): this;
+    on(
+      events: string,
+      selector: string,
+      handler: (event: JQueryEventObject, ...args: any[]) => void
+    ): this;
+    on(
+      events: string,
+      data: any,
+      handler: (event: JQueryEventObject, ...args: any[]) => void
+    ): this;
+    on(
+      events: string,
+      selector: string,
+      data: any,
+      handler: (event: JQueryEventObject, ...args: any[]) => void
+    ): this;
+    off(events?: string, selector?: string, handler?: Function): this;
+    click(handler?: (event: JQueryEventObject) => void): this;
+    trigger(eventType: string, extraParameters?: any[] | object): this;
+    find(selector: string): JQuery;
+    children(selector?: string): JQuery;
+    parent(selector?: string): JQuery;
+    parents(selector?: string): JQuery;
+    closest(selector: string): JQuery;
+    next(selector?: string): JQuery;
+    prev(selector?: string): JQuery;
+    siblings(selector?: string): JQuery;
+    append(content: string | JQuery | Element | ArrayLike<Element>): this;
+    prepend(content: string | JQuery | Element | ArrayLike<Element>): this;
+    before(content: string | JQuery | Element | ArrayLike<Element>): this;
+    after(content: string | JQuery | Element | ArrayLike<Element>): this;
+    remove(): this;
+    empty(): this;
+    replaceWith(newContent: string | JQuery | Element): this;
+    attr(attributeName: string): string;
+    attr(attributeName: string, value: string | number | boolean): this;
+    removeAttr(attributeName: string): this;
+    prop(propertyName: string): any;
+    prop(propertyName: string, value: any): this;
+    data(key: string, value: any): this;
+    data(key: string): any;
+    removeData(name?: string): this;
+    show(): this;
+    hide(): this;
+    toggle(display?: boolean): this;
+    animate(properties: object, duration?: number | string, easing?: string, complete?: Function): this;
+    fadeIn(duration?: number | string, complete?: Function): this;
+    fadeOut(duration?: number | string, complete?: Function): this;
+    slideUp(duration?: number | string, complete?: Function): this;
+    slideDown(duration?: number | string, complete?: Function): this;
+    each(callback: (index: number, element: Element) => void | false): this;
+    map(callback: (index: number, element: Element) => any): JQuery;
+    get(): Element[];
+    get(index: number): Element;
+    index(selector?: string | JQuery | Element): number;
+    is(selector: string | JQuery | Element | ((index: number, element: Element) => boolean)): boolean;
+    length: number;
+    [index: number]: Element;
     [key: string]: any;
+  }
+
+  interface JQueryEventObject extends Event {
+    data?: any;
+    result?: any;
+    currentTarget: Element;
+    delegateTarget: Element;
+    metaKey: boolean;
+    pageX: number;
+    pageY: number;
+    preventDefault(): void;
+    stopPropagation(): void;
+    stopImmediatePropagation(): void;
+    target: Element;
+    timeStamp: number;
+    type: string;
+    which: number;
+    originalEvent: Event;
   }
 
   function ordinalSuffixOf(i: number): number;
@@ -1433,6 +1505,11 @@ declare global {
   function between(x: any, min: number, max: number): boolean;
   function getRobinLocation(): string;
   function sydneySchedule(): void;
+
+  declare const combatActionColours: CombatActionColours;
+  interface CombatActionColours { [category: string]: { [attitude: string]: string[]; }; }
+
+  let combatListColor: (name:any, value:any, type?:any) => any;
 }
 
 export {};

@@ -5,7 +5,7 @@
     "cn": "秋枫白桦"
   },
   "alias": ["Simple Frameworks"], 
-  "version": "2.6.1",
+  "version": "2.6.3",
   "imgFileList": [
     "img/misc/sky/solar-eclipse-0.png",
     "img/misc/sky/solar-eclipse-1.png",
@@ -16,36 +16,37 @@
     "styles/maplebirchPanel​.css"
   ],
   "scriptFileList": [
-    "game/03-JavaScript/maplebirchDefineSugarCube.js",
-    "data/maplebirchVanillaSchedule.js"
+    "data/defineSugarCube.js",
+    "data/vanillaNPCSchedule.js"
   ],
   "scriptFileList_preload":[
-    "data/maplebirchData-v1.js"
+    "data/state-variables-v1.js"
   ],
   "scriptFileList_earlyload": [
-    "scriptEarly/modules/maplebirchShop.js",
-    "scriptEarly/modules/maplebirchHandling.js",
-    "scriptEarly/modules/maplebirchCharacter.js",
-    "scriptEarly/modules/maplebirchCombat.js"
+
   ],
   "scriptFileList_inject_early": [
     "scriptEarly/maplebirch-core.js",
-    "scriptEarly/Utils/maplebirchUtils.js",
-    "data/frameworkData.js",
-    "data/maplebirchWeather.js",
-    "scriptEarly/maplebirch-modload.js",
-    "scriptEarly/Utils/maplebirchTimeEvents.js",
-    "scriptEarly/Utils/maplebirchStateEvents.js",
-    "scriptEarly/Utils/maplebirchFrameworks.js",
-    "scriptEarly/Utils/maplebirchNPC-clothes.js",
-    "scriptEarly/Utils/maplebirchNPC-model.js",
-    "scriptEarly/Utils/maplebirchTransformation.js",
-    "scriptEarly/modules/maplebirchTimeState.js",
-    "scriptEarly/modules/maplebirchTools.js",
-    "game/03-JavaScript/maplebirchSFcompatible.js",
-    "scriptEarly/modules/maplebirchAudio.js",
-    "scriptEarly/modules/maplebirchVariables.js",
-    "scriptEarly/modules/maplebirchNPCs.js"
+    "scriptEarly/Utils/Utils.js",
+    "data/framework-data.js",
+    "data/modifyWeather.js",
+    "scriptEarly/addonPlugin.js",
+    "scriptEarly/Utils/TimeEvents.js",
+    "scriptEarly/Utils/StateEvents.js",
+    "scriptEarly/Utils/FrameworksUtils.js",
+    "scriptEarly/Utils/NPC-clothes.js",
+    "scriptEarly/Utils/NPC-model.js",
+    "scriptEarly/Utils/Transformation.js",
+    "scriptEarly/modules/TimeState.js",
+    "scriptEarly/modules/Tools.js",
+    "scriptEarly/SFCompatible.js",
+    "scriptEarly/modules/Audio.js",
+    "scriptEarly/modules/State-Variables.js",
+    "scriptEarly/modules/Character.js",
+    "scriptEarly/modules/NamedNPC.js",
+    "scriptEarly/modules/Combat.js",
+    "scriptEarly/modules/Internals.js",
+    "scriptEarly/modules/Shop.js"
   ],
   "tweeFileList": [
 
