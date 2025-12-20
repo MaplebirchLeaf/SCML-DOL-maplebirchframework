@@ -41,8 +41,7 @@
 		}
 
 		get ZIndices() {
-			// @ts-ignore
-			return maplebirch.npc.Sidebar.constructor.ZIndices;
+			return ZIndices;
 		}
 
 		/** @param {string} widget @param {any[]} args */
@@ -147,8 +146,6 @@
 		inject() {
 			this.#getData();
 			this.#update();
-			if (!V.maplebirch?.transformation) V.maplebirch.transformation = {};
-			Object.entries(this.config).forEach(([name, config]) => { if (!V.maplebirch.transformation[name]) V.maplebirch.transformation[name] = { build: 0, level: 0 }; });
 			this.#clear();
 		}
 
@@ -225,6 +222,7 @@
 			this.log('开始更新变形数据', 'DEBUG');
 			const vanillaAnimals = ['cat', 'cow', 'wolf', 'bird', 'fox'];
 			const vanillaSpecial = ['angel', 'demon', 'fallenAngel'];
+			Object.entries(this.config).forEach(([name, config]) => { if (!V.maplebirch.transformation[name]) V.maplebirch.transformation[name] = { build: 0, level: 0 }; });
 			if (this.transformation.traits) {
 				if (!V.transformationParts.traits) V.transformationParts.traits = {};
 				Object.entries(this.transformation.traits).forEach(([trait, value]) => {
@@ -267,14 +265,14 @@
 			if (!V.transformationParts) return false;
 			if (!this.vanilla) this.vanillaTransformation(true);
 			Object.keys(V.transformationParts).forEach(data => {
-				if (!this.vanilla.transformation.has(data)) if (!Object.keys(this.transformation).includes(data)) {
-					delete V.transformationParts[data];
-					delete V.maplebirch.transformation[data];
-				}
+				if (!this.vanilla.transformation.has(data) && !Object.keys(this.transformation).includes(data)) delete V.transformationParts[data];
 			});
-			if (V.transformationParts.traits && typeof V.transformationParts.traits === 'object') {
-				Object.keys(V.transformationParts.traits).forEach(trait => {
-					if (!this.vanilla.traits.has(trait)) if (!this.transformation.traits && (trait in this.transformation.traits)) delete V.transformationParts.traits[trait];
+			if (V.transformationParts.traits && typeof V.transformationParts.traits === 'object') Object.keys(V.transformationParts.traits).forEach(trait => { if (!this.vanilla.traits.has(trait) && !(this.transformation.traits && trait in this.transformation.traits)) delete V.transformationParts.traits[trait]; });
+			if (V.maplebirch.transformation) {
+				const validTransformations = new Set(['wolf', 'cat', 'cow', 'bird', 'fox', 'angel', 'demon', 'fallen', ...Object.keys(this.config)]);
+				Object.keys(V.maplebirch.transformation).forEach(name => {
+					const isVanilla = ['wolf', 'cat', 'cow', 'bird', 'fox', 'angel', 'demon', 'fallen'].includes(name);
+					if (!isVanilla && !validTransformations.has(name)) delete V.maplebirch.transformation[name];
 				});
 			}
 		}
@@ -448,7 +446,6 @@
 			this.#updateTransformationHistory();
 		}
 		
-		// 0.5.6：更新变形历史记录
 		#updateTransformationHistory() {
 			if (!V.transformationHistory || !Array.isArray(V.transformationHistory)) V.transformationHistory = [];
 			const vanillaTfs = ['angel', 'fallenangel', 'demon', 'dryad', 'wolfgirl', 'cat', 'cow', 'harpy', 'fox'];

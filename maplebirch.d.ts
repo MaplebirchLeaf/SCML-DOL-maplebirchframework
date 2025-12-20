@@ -21,9 +21,7 @@ declare global {
     DateTime: typeof DateTime;
     getFormattedDate: any;
     getShortFormattedDate: any;
-    lanSwitch(text: any): string;
-    lanSwitch(english: string, chinese: string, ...args: any[]): string;
-    lanSwitch(options: { EN: string; CN: string; [key: string]: string }): string;
+    lanSwitch: typeof lanSwitch;
     between: typeof between;
   }
 
@@ -902,6 +900,7 @@ declare global {
       importantNPCs: string[];
       specialNPCs: string[];
     };
+    romanceConditions: { [x: string]: (() => any)[]; };
     NPCNameList: string[];
     customStats: Record<string, NPCStatConfig>;
     Sidebar: NPCSidebar;
@@ -1501,15 +1500,20 @@ declare global {
     [key: string]: any;
   };
 
+  function lanSwitch(text: any): string;
+  function lanSwitch(english: string, chinese: string, ...args: any[]): string;
+  function lanSwitch(options: { EN: string; CN: string; [key: string]: string }): string;
   const playerNormalPregnancyType: () => string;
   function between(x: any, min: number, max: number): boolean;
   function getRobinLocation(): string;
   function sydneySchedule(): void;
-
   declare const combatActionColours: CombatActionColours;
   interface CombatActionColours { [category: string]: { [attitude: string]: string[]; }; }
-
   let combatListColor: (name:any, value:any, type?:any) => any;
+  function hasSexStat(input:string,required:number,modifiers?:boolean):boolean;
+  let isPossibleLoveInterest: (name:string) => boolean;
+
+  const ZIndices: {[key: string]: number};
 }
 
 export {};

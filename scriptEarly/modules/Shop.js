@@ -175,7 +175,7 @@
       if (options.changingRoom) {
         if (this.shopText[shopName].includes('beforeChangingRoom')) html += `\t\t<<maplebirchTextOutput "${shopName+'_beforeChangingRoom'}">><br><br>\n`;
         html += `\t\t<<if ${options.changingRoomCondition}>>\n`;
-        html += `\t\t\t<<icon "hanger.png">><<lanLink '更衣室' 'Changing Room'>>\n`;
+        html += `\t\t\t<<icon "hanger.png">><<lanLink [[Changing Room|Changing Room]]>>\n`;
         html += `\t\t\t\t<<ShowUnderEquip "normal">>\n`;
         html += `\t\t\t\t<<set $wardrobeExit to "${shopName + ' Shop'}">>\n`;
         html += `\t\t\t<</lanLink>>\n`;
@@ -188,7 +188,7 @@
       if (this.shopText[shopName].includes('beforeLeave')) html += `\t\t<<maplebirchTextOutput "${shopName+'_beforeLeave'}">><br><br>\n`;
 
       html += `\t\t<<if $tryOn.value isnot 0>>\n`;
-      html += `\t\t\t<<icon "hanger.png">><<lanLink "归还衣服">>\n`;
+      html += `\t\t\t<<icon "hanger.png">><<lanLink 'Return Clothes'>>\n`;
       html += `\t\t\t\t<<clothingReset>>\n`;
       html += `\t\t\t\t<<updatesidebarimg>>\n`;
       html += `\t\t\t\t<<updatesidebardescription>>\n`;
@@ -202,9 +202,9 @@
       
       html += `\t\t\t<<if $tryOn.value gt 0 and $tryOn.value lte $money>>\n`;
       html += `\t\t\t\t<<sendItemsToDropdown>>\n`;
-      html += `\t\t\t\t<<highicon>><<lanLink "购买衣物">><<buyTryOnClothes "wear">><<updateclothingshop>><</lanLink>>\n`;
+      html += `\t\t\t\t<<highicon>><<lanLink 'Buy Clothes'>><<buyTryOnClothes "wear">><<updateclothingshop>><</lanLink>>\n`;
       html += `\t\t\t\t<br>\n`;
-      html += `\t\t\t\t<<wardrobeicon>><<lanLink "购买衣物并送至衣柜">>\n`;
+      html += `\t\t\t\t<<wardrobeicon>><<lanLink 'Buy Clothes And Send To Wardrobe'>>\n`;
       html += `\t\t\t\t\t<<buyTryOnClothes "wardrobe">>\n`;
       html += `\t\t\t\t\t<<updatesidebarmoney>>\n`;
       html += `\t\t\t\t\t<<updatesidebarimg>>\n`;
@@ -220,7 +220,7 @@
       
       html += `\t\t<<else>>\n`;
       html += `\t\t\t<<getouticon>>\n`;
-      html += `\t\t\t<<lanLink '离开' '${options.exitPassage}'>>\n`;
+      html += `\t\t\t<<lanLink [[Leave|${options.exitPassage}]]>>\n`;
       html += `\t\t\t\t<<shopClothingFilterReset>>\n`;
       html += `\t\t\t\t<<ShowUnderEquip "normal">>\n`;
       html += `\t\t\t\t<<ShowUnderEquip "over">>\n`;

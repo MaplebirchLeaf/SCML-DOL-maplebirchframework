@@ -173,10 +173,10 @@
         <</language>>
         <span class="gold bold"><<lanSwitch 'Custom Bodywriting' '定制涂鸦'>></span><br>
         <<lanSwitch 'The characteristics of this bodywriting are' '这幅涂鸦的所具有的特定'>>：
-        <br><<lanSwitch 'Color' '颜色'>>：<br><<radiobuttonsfrom '_maplebirchBodywriting.color' _maplebirchTextColorNames>>
-        <div id='maplebirchBodyWriting' style='display:inline'></div><br><<lanSwitch 'Gender' '性别'>>：
+        <br><<lanSwitch 'Color: ' '颜色：'>><br><<radiobuttonsfrom '_maplebirchBodywriting.color' _maplebirchTextColorNames>>
+        <div id='maplebirchBodyWriting' style='display:inline'></div><br><<lanSwitch 'Gender: ' '性别：'>>
         <<lanListbox '_maplebirchBodywriting.gender'>><<option 'asexual' 'n'>><<option 'male' 'm'>><<option 'famale' 'f'>><<option 'hermaphrodite' 'h'>><</lanListbox>>
-        <br><<lanSwitch 'Category' '类别'>>：<<lanListbox '_maplebirchBodywriting.special' autoselect>><<optionsfrom _maplebirchBodywritingSpecialNames>><</lanListbox>>
+        <br><<lanSwitch 'Category: ' '类别：'>><<lanListbox '_maplebirchBodywriting.special' autoselect>><<optionsfrom _maplebirchBodywritingSpecialNames>><</lanListbox>>
         <br><<lanSwitch 'Related to the Love Interest?' '与恋爱对象有关?'>>
         <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'This option will only take effect when the category is selected as &quot;Love Interest&quot;' '仅在类别选用&quot;恋爱对象&quot;时，此选项才会生效'>></span>">(?)</span>
         <<set _maplebirchBodywritingloveInterestNames = ['None', ...setup.loveInterestNpc.filter(name => isPossibleLoveInterest(name))]>>
@@ -190,7 +190,7 @@
         <<option 'CN'>>把 <<textbox '_maplebirchBodywriting.text' ''>> 用 <<lanListbox '_maplebirchBodywriting.pen'>><<optionsfrom _maplebirchBodywritingPenNames>><</lanListbox>> 写在你的 <<listbox '_maplebirchBodywriting.bodyPart'>><<optionsfrom _bodyPartOptions>><</listbox>> 上
         <<option 'EN'>>Write <<textbox '_maplebirchBodywriting.text' ''>> on your <<listbox '_maplebirchBodywriting.bodyPart'>><<optionsfrom _bodyPartOptions>><</listbox>> with a <<lanListbox '_maplebirchBodywriting.pen'>><<optionsfrom _maplebirchBodywritingPenNames>><</lanListbox>>
         <</language>>
-        <<lanLink '应用' $passage>>
+        <<lanLink 'confirm' 'capitalize' 'class:no-numberify'>>
           <<set _maplebirchBodywriting.skin to {
             writing: T.maplebirchBodywriting.color === 'custom' ? \`<span style='color:\${T.maplebirchBodywriting.custom}'>\${T.maplebirchBodywriting.text}</span>\` : \`<span class='\${T.maplebirchBodywriting.color}'>\${T.maplebirchBodywriting.text}</span>\`,
             writ_cn: T.maplebirchBodywriting.color === 'custom' ? \`<span style='color:\${T.maplebirchBodywriting.custom}'>\${T.maplebirchBodywriting.text}</span>\` : \`<span class='\${T.maplebirchBodywriting.color}'>\${T.maplebirchBodywriting.text}</span>\`,
@@ -207,7 +207,7 @@
     <</widget>>`
   ]
 
-  const overlayWidgets = [
+  const overlay = [
     `<<widget 'maplebirchReplace'>>
       <<set _key to _args[0]>>
       <<if !_key>><<exit>><</if>>
@@ -229,32 +229,29 @@
     <</widget>>`,
   ];
 
-  const audioWidgets = [
+  const audio = [
     `<<widget 'maplebirch-playback'>>
-      <div class='settingsToggleItemWide'>
-        <details class='maplebirch-playback'>
-          <summary class='maplebirch-playback'><<= maplebirch.t('music player')>></summary>
-          <div class='maplebirch-playback-content'>
-            <<set _modName to _args[0]>>
-            <<set $maplebirch.audio.playlist to maplebirch.audio.getPlayer(_modName).audioKeys>>
-            <<for _key range $maplebirch.audio.playlist>>
-              <<capture _key>>
-              <<link _key>>
-                <<run $maplebirch.audio.currentTrack = _key>>
-                <<run $maplebirch.audio.currentIndex = $maplebirch.audio.playlist.indexOf(_key)>>
-                <<run maplebirch.audio.getPlayer(_modName).stopAll()>>
-                <<run maplebirch.audio.getPlayer(_modName).play(_key, { loop: V.maplebirch.audio.loopMode === 'single' })>>
-                <<replace '#maplebirch-playback-controls'>><<maplebirch-playback-controls _modName>><</replace>>
-              <</link>><br>
-              <</capture>>
-            <</for>><br>
-            <div id='maplebirch-playback-controls'><<maplebirch-playback-controls _modName>></div><br>
-            <<= maplebirch.t('import audio')>>: <input type='file' accept='audio/*' onchange='maplebirch.audio.addAudioFromFile(this.files[0], T.modName).then(success => {if (success) maplebirch.audio.refreshCache()});'>
-            <<set $_clearCache to maplebirch.t('Clear',true)+maplebirch.t('Cache')>>
-            <<link $_clearCache>><<run maplebirch.audio.refreshCache(_modName)>><</link>>
-          </div>
-        </details>
-      </div>
+      <details class='maplebirch-playback'>
+        <summary class='maplebirch-playback'><span class='red'><<lanSwitch 'Music Player' '音乐播放器'>></span></summary>
+        <div class='maplebirch-playback-content'>
+          <<set _modName to _args[0]>>
+          <<set $maplebirch.audio.playlist to maplebirch.audio.getPlayer(_modName).audioKeys>>
+          <<for _key range $maplebirch.audio.playlist>>
+            <<capture _key>>
+            <<link _key>>
+              <<run $maplebirch.audio.currentTrack = _key>>
+              <<run $maplebirch.audio.currentIndex = $maplebirch.audio.playlist.indexOf(_key)>>
+              <<run maplebirch.audio.getPlayer(_modName).stopAll()>>
+              <<run maplebirch.audio.getPlayer(_modName).play(_key, { loop: V.maplebirch.audio.loopMode === 'single' })>>
+              <<replace '#maplebirch-playback-controls'>><<maplebirch-playback-controls _modName>><</replace>>
+            <</link>><br>
+            <</capture>>
+          <</for>><br>
+          <div id='maplebirch-playback-controls'><<maplebirch-playback-controls _modName>></div><br>
+          <<lanSwitch 'Import Audio' '导入音频'>>: <input type='file' accept='audio/*' onchange='maplebirch.audio.addAudioFromFile(this.files[0], T.modName).then(success => {if (success) maplebirch.audio.refreshCache()});'>
+          <<lanLink 'clear cache' 'title'>><<run maplebirch.audio.deleteModAudio(_modName)>><</lanLink>>
+        </div>
+      </details>
     <</widget>>`,
     `<<widget 'maplebirch-playback-controls'>>
       <<set _playing to maplebirch.audio.getPlayer(_modName) ? maplebirch.audio.getPlayer(_modName).isPlaying() : []>>
@@ -268,10 +265,10 @@
       <</if>>
       <div class='current-track-display'>
         <<if V.maplebirch.audio.currentTrack>>
-          <<= maplebirch.t('currently playing')>>: <strong><span class='gold'><<= V.maplebirch.audio.currentTrack>></span></strong>
-          <<if V.maplebirch.audio.loopMode === 'single'>>(<<= maplebirch.t('single repeat')>>)<</if>>
+          <<lanSwitch 'Now Playing' '当前播放'>>: <strong><span class='gold'><<= V.maplebirch.audio.currentTrack>></span></strong>
+          <<if V.maplebirch.audio.loopMode === 'single'>>(<<lanSwitch 'Repeat One' '单曲循环'>>)<</if>>
         <<else>>
-          <<= maplebirch.t('there are no tracks playing')>>
+          <<lanSwitch 'Nothing is playing right now.' '当前没有正在播放的内容。'>>
         <</if>>
       </div>
       <<if V.maplebirch.audio.currentTrack && maplebirch.audio.getPlayer(_modName)>>
@@ -318,7 +315,7 @@
         <</script>>
       <</if>>
       <div class='audio-controls'>
-        <<lanLink 'previous song'>>
+        <<lanLink 'previous' 'title'>>
           <<if V.maplebirch.audio.currentIndex > 0>>
             <<set V.maplebirch.audio.currentIndex to V.maplebirch.audio.currentIndex - 1>>
           <<else>>
@@ -330,17 +327,17 @@
           <<replace '#maplebirch-playback-controls'>><<maplebirch-playback-controls _modName>><</replace>>
         <</lanLink>>
         <<if _playing.includes(V.maplebirch.audio.currentTrack)>>
-          <<lanLink 'pause'>>
+          <<lanLink 'pause' 'title'>>
             <<run maplebirch.audio.getPlayer(_modName).togglePause(V.maplebirch.audio.currentTrack)>>
             <<replace '#maplebirch-playback-controls'>><<maplebirch-playback-controls _modName>><</replace>>
           <</lanLink>>
         <<elseif _isPaused>>
-          <<lanLink 'resume'>>
+          <<lanLink 'resume' 'title'>>
             <<run maplebirch.audio.getPlayer(_modName).togglePause(V.maplebirch.audio.currentTrack)>>
             <<replace '#maplebirch-playback-controls'>><<maplebirch-playback-controls _modName>><</replace>>
           <</lanLink>>
         <<elseif V.maplebirch.audio.currentTrack>>
-          <<lanLink 'playback'>>
+          <<lanLink 'playback' 'title'>>
             <<run maplebirch.audio.getPlayer(_modName).play(
               V.maplebirch.audio.currentTrack,
               { loop: V.maplebirch.audio.loopMode === 'single', volume: V.maplebirch.audio.volume, stopOthers: false }
@@ -348,7 +345,7 @@
             <<replace '#maplebirch-playback-controls'>><<maplebirch-playback-controls _modName>><</replace>>
           <</lanLink>>
         <</if>>
-        <<lanLink 'next song'>>
+        <<lanLink 'next' 'title'>>
           <<if V.maplebirch.audio.currentIndex < V.maplebirch.audio.playlist.length - 1>>
             <<set V.maplebirch.audio.currentIndex to V.maplebirch.audio.currentIndex + 1>>
           <<else>>
@@ -359,13 +356,13 @@
           <<run maplebirch.audio.getPlayer(_modName).play(V.maplebirch.audio.currentTrack, {loop: V.maplebirch.audio.loopMode === 'single', volume: V.maplebirch.audio.volume})>>
           <<replace '#maplebirch-playback-controls'>><<maplebirch-playback-controls _modName>><</replace>>
         <</lanLink>>
-        <<lanLink 'stop'>>
+        <<lanLink 'stop' 'title'>>
           <<run maplebirch.audio.getPlayer(_modName).stopAll()>>
           <<set V.maplebirch.audio.currentTrack to null>>
           <<set V.maplebirch.audio.currentIndex to -1>>
           <<replace '#maplebirch-playback-controls'>><<maplebirch-playback-controls _modName>><</replace>>
         <</lanLink>>
-        <<lanLink 'loop mode'>>
+        <<lanLink 'loop mode' 'title'>>
           <<if V.maplebirch.audio.loopMode === 'none'>>
             <<set V.maplebirch.audio.loopMode to 'single'>>
           <<else>>
@@ -374,7 +371,7 @@
           <<replace '#maplebirch-playback-controls'>><<maplebirch-playback-controls _modName>><</replace>>
         <</lanLink>>
       </div>
-      <label><<= maplebirch.t('volume')>>:</label>
+      <label><<lanSwitch 'Volume' '音量'>>:</label>
       <<numberslider '$maplebirch.audio.volume' $maplebirch.audio.volume 0 1 0.01 {
         value: v => Math.round(v * 100) + '%',
         onInputChange: value => { maplebirch.audio.getPlayer(T.modName).Volume = value; }
@@ -382,7 +379,7 @@
     <</widget>>`,
   ];
 
-  const characterWidgets = [
+  const character = [
     `<<widget 'maplebirch-npc-model'>>
       <div id='img-npc'>
         <<selectmodel 'npcmodel' 'sidebar'>>
@@ -402,11 +399,11 @@
             <<set _config to maplebirch.char.transformation.config[_modName]>>
             <div class='settingsToggleItemWide'>
               <<if _config.icon>><<icon _config.icon>><</if>>
-              <span class='gold bold'><<= maplebirch.t('Mods')+'：'+maplebirch.t(_modName)>></span>
+              <span class='gold bold'><<lanSwitch 'Mods: ' '模组：'>>+maplebirch.t(_modName)>></span>
               <<if $transformationParts[_modName]>><<for _partName, $_partValue range $transformationParts[_modName]>><<capture _partName, $_partValue>>
                 <<if $_partValue isnot 'disabled'>>
                   <<set _varPath to '$transformationParts.'+_modName+'.'+_partName>>
-                  <div class='tf-part-item'><<= maplebirch.t(String(_partName))>>：<<lanListbox _varPath autoselect>><<option '隐藏' 'hidden'>><<option '默认' 'default'>><</lanListbox>></div>
+                  <div class='tf-part-item'><<= maplebirch.t(String(_partName))>>：<<lanListbox _varPath autoselect>><<option 'hidden' 'hidden'>><<option 'default' 'default'>><</lanListbox>></div>
                 <</if>>
               <</capture>><</for>><</if>>
             </div>
@@ -417,7 +414,7 @@
         !_modTransforms.every(transform => V.transformationParts[transform]?.tail is 'disabled') && ['demon', 'cat', 'cow', 'wolf', 'bird', 'fox'].every(transform => T[transform].tail is 'disabled') || 
         !_modTransforms.every(transform => V.transformationParts[transform]?.wings is 'disabled') && ['angel', 'fallen', 'demon', 'bird'].every(transform => T[transform].wings is 'disabled')>>
         <div class='settingsToggleItemWide no-numberify'>
-          <span class='gold bold'><<= maplebirch.tool.convert(maplebirch.t('layer',true)+maplebirch.t('adjustments'),'title')>>：</span>
+          <span class='gold bold'><<lanSwitch 'Layer Adjustments: ' '图层调整：'>></span>
           <br><div class='no-numberify'>
           <<if !_modTransforms.every(transform => V.transformationParts[transform]?.horns is 'disabled')>>
             <<set _front_text to $hornslayer is 'front' ? 'Prioritise headwear over horns' : 'Prioritise horns over headwear'>>
@@ -440,7 +437,7 @@
     <</widget>>`,
   ];
 
-  const modHintWidgets = [
+  const modHint = [
     `<<widget 'maplebirchModHint'>>
       <<if !$maplebirch.hintlocation>><<set $maplebirch.hintlocation to 'ModHint'>><</if>>
       <<switch $maplebirch.hintlocation>>
@@ -460,15 +457,15 @@
       <</switch>>
       <div id='overlayTabs' class='tab'>
         <<closeButtonMobile>>
-        <<lanButton '模组介绍'>>
+        <<lanButton 'mods introduction' 'title'>>
           <<toggleTab>><<set $maplebirch.hintlocation to 'ModHint'>>
           <<replace #customOverlayContent>><<maplebirchModHint>><</replace>>
         <</lanButton>>
-        <<lanButton '模组内容'>>
+        <<lanButton 'mods contents' 'title'>>
           <<toggleTab>><<set $maplebirch.hintlocation to 'Content'>>
           <<replace #customOverlayContent>><<maplebirchModHint>><</replace>>
         <</lanButton>>
-        <<lanButton '角色面板'>>
+        <<lanButton 'character panel' 'title'>>
           <<toggleTab>><<set $maplebirch.hintlocation to 'Panel'>>
           <<replace #customOverlayContent>><<maplebirchModHint>><</replace>>
           <<run maplebirch.trigger('characterRender')>>
@@ -483,14 +480,14 @@
     <</widget>>`,
     `<<widget 'maplebirchModHintDesktop'>>
       <<if $options.maplebirch?.modHint is 'desktop'>>
-        <<lanButton '秋枫白桦' 'upper'>>
+        <<lanButton 'maplebirch' 'upper'>>
           <<maplebirchReplace 'maplebirchModHint' 'title'>>
           <<run maplebirch.trigger('characterRender')>>
         <</lanButton>>
       <</if>>
     <</widget>>`,
     `<<widget 'maplebirchModHintContent'>>
-      <span class='searchButtons'>
+      <span class='searchButtons' style='display:flex'>
         <<textbox '_maplebirchModHintTextbox' ''>>
         <<lanButton 'search' 'capitalize'>><<run maplebirch.tool.modhint.searchButtonClicked()>><</lanButton>>
         <<lanButton 'clear' 'capitalize'>><<run maplebirch.tool.modhint.clearButtonClicked()>><</lanButton>>
@@ -517,10 +514,10 @@
 
   const specialWidget = [
     ...bodywriting,
-    ...overlayWidgets,
-    ...audioWidgets,
-    ...characterWidgets,
-    ...modHintWidgets,
+    ...overlay,
+    ...audio,
+    ...character,
+    ...modHint,
   ];
 
   const defaultData = {
@@ -533,18 +530,18 @@
       <<setupOptions>>
       <div class='settingsGrid'>
         <div class='settingsHeader options'>
-          <span class='gold'><<= maplebirch.t('Maplebirch Frameworks')>></span>
+          <span class='gold'><<lanSwitch 'Maplebirch Framework' '秋枫白桦框架'>></span>
         </div>
         <div class='settingsToggleItem'>
-          <span class='gold'><<= maplebirch.t('Current Mods Language Setting')>></span>
-          <<set _selectedLang to maplebirch.lang.language>>
-          <<lanListbox '_selectedLang' autoselect>><<option 'English' 'EN'>><<option 'Chinese' 'CN'>><</lanListbox>>
+          <span class='gold'><<lanSwitch 'Current Framework Language' '当前框架语言'>></span>
+          <<set _maplebirchLanguage to maplebirch.Language>>
+          <<lanListbox '_maplebirchLanguage' autoselect>><<option 'English' 'EN'>><<option 'Chinese' 'CN'>><</lanListbox>>
         </div>
         <div class='settingsToggleItem'>
-          <label><<checkbox '$options.maplebirch.debug' false true autocheck>><<= maplebirch.t('DEBUG')+maplebirch.t('Mode')>></label>
+          <label><<checkbox '$options.maplebirch.debug' false true autocheck>><<lanSwitch 'DEBUG MODE' '调试模式'>></label>
         </div>
         <div class='settingsToggleItem'>
-          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('sidebar',true)+maplebirch.t('position',true)+maplebirch.t('selection'),'capitalize')>></span>
+          <span class='gold'><<lanSwitch 'Sidebar Control Position Selection' '侧边栏控件位置选择'>></span>
           <<lanListbox '$options.maplebirch.modHint' autoselect>><<option 'mobile client' 'mobile'>><<option 'desktop client' 'desktop'>><<option 'disable' 'disable'>><</lanListbox>>
           <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'Update next time the interface is opened' '在下次打开界面时更新'>></span>">(?)</span>
         </div>
@@ -553,8 +550,8 @@
           <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'Customized bodywriting can be created at the mirror after activation.' '启用后在镜子处可定制涂鸦。'>></span>">(?)</span>
         </div>
         <div class='settingsToggleItem'>
-          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('maplebirch',true)+maplebirch.t('celestial phenomenons settings'),'capitalize')>></span>
-          <label><<checkbox '$options.maplebirch.solarEclipse' false true autocheck>><<= maplebirch.t('solar eclipse')>></label>
+          <span class='gold'><<lanSwitch 'Enable Celestial Events' '启用特殊天象'>></span>
+          <label><<checkbox '$options.maplebirch.solarEclipse' false true autocheck>><<lanSwitch 'Solar Eclipse' '日蚀'>></label>
           <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'When enabled, a solar eclipse will occur in the specified month.' '启用后将在指定月份出现日蚀。'>></span>">(?)</span>
         </div>
         <div class='settingsToggleItem'>
@@ -562,15 +559,15 @@
           <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'After enabling, it overrides the original schedule location detection for Robin and Sydney.' '启用后覆盖原版的罗宾和悉尼的日程地点检测。'>></span>">(?)</span>
         </div>
         <div class='settingsToggleItem'>
-          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('total number of status displays'),'capitalize')>></span>
+          <span class='gold'><<lanSwitch 'Total Number Of Social Status Displays' '社交栏状态显示总数'>></span>
           <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'Adjust the total number of status displays for Primary Relationships NPCs in the SOCIAL bar.' '调整社交栏中主要关系NPC的状态显示总数。'>></span>">(?)</span>
           <br><div class='maplebirch-relationcount-slider'><<numberslider '$options.maplebirch.relationcount' $options.maplebirch.relationcount 2 10 2>></div>
         </div>
         <div class='settingsToggleItemWide'>
           <<set _npcsidebarName = {}>>
           <<set setup.NPCNameList.forEach(name => T.npcsidebarName[maplebirch.autoTranslate(maplebirch.tool.convert(name, 'title'))] = name)>>
-          <label onclick='maplebirch.trigger("update")'><<checkbox '$options.maplebirch.npcsidebar.show' false true autocheck>><<= maplebirch.tool.convert('NPC '+maplebirch.t('model',true)+maplebirch.t('display',true),'title')>></label> |
-          <label onclick='maplebirch.trigger("update")'><<checkbox '$options.maplebirch.npcsidebar.model' false true autocheck>><<= maplebirch.tool.convert(maplebirch.t('canvas')+maplebirch.t('Mode'),'pascal')>></label>
+          <label onclick='maplebirch.trigger("update")'><<checkbox '$options.maplebirch.npcsidebar.show' false true autocheck>><<lanSwitch 'NPC Sidebar Image Display' 'NPC侧边栏图像显示'>></label> |
+          <label onclick='maplebirch.trigger("update")'><<checkbox '$options.maplebirch.npcsidebar.model' false true autocheck>><<lanSwitch 'PC MODEL MODE' 'PC模型模式'>></label>
           <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'After enabling the display, named NPCs will show their models when nearby, with the canvas mode set to the player model' '开启显示后命名NPC在附近将显示模型，画布模式为玩家模型'>></span>">(?)</span><br>
           <<lanListbox '$options.maplebirch.npcsidebar.nnpc' autoselect>><<optionsfrom _npcsidebarName>><</lanListbox>>
           <<if $options.maplebirch.npcsidebar.nnpc>>
@@ -579,57 +576,42 @@
             <</if>>
             <<set _fixedName = \`$options.maplebirch.npcsidebar.display.\${$options.maplebirch.npcsidebar.nnpc}\`>>
             <<set _npcsidebarDisplay = ['none'].concat(Array.from(maplebirch.npc.Sidebar.display[$options.maplebirch.npcsidebar.nnpc]))>>
-            <<= maplebirch.tool.convert(maplebirch.t('graphic',true)+maplebirch.t('selection'), 'capitalize')>>：<<radiobuttonsfrom _fixedName _npcsidebarDisplay>>
+            <<lanSwitch 'Graphic Selection: ' '图形选择：'>><<radiobuttonsfrom _fixedName _npcsidebarDisplay>>
           <</if>>
         </div>
       </div><hr>`,
     Cheats : `
+      <<if $options.maplebirch.debug>><div class='settingsGrid'><<run maplebirch.trigger('update')>>
+        <div id='ConsoleCheat' class='settingsToggleItemWide'>
+          <details class='JSCheatConsole'>
+            <summary class='JSCheatConsole'>JavaScript <<lanSwitch 'Code Cheater' '作弊器'>></summary>
+            <div class='searchButtons'>
+              <div class='input-row'><<textbox '_maplebirchJSCheatConsole' ''>><<lanButton 'execute' 'capitalize'>><<run maplebirch.tool.console.execute('javascript')>><</lanButton>></div>
+              <span id='js-cheat-console-status' class='cheat-console-status'></span>
+            </div>
+          </details>
+          <details class='TwineCheatConsole'>
+            <summary class='TwineCheatConsole'>Twine <<lanSwitch 'Code Cheater' '作弊器'>></summary>
+            <div class='searchButtons'>
+              <div class='input-row'><<textbox '_maplebirchTwineCheatConsole' ''>><<lanButton 'execute' 'capitalize'>><<run maplebirch.tool.console.execute('twine')>><</lanButton>></div>
+              <span id='twine-cheat-console-status' class='cheat-console-status'></span>
+            </div>
+          </details>
+        </div>
+      </div><</if>>
       <div class='settingsGrid'>
-        <div class='settingsHeader options'><span class='gold'><<= maplebirch.t('Mods Cheats')>></span></div>
-        <<if $options.maplebirch.debug>><<run maplebirch.trigger('update')>>
-          <div id='ConsoleCheat' class='settingsToggleItemWide'>
-            <<set _CodeCheater to maplebirch.t('Code Cheater')>>
-            <details class='JSCheatConsole'>
-              <summary class='JSCheatConsole'>JavaScript <<= maplebirch.t('Code Cheater')>></summary>
-              <div class='searchButtons'>
-                <div class='input-row'>
-                  <<textbox '_maplebirchJSCheatConsole' ''>>
-                  <<lanButton 'execute'>>
-                    <<run maplebirch.tool.console.execute('javascript')>>
-                  <</lanButton>>
-                </div>
-                <span id='js-cheat-console-status' class='cheat-console-status'></span>
-              </div>
-            </details>
-            <details class='TwineCheatConsole'>
-              <summary class='TwineCheatConsole'>Twine <<= maplebirch.t('Code Cheater')>></summary>
-              <div class='searchButtons'>
-                <div class='input-row'>
-                  <<textbox '_maplebirchTwineCheatConsole' ''>>
-                  <<lanButton 'execute'>>
-                    <<run maplebirch.tool.console.execute('twine')>>
-                  <</lanButton>>
-                </div>
-                <span id='twine-cheat-console-status' class='cheat-console-status'></span>
-              </div>
-            </details>
-          </div>
-        <</if>>
-      </div><hr>
-      <div class='settingsGrid'>
-        <div class='settingsHeader options'><<= maplebirch.tool.convert(maplebirch.t('Mods',true)+maplebirch.t('transformation'),'title')>></div>
+        <div class='settingsHeader options'><<lanSwitch 'Mods Transformation' '模组转化'>></div>
         <<if Object.keys(V.maplebirch?.transformation).length>><div class='settingsToggleItem'>
-          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('Mods',true)+maplebirch.t('transformation',true)+maplebirch.t('type'),'title')>></span><br>
+          <span class='gold'><<lanSwitch 'Transformation Type' '转化种类'>></span><br>
           <<for _modName range Object.keys(V.maplebirch?.transformation)>>
             <<capture _modName>>
             <<set _config = maplebirch.char.transformation.config[_modName]>>
               <<if _config.icon>><<icon _config.icon>><</if>>
               <<= maplebirch.t(_modName)>>：
-              <<lanLink 'Set'>>
+              <<lanLink 'set' 'capitalize'>>
                 <<clearDivineTransformations>><<clearAnimalTransformations>>
                 <<= \`<<\${_modName}Transform>>\`>><<updatesidebarimg>>
-                <</lanLink>> | 
-              <<lanLink 'Clear'>>
+              <</lanLink>> | <<lanLink 'clear' 'capitalize'>>
                 <<clearDivineTransformations>><<clearAnimalTransformations>>
                 <<= \`<<\${_modName}Transform 99>>\`>><<updatesidebarimg>>
               <</lanLink>>
@@ -638,7 +620,7 @@
           <</for>>
         </div>
         <div class='settingsToggleItem'>
-          <span class='gold'><<= maplebirch.tool.convert(maplebirch.t('Mods',true)+maplebirch.t('transformation',true)+maplebirch.t('points'),'title')>></span><br>
+          <span class='gold'><<lanSwitch 'Transformation Points' '转化点数'>></span><br>
           <<for _modName range Object.keys(V.maplebirch?.transformation || {})>>
             <<capture _modName>>
               <<set _config to maplebirch.char.transformation.config[_modName]>>
@@ -683,9 +665,9 @@
       { src: '\t\t</div>\n\t</div>', applybefore: '\t\t\t<<maplebirchWeaponBox>>\n\t\t' }
     ],
     overlayReplace: [
-      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleSaves">>', applybefore: '\t<<lanButton "Mods Settings">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>\n\t\t<</lanButton>>\n\t' },
-      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleOptions">>', applybefore: '\t<<lanButton "Mods">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #cheatsShown>><<maplebirchCheats>><</replace>>\n\t\t\t<<run $("#customOverlayContent").scrollTop(0);>>\n\t\t<</lanButton>>\n\t' },
-      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleFeats">>', applybefore: '\t<<lanButton "Mods Statistics">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchStatistics>><</replace>>\n\t\t<</lanButton>>\n\t' }
+      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleSaves">>', applybefore: '\t<<lanButton "mods settings" "title">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>\n\t\t<</lanButton>>\n\t' },
+      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleOptions">>', applybefore: '\t<<lanButton "mods cheats" "title">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #cheatsShown>><<maplebirchCheats>><</replace>>\n\t\t\t<<run $("#customOverlayContent").scrollTop(0);>>\n\t\t<</lanButton>>\n\t' },
+      { src: '</div>\n\t<<closeButton>>\n<</widget>>\n\n<<widget "titleFeats">>', applybefore: '\t<<lanButton "mods statistics" "title">>\n\t\t\t<<toggleTab>>\n\t\t\t<<replace #customOverlayContent>><<maplebirchStatistics>><</replace>>\n\t\t<</lanButton>>\n\t' }
     ],
     'Options Overlay': [
       { src: '<</widget>>\n\n<<widget "setFont">>', applybefore: '\t<<maplebirchInformation>>\n' }
@@ -742,6 +724,10 @@
       { src: '<<if $genderknown.includes($npc[_iii])>>', to: '<<if maplebirch.tool.contains($genderknown, $npc)>>' },
       { srcmatch: /<<if \$npc\.length is 1 and \(\["Kylar","Sydney","Gwylan"\]\.includes\(\$npc\[0\]\)\)>>[\s\S]*?<<if \$npc\[0\] is "Sydney" and !\$sydneySeen\.includes\("herm"\)\s*>>[\s\S]*?<<set \$sydneySeen\.pushUnique\("herm"\)>>[\s\S]*?<<elseif \$npc\[0\] is "Kylar">>[\s\S]*?<<elseif \$npc\[0\] is "Gwylan" and !\$gwylanSeen\.includes\("herm"\)>>[\s\S]*?<<\/if>>/, to: '<<if $npc.some(npc => maplebirch.combat.Reaction.HermNameList.includes(npc))>>\n\t\t\t\t<<= maplebirch.combat.Reaction.check("herm")>>'},
       { srcmatch: /<<if \$npc\.length is 1 and \(\["Kylar","Sydney","Gwylan"\]\.includes\(\$npc\[0\]\)\)>>\s*<<if \$npc\[0\] is "Sydney" and !\$sydneySeen\.includes\("crossdress"\)\s*>>\s*<<set \$sydneySeen\.pushUnique\("crossdress"\)>>[\s\S]*?<<elseif \$npc\[0\] is "Kylar">>[\s\S]*?<<elseif \$npc\[0\] is "Gwylan" and !\$gwylanSeen\.includes\("crossdress"\)>>[\s\S]*?<<\/if>>/, to: '<<if $npc.some(npc => maplebirch.combat.Reaction.CDNameList.includes(npc))>>\n\t\t\t\t<<= maplebirch.combat.Reaction.check("crossdress")>>'},
+    ],
+    'Widgets Wardrobe': [
+      { src: ')<</if>>\n\t\t<br>', applyafter: '\n\t\t<<lanSwitch "Search: " "搜索：">><<textbox "$maplebirch.wardrobeSearch" $maplebirch.wardrobeSearch>><div class="outfitContainer no-numberify" style="display: inline-block;"><<lanButton "confirm" "capitalize">><<run Dynamic.render()>><</lanButton>></div><br>' },
+      { src: '<</if>>\n\t\t\t<div class="wardrobeItem wardrobe-action no-numberify">', to: '<</if>>\n\t\t\t<<if $maplebirch.wardrobeSearch isnot "">><<run $maplebirch.wardrobeSearch.toLowerCase()>><<language>><<option "CN">><<if !_itemData.cn_name_cap.toLowerCase().includes($maplebirch.wardrobeSearch)>><<continue>><</if>><<option "EN">><<if !_itemData.name_cap.toLowerCase().includes($maplebirch.wardrobeSearch)>><<continue>><</if>><</language>><</if>>\n\t\t\t<div class="wardrobeItem wardrobe-action no-numberify">'}
     ]
   };
 

@@ -102,16 +102,14 @@
       const statusElement = $('#js-cheat-console-status');
       statusElement.empty().removeClass('success error visible');
       if (typeof code !== 'string' || code.trim() === '') {
-        this.log('执行失败：请输入有效的 JavaScript 代码', 'ERROR');
-        this.#updateJSStatus('执行失败：请输入有效的 JavaScript 代码', false);
-        return { success: false, error: '请输入有效的 JavaScript 代码' };
+        this.#updateJSStatus(`${lanSwitch('Execution failed: Please enter valid JavaScript code.', '执行失败：请输入有效的 JavaScript 代码。')}`, false);
+        return { success: false, error: lanSwitch('Please enter valid JavaScript code.', '请输入有效的 JavaScript 代码。') };
       }
       try {
         result = this.#executeJSCode(code);
         if (result instanceof Error) throw result;
         const hasExplicitReturn = /\breturn\b\s*[^;]*;?$|return;/.test(code);
-        const message = hasExplicitReturn ? `执行成功 → ${this.#formatResult(result)}` : '代码已执行';
-        this.log('JS代码执行成功', 'INFO', result);
+        const message = hasExplicitReturn ? lanSwitch('Execution successful → ', '执行成功 → ') + this.#formatResult(result) : lanSwitch('Code executed.', '代码已执行。');
         this.#updateJSStatus(message, true);
         return { 
           success: true, 
@@ -120,9 +118,8 @@
           globals: this.globalNamespace
         };
       } catch (/**@type {any}*/error) {
-        const errorMsg = error.message || '未知错误';
-        const message = `执行错误 → ${errorMsg}`;
-        this.log('执行失败', 'ERROR', error);
+        const errorMsg = error.message || lanSwitch('Unknown error', '未知错误');
+        const message = lanSwitch('Execution error → ', '执行错误 → ') + errorMsg;
         this.#updateJSStatus(message, false);
         return {
           success: false,
@@ -186,11 +183,11 @@
           return undefined;
         },
         set: (target, prop, value) => {
-          if (prop in target) throw new Error(`不能修改内置对象: ${String(prop)}`);
-          if (prop === 'global') throw new Error('不能覆盖 global 命名空间');
+          if (prop in target) throw new Error(lanSwitch(`Cannot modify built-in object: ${String(prop)}`, `不能修改内置对象: ${String(prop)}`));
+          if (prop === 'global') throw new Error(lanSwitch('Cannot override global namespace', '不能覆盖 global 命名空间'));
           if (prop in window) {
             const descriptor = Object.getOwnPropertyDescriptor(window, prop);
-            if (descriptor && descriptor.writable === false) throw new Error(`不能修改只读属性: ${String(prop)}`);
+            if (descriptor && descriptor.writable === false) throw new Error(lanSwitch(`Cannot modify read-only property: ${String(prop)}`, `不能修改只读属性: ${String(prop)}`));
             // @ts-ignore
             window[prop] = value;
             return true;
@@ -225,9 +222,8 @@
       const statusElement = $('#twine-cheat-console-status');
       statusElement.empty().removeClass('success error visible');
       if (typeof code !== 'string' || code.trim() === '') {
-        this.log('执行失败：请输入有效的Twine代码', 'ERROR');
-        this.#updateTwineStatus('执行失败：请输入有效的Twine代码', false);
-        return { success: false, error: '请输入有效的Twine代码' };
+        this.#updateTwineStatus(lanSwitch('Execution failed: Please enter valid Twine code.', '执行失败：请输入有效的 Twine 代码。'), false);
+        return { success: false, error: lanSwitch('Please enter valid Twine code.', '请输入有效的 Twine 代码。') };
       }
       try {
         const fragment = document.createDocumentFragment();
@@ -240,36 +236,35 @@
               if (match) {
                 let target = match[2] || match[4];
                 if (target) {
-                  this.#updateTwineStatus('执行成功，即将跳转...', true);
+                  this.#updateTwineStatus(lanSwitch('Execution successful, redirecting...', '执行成功，即将跳转...'), true);
                   setTimeout(() => maplebirch.SugarCube.Engine.play(target), 300);
                   return {
                     success: true,
-                    message: '代码执行成功',
+                    message: lanSwitch('Code executed successfully.', '代码执行成功。'),
                     hasNavigation: true
                   };
                 }
               }
             }
-            this.#updateTwineStatus('执行成功，即将跳转...', true);
+            this.#updateTwineStatus(lanSwitch('Execution successful, redirecting...', '执行成功，即将跳转...'), true);
             setTimeout(() => { if (fragment.children.length > 0) document.getElementById('your-output-container')?.appendChild(fragment); }, 300);
             return {
               success: true,
-              message: '代码执行成功',
+              message: lanSwitch('Code executed successfully.', '代码执行成功。'),
               hasNavigation: true
             };
           } else {
-            this.#updateTwineStatus('执行成功', true);
-            this.log('Twine代码执行成功', 'INFO');
+            this.#updateTwineStatus(lanSwitch('Execution successful', '执行成功'), true);
             return {
               success: true,
-              message: '代码执行成功',
+              message: lanSwitch('Code executed successfully.', '代码执行成功。'),
               // @ts-ignore
               parsedContent: fragment.innerHTML
             };
           }
         } catch (/**@type {any}*/wikifyError) {
-          const errorMsg = wikifyError.message || 'Wikifier解析错误';
-          this.#updateTwineStatus(`解析错误: ${errorMsg}`, false);
+          const errorMsg = wikifyError.message || lanSwitch('Wikifier parsing error', 'Wikifier 解析错误');
+          this.#updateTwineStatus(lanSwitch('Parsing error: ', '解析错误: ') + errorMsg, false);
           this.log('Twine代码解析失败', 'ERROR', wikifyError);
           return {
             success: false,
@@ -278,13 +273,12 @@
           };
         }
       } catch (/**@type {any}*/error) {
-        const errorMsg = error.message || '未知错误';
-        this.#updateTwineStatus(`执行错误: ${errorMsg}`, false);
-        this.log('Twine代码执行失败', 'ERROR', error);
+        const errorMsg = error.message || lanSwitch('Unknown error', '未知错误');
+        this.#updateTwineStatus(lanSwitch('Execution error: ', '执行错误: ') + errorMsg, false);
         return {
           success: false,
           error: errorMsg,
-          message: `执行错误: ${errorMsg}`
+          message: lanSwitch('Execution error: ', '执行错误: ') + errorMsg
         };
       }
     }
@@ -305,10 +299,7 @@
         return this.#executeTwine();
       } else {
         this.log(`未知执行类型: ${type}`, 'ERROR');
-        return {
-          success: false,
-          error: `未知执行类型: ${type}`
-        };
+        return { success: false, error: lanSwitch('Unknown execution type: ', '未知执行类型: ') + type };
       }
     }
   }
@@ -426,7 +417,7 @@
     }
 
     clearAll(confirm = false) {
-      if (!confirm) return `<div class='settingsToggleItem'><span class='red'><<lanSwitch 'Are you sure to clear' '确认清除'>> ${this.cache.length} <<lanSwitch 'codes' '个命令'>>?</span><br><<lanLink 'confirm' null 'capitalize'>><<run maplebirch.tool?.cheat.clearAll(true)>><</lanLink>> | <<lanLink 'cancel' null 'capitalize'>><<run maplebirch.tool?.cheat.displayAll()>><</lanLink>></div>`;
+      if (!confirm) return `<div class='settingsToggleItem'><span class='red'><<lanSwitch 'Are you sure to clear' '确认清除'>> ${this.cache.length} <<lanSwitch 'codes' '个命令'>>?</span><br><<lanLink 'confirm' 'capitalize'>><<run maplebirch.tool?.cheat.clearAll(true)>><</lanLink>> | <<lanLink 'cancel' 'capitalize'>><<run maplebirch.tool?.cheat.displayAll()>><</lanLink>></div>`;
       this.clearAllAsync();
       return '';
     }
@@ -451,7 +442,7 @@
       const cheatItem = this.cache.find(c => c.name === name);
       if (!cheatItem) return '';
       const itemId = `cheat-item-${cheatItem.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
-      return `<span class='red'><<lanSwitch 'Confirm to clear' '确认清除'>> "${cheatItem.name}"?</span><br><<lanLink 'confirm' null 'capitalize'>><<run maplebirch.tool?.cheat.remove('${cheatItem.name.replace(/'/g, "\\'")}')>><<run maplebirch.tool?.cheat.displayAll()>><</lanLink>> | <<lanLink 'cancel' null 'capitalize'>><<run maplebirch.tool?.cheat.cancelDelete('${cheatItem.name.replace(/'/g, "\\'")}')>><</lanLink>>`;
+      return `<span class='red'><<lanSwitch 'Confirm to clear' '确认清除'>> "${cheatItem.name}"?</span><br><<lanLink 'confirm' 'capitalize'>><<run maplebirch.tool?.cheat.remove('${cheatItem.name.replace(/'/g, "\\'")}')>><<run maplebirch.tool?.cheat.displayAll()>><</lanLink>> | <<lanLink 'cancel' 'capitalize'>><<run maplebirch.tool?.cheat.cancelDelete('${cheatItem.name.replace(/'/g, "\\'")}')>><</lanLink>>`;
     }
 
     /** @param {any} name */
@@ -459,7 +450,7 @@
       const cheatItem = this.cache.find(c => c.name === name);
       if (!cheatItem) return;
       const itemId = `cheat-item-${cheatItem.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
-      const normalHTML = `<span class='teal'>${cheatItem.name}</span><br><<lanLink 'execute' null 'capitalize'>><<run maplebirch.tool?.cheat.execute('${cheatItem.name.replace(/'/g, "\\'")}')>><</lanLink>> | <<lanLink 'delete' null 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${cheatItem.name.replace(/'/g, "\\'")}'))>><</lanLink>>`;
+      const normalHTML = `<span class='teal'>${cheatItem.name}</span><br><<lanLink 'execute' 'capitalize'>><<run maplebirch.tool?.cheat.execute('${cheatItem.name.replace(/'/g, "\\'")}')>><</lanLink>> | <<lanLink 'delete' 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${cheatItem.name.replace(/'/g, "\\'")}'))>><</lanLink>>`;
       this.updateContainer(itemId, normalHTML);
     }
 
@@ -467,7 +458,7 @@
       if (cheats.length === 0) return '';
       return cheats.map(item => {
         const itemId = `cheat-item-${item.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
-        return `<div id="${itemId}" class='settingsToggleItem'><span class='teal'>${item.name}</span><br><<lanLink 'execute' null 'capitalize'>><<run maplebirch.tool?.cheat.execute('${item.name.replace(/'/g, "\\'")}')>><</lanLink>> | <<lanLink 'delete' null 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${item.name.replace(/'/g, "\\'")}'))>><</lanLink>></div>`;
+        return `<div id="${itemId}" class='settingsToggleItem'><span class='teal'>${item.name}</span><br><<lanLink 'execute' 'capitalize'>><<run maplebirch.tool?.cheat.execute('${item.name.replace(/'/g, "\\'")}')>><</lanLink>> | <<lanLink 'delete' 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${item.name.replace(/'/g, "\\'")}'))>><</lanLink>></div>`;
       }).join('');
     }
   }

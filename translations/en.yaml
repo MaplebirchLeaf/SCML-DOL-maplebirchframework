@@ -1,72 +1,40 @@
 'English': English
 'Chinese': Chinese
-'Mods': Mods
-'Maplebirch Frameworks': Maplebirch Frameworks
-'Download': Download
-'Version': Version
-'Author': Author
-'Last Modified By': Last Modified By
-'Maplebirch Frameworks Mod List': Maplebirch Frameworks Mod List
-'Current Mods Language Setting': Current Mods Language Setting
-'Dependence': Dependence
-'Mods Contents': Mods Contents
-'Mods Settings': Mods Settings
-'Mods Cheats': Mods Cheats
-'Mods Statistics': Mods Statistics
-'Mods Introduction': Mods Introduction
-'Apply': Apply
-'Maplebirch Mod': Maplebirch Mod
+'mods': mods
+'maplebirch': maplebirch
+'introduction': introduction
+'contents': contents
+'settings': settings
+'cheats': cheats
+'statistics': statistics
+'apply': apply
 'search': search
 'clear': clear
-'Character Panel': Character Panel
-'maplebirch': maplebirch
-'Mode': Mode
-'DEBUG': DEBUG
-'Code Cheater': Code Cheater
-'permission': permission
-'sidebar': sidebar
-'position': position
-'music player': music player
-'previous song': previous song
-'next song': next song
+'character': character
+'panel': panel
+'previous': previous
+'next': next
 'playback': playback
 'pause': pause
 'stop': stop
 'resume': resume
 'loop mode': loop mode
 'volume': volume
-'import audio': import audio
-'currently playing': Currently playing
-'there are no tracks playing': There are no tracks playing
-'single repeat': single repeat
-'Cache': Cache
+'cache': cache
 'mobile client': mobile client
 'desktop client': desktop client
 'disable': disable
 'enable': enable
 'execute': execute
-'display': display
-'model': model
-'canvas': canvas
-'graphic': graphic
-'selection': selection
-'celestial phenomenons settings': celestial phenomenons settings
-'total number of status displays': total number of status displays
-'solar eclipse': solar eclipse
-'Set': Set
+'set': set
 'hidden': hidden
 'default': default
-'layer': layer
-'adjustments': adjustments
-'type': type
-'points': points
 'delete': delete
 'confirm': confirm
 'cancel': cancel
 'all': all
 'create': create
 
-'transformation': transformation
 'Prioritise headwear over horns': Prioritise headwear over horns
 'Prioritise horns over headwear': Prioritise horns over headwear
 'Push tail back': Push tail back
@@ -93,10 +61,10 @@
 'View Legwear': View Legwear
 'View Shoes': View Shoes
 'View Genital Wear': View Genital Wear
-'Changing room': Changing room
-'Return clothes': Return clothes
-'Buy clothes': Buy clothes
-'Buy clothes and send to wardrobe': Buy clothes and send to wardrobe
+'Changing Room': Changing Room
+'Return Clothes': Return Clothes
+'Buy Clothes': Buy Clothes
+'Buy Clothes And Send To Wardrobe': Buy Clothes And Send To Wardrobe
 'Leave': Leave
 
 'None': None

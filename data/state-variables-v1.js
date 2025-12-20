@@ -43,4 +43,13 @@
     if (data.npc) for (const npcName in data.npc) if (Object.prototype.hasOwnProperty.call(data.npc, npcName)) utils.remove(data.npc, `${npcName}.location`);
     data.version = '1.0.3';
   });
+
+  // v1.0.4版本数据更新
+  migration.add('1.0.3', '1.0.4', (data, utils) => {
+    utils.remove(data, 'time');
+    utils.remove(data, 'character');
+    utils.remove(data, 'inventory');
+    if (data.wardrobeSearch == null) data.wardrobeSearch = '';
+    data.version = '1.0.4';
+  });
 })();

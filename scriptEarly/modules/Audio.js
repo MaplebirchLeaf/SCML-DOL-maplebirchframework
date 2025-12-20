@@ -22,13 +22,7 @@
       ]);
     }
 
-    /**
-     * 存储音频缓冲区
-     * @param {string} key 音频键
-     * @param {ArrayBuffer} arrayBuffer 音频数据
-     * @param {string} modName 模块名称
-     * @returns {Promise<boolean>} 是否成功
-     */
+    /** @param {any} key @param {any} arrayBuffer @param {string} modName */
     async store(key, arrayBuffer, modName) {
       try {
         await this.core.idb.withTransaction(['audioBuffers'], 'readwrite', async (tx) => {
@@ -42,11 +36,7 @@
       }
     }
 
-    /**
-     * 获取音频缓冲区
-     * @param {string} key 音频键
-     * @returns {Promise<ArrayBuffer|null>} 音频数据或null
-     */
+    /** @param {any} key */
     async get(key) {
       try {
         return await this.core.idb.withTransaction(['audioBuffers'], 'readonly', async (tx) => {
@@ -60,11 +50,7 @@
       }
     }
 
-    /**
-     * 获取模块的所有音频键
-     * @param {string} modName 模块名称
-     * @returns {Promise<string[]>} 音频键列表
-     */
+    /** @param {string} modName */
     async getModKeys(modName) {
       try {
         return await this.core.idb.withTransaction(['audioBuffers'], 'readonly', async (tx) => {
@@ -76,6 +62,49 @@
       } catch (/**@type {any}*/err) {
         this.core.logger.log(`获取模块音频键失败: ${modName} - ${err?.message || err}`, 'ERROR');
         return [];
+      }
+    }
+
+    /** @param {string} key */
+    async delete(key) {
+      try {
+        await this.core.idb.withTransaction(['audioBuffers'], 'readwrite', async (tx) => {
+          const store = tx.objectStore('audioBuffers');
+          await store.delete(key);
+        });
+        return true;
+      } catch (/**@type {any}*/err) {
+        this.core.logger.log(`删除音频失败: ${key} - ${err?.message || err}`, 'ERROR');
+        return false;
+      }
+    }
+
+    /** @param {string} modName */
+    async deleteMod(modName) {
+      try {
+        const keys = await this.getModKeys(modName);
+        for (const key of keys) await this.delete(key);
+        return true;
+      } catch (/**@type {any}*/err) {
+        this.core.logger.log(`删除模块音频失败: ${modName} - ${err?.message || err}`, 'ERROR');
+        return false;
+      }
+    }
+
+    /**
+     * 清空所有音频
+     * @returns {Promise<boolean>} 是否成功
+     */
+    async clear() {
+      try {
+        await this.core.idb.withTransaction(['audioBuffers'], 'readwrite', async (tx) => {
+          const store = tx.objectStore('audioBuffers');
+          await store.clear();
+        });
+        return true;
+      } catch (/**@type {any}*/err) {
+        this.core.logger.log(`清空音频失败: ${err?.message || err}`, 'ERROR');
+        return false;
       }
     }
   }
@@ -530,6 +559,37 @@
     async refreshAllCache() {
       for (const player of this.modPlayers.values()) { player.bufferCache.clear(); await player.refreshAudioKeys(); }
       await this.#refreshAllAudioKeys();
+    }
+
+
+    /** @param {string} key @param {any} modName */
+    async deleteAudio(key, modName) {
+      const success = await this.idbManager.delete(key);
+      if (success) {
+        const player = this.modPlayers.get(modName);
+        if (player) {
+          player.bufferCache.delete(key);
+          await player.refreshAudioKeys();
+        }
+        await this.#refreshAllAudioKeys();
+        this.log(`已删除音频: ${key}`, 'DEBUG');
+      }
+      return success;
+    }
+
+    /** @param {string} modName */
+    async deleteModAudio(modName) {
+      const success = await this.idbManager.deleteMod(modName);
+      if (success) {
+        const player = this.modPlayers.get(modName);
+        if (player) {
+          player.bufferCache.clear();
+          await player.refreshAudioKeys();
+        }
+        await this.#refreshAllAudioKeys();
+        this.log(`已删除模块 ${modName} 的所有音频`, 'DEBUG');
+      }
+      return success;
     }
   }
 

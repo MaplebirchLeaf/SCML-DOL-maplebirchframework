@@ -8,7 +8,7 @@
   }
 
   const maplebirch = window.maplebirch;
-  const currentVersion = '1.0.3';
+  const currentVersion = '1.0.4';
 
   class variablesModule {
     static options = {
@@ -41,24 +41,6 @@
       storage: {}
     }
 
-    static time = {
-      monthly:  {},
-      weekly:   {},
-      daily:    {},
-      dawn:     {},
-    }
-
-    static character = {
-      carrying:   {},
-      attribute:  {}
-    }
-
-    static inventory = {
-      items: [],
-      maxSlots: 5,
-      backpack: 'none'
-    }
-
     static combat = {
       npcList: [],
       enemy:   {},
@@ -71,13 +53,11 @@
 
     static defaultVar = {
       audio:      variablesModule.audio,
-      time:       variablesModule.time,
-      character:  variablesModule.character,
-      inventory:  variablesModule.inventory,
       combat:     variablesModule.combat,
       player:     variablesModule.player,
       npc:            {},
       transformation: {},
+      wardrobeSearch: '',
     };
     
     /** @param {MaplebirchCore} core */

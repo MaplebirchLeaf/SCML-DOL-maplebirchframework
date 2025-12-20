@@ -2,10 +2,10 @@
 /// <reference path='../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  const frameworkVersion = '2.6.3';
+  const frameworkVersion = '2.6.4';
   const lastUpdate = '2025.12.19';
   const lastModifiedBy = '楓樺葉';
-  const DEBUGMODE = false;
+  const DEBUGMODE = true;
 
   const ModuleState = {
     PENDING: 0,
@@ -99,8 +99,8 @@
       this.isProcessing = new Map();
       /** @type {Object<string, Array<{callback: Function, description: string, internalId: string}>>} 事件监听器集合，使用字符串索引签名 */
       this.events = {
-        ':IndexedDB':           [],
-        ':import':              [],
+        ':IndexedDB':           [], // IDB数据库
+        ':import':              [], // 数据导入
         ':allModuleRegistered': [], // 所有模块注册完成时机
         ':dataInit':            [], // 框架提供的模组V变量注册接口
         ':onSave':              [], // 存档

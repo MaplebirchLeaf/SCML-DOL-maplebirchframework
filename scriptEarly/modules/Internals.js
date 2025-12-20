@@ -31,10 +31,16 @@
     static macroTranslation(key, core = maplebirch) {
       try { key = String(key); }
       catch (e) { return ''; }
+      const translation = core.t(key);
+      if (translation[0] !== '[' || translation[translation.length - 1] !== ']') return translation;
       const autoTranslated = core.autoTranslate(key);
       if (autoTranslated !== key) return autoTranslated;
-      const result = core.t(key);
-      return (result[0] === '[' && result[result.length - 1] === ']') ? autoTranslated : result;
+      if (key.includes(' ')) {
+        const words = key.split(' ');
+        const translatedWords = words.map(word => core.autoTranslate(word));
+        if (translatedWords.some((word, i) => word !== words[i])) return core.lang.language === 'CN' ? translatedWords.join('') : translatedWords.join(' ');
+      }
+      return key;
     }
 
     /** @param {MaplebirchCore} core */
@@ -114,10 +120,10 @@
         lancheck = available.length > 0 ? available[0] : 'EN';
       }
 
-      if (this.output) {
+      if (this?.output) {
         try {
           const $container = jQuery('<span style="display: contents;"></span>');
-          const uniqueId = `langSwitch-${Date.now()}-${Math.random().toString(36)}`;
+          const uniqueId = `lanSwitch-${Date.now()}-${Math.random().toString(36)}`;
           const contentObj = targetObj;
           const renderContent = () => {
             $container.empty();
@@ -132,8 +138,8 @@
           };
           renderContent();
           $(this.output).append($container);
-          setup.maplebirch.language.add('langSwitch', uniqueId, renderContent);
-          $container.on('remove', () => setup.maplebirch.language.remove('langSwitch', uniqueId));
+          setup.maplebirch.language.add('lanSwitch', uniqueId, renderContent);
+          $container.on('remove', () => setup.maplebirch.language.remove('lanSwitch', uniqueId));
           return $container[0];
         } catch (e) {
           console.error('lanSwitch 宏模式错误', e);
@@ -153,10 +159,17 @@
         let translationKey = '';
         let convertMode = null;
         let $image = null;
-
+        let customClasses = '';
+        let inlineStyle = '';
+        for (let i = 1; i < this.args.length; i++) {
+          if (typeof this.args[i] === 'string') {
+            if (this.args[i].startsWith('class:')) { customClasses = this.args[i].substring(6); }
+            else if (this.args[i].startsWith('style:')) { inlineStyle = this.args[i].substring(6); }
+          }
+        }
         if (typeof arg === 'string') {
           translationKey = arg;
-          convertMode = this.args.length > 1 ? this.args[1] : null;
+          for (let i = 1; i < this.args.length; i++) if (typeof this.args[i] === 'string' && !this.args[i].startsWith('class:') && !this.args[i].startsWith('style:')) { convertMode = this.args[i]; break; }
           buttonText = Internals.macroTranslation(translationKey, maplebirch);
         } else if (typeof arg === 'object') {
           if (arg.isImage) {
@@ -165,10 +178,10 @@
             if (arg.title) $image.attr('title', arg.title);
             if (arg.align) $image.attr('align', arg.align);
             translationKey = `image:${arg.source}`;
-            convertMode = this.args.length > 1 ? this.args[1] : null;
+            for (let i = 1; i < this.args.length; i++) if (typeof this.args[i] === 'string' && !this.args[i].startsWith('class:') && !this.args[i].startsWith('style:')) { convertMode = this.args[i]; break; }
           } else if (arg.text) {
             translationKey = arg.text;
-            convertMode = this.args.length > 1 ? this.args[1] : null;
+            for (let i = 1; i < this.args.length; i++) if (typeof this.args[i] === 'string' && !this.args[i].startsWith('class:') && !this.args[i].startsWith('style:')) { convertMode = this.args[i]; break; }
             buttonText = Internals.macroTranslation(translationKey, maplebirch);
           } else {
             return this.error('<<lanButton>> 不支持的参数对象类型');
@@ -180,6 +193,8 @@
         if (convertMode && buttonText) buttonText = maplebirch.tool.convert(buttonText, convertMode);
 
         const $button = jQuery(document.createElement('button')).addClass('macro-button link-internal').attr('data-translation-key', translationKey);
+        if (customClasses) customClasses.split(/\s+/).forEach(cls => { if (cls.trim()) $button.addClass(cls.trim()); });
+        if (inlineStyle) $button.attr('style', inlineStyle);
         const uniqueId = `${Date.now()}-${Math.random().toString(36)}`;
 
         if ($image) { $button.append($image).addClass('link-image'); }
@@ -217,50 +232,49 @@
     _languageLink() {
       try {
         if (!this.args || this.args.length === 0) return this.error('<<lanLink>> 需要至少一个参数');
-
-        const arg = this.args[0];
-        let linkText = '';
+        const uniqueId = `${Date.now()}-${Math.random().toString(36)}`;
+        T.link = true;
+        const CONVERT_MODES = ['lower','upper','capitalize','title','camel','pascal','snake','kebab','constant'];
         let translationKey = '';
         let passageName = null;
         let convertMode = null;
-        let $image = null;
-        T.link = true;
-        const uniqueId = `${Date.now()}-${Math.random().toString(36)}`;
-
-        if (typeof arg === 'string') {
-          translationKey = arg;
-          passageName = this.args.length > 1 ? this.args[1] : null;
-          convertMode = this.args.length > 2 ? this.args[2] : null;
-          linkText = Internals.macroTranslation(translationKey, maplebirch);
-        } else if (typeof arg === 'object') {
-          if (arg.isImage) {
-            $image = jQuery(document.createElement('img')).attr('src', arg.source);
-
-            if (arg.passage) $image.attr('data-passage', arg.passage);
-            if (arg.title) $image.attr('title', arg.title);
-            if (arg.align) $image.attr('align', arg.align);
-
-            passageName = arg.link;
-            translationKey = `image:${arg.source}`;
-            convertMode = this.args.length > 1 ? this.args[1] : null;
-          } else if (arg.link) {
-            translationKey = arg.text;
-            passageName = arg.link;
-            convertMode = this.args.length > 1 ? this.args[1] : null;
-            linkText = Internals.macroTranslation(translationKey, maplebirch);
+        let customClasses = '';
+        let inlineStyle = '';
+        const firstArg = this.args[0];
+        if (typeof firstArg === 'string') {
+          translationKey = firstArg;
+          for (let i = 1; i < this.args.length; i++) {
+            const arg = this.args[i];
+            if (typeof arg === 'string') {
+              if (arg.startsWith('class:')) { customClasses = arg.substring(6); }
+              else if (arg.startsWith('style:')) { inlineStyle = arg.substring(6); }
+              else if (CONVERT_MODES.includes(arg)) { convertMode = arg; }
+              else if (!passageName) { passageName = arg; }
+            }
+          }
+        } else if (firstArg && typeof firstArg === 'object') {
+          if (firstArg.text) {
+            translationKey = firstArg.text;
+            passageName = firstArg.link || null;
+            for (let i = 1; i < this.args.length; i++) {
+              const arg = this.args[i];
+              if (typeof arg === 'string') {
+                if (arg.startsWith('class:')) { customClasses = arg.substring(6); }
+                else if (arg.startsWith('style:')) { inlineStyle = arg.substring(6); }
+                else if (CONVERT_MODES.includes(arg)) { convertMode = arg; }
+              }
+            }
           } else {
-            return this.error('<<lanLink>> 不支持的参数对象类型');
+            return this.error('<<lanLink>> 链接对象需要 text 属性');
           }
         } else {
-          return this.error('<<lanLink>> 参数必须是字符串、函数或链接对象');
+          return this.error('<<lanLink>> 第一个参数必须是字符串或链接对象');
         }
-
+        let linkText = Internals.macroTranslation(translationKey, maplebirch);
         const $container = jQuery(document.createElement('span'));
         const $link = jQuery(document.createElement('a')).addClass('macro-link link-internal').attr('data-translation-key', translationKey);
-
-        if ($image) { $link.append($image).addClass('link-image'); }
-        else { $link.append(document.createTextNode(linkText)); }
-
+        if (customClasses) customClasses.split(/\s+/).forEach(cls => { if (cls.trim()) $link.addClass(cls.trim()); });
+        if (inlineStyle) $link.attr('style', inlineStyle);
         if (passageName != null) {
           $link.attr('data-passage', passageName);
           if (maplebirch.SugarCube.Story.has(passageName)) {
@@ -269,33 +283,23 @@
             $link.addClass('link-broken');
           }
         }
-
-        if (convertMode) $link.attr('data-convert-mode', convertMode);
+        if (convertMode) { $link.attr('data-convert-mode', convertMode); linkText = maplebirch.tool.convert(linkText, convertMode); }
+        $link.append(document.createTextNode(linkText));
         const payloadContent = this.payload[0]?.contents?.trim() || '';
         const macroThis = this;
-
         $link.ariaClick({
           namespace: '.macros',
           role: passageName != null ? 'link' : 'button',
           one: passageName != null
         }, this.createShadowWrapper(
-          payloadContent ? () => { maplebirch.SugarCube.Wikifier.wikifyEval(payloadContent, macroThis.passageObj); } : null,
+          payloadContent ? () => maplebirch.SugarCube.Wikifier.wikifyEval(payloadContent, macroThis.passageObj) : null,
           passageName != null ? () => maplebirch.SugarCube.Engine.play(passageName) : null
         ));
-
         const updateLinkText = () => {
-          if ($image) return;
-          const newText = Internals.macroTranslation(translationKey, maplebirch);
-          let finalText = newText;
-          if (convertMode) finalText = maplebirch.tool.convert(newText, convertMode);
-          $link.empty().append(document.createTextNode(finalText));
+          let newText = Internals.macroTranslation(translationKey, maplebirch);
+          if (convertMode) newText = maplebirch.tool.convert(newText, convertMode);
+          $link.empty().append(document.createTextNode(newText));
         };
-
-        if (!$image && convertMode && linkText) {
-          linkText = maplebirch.tool.convert(linkText, convertMode);
-          $link.empty().append(document.createTextNode(linkText));
-        }
-
         $container.append($link);
         $container.appendTo(this.output);
         setup.maplebirch.language.add('lanLink', uniqueId, updateLinkText);
@@ -314,11 +318,16 @@
         if (!varName || (varName[0] !== '$' && varName[0] !== '_')) return this.error(`变量名 '${varName}' 缺少sigil（$ 或 _）`);
         const varId = maplebirch.SugarCube.Util.slugify(varName);
         const config = { autoselect: false };
+        let customClasses = '';
+        let inlineStyle = '';
         for (let i = 1; i < this.args.length; ++i) {
           const arg = this.args[i];
-          if (arg === 'autoselect') config.autoselect = true;
+          if (typeof arg === 'string') {
+            if (arg === 'autoselect') config.autoselect = true;
+            else if (arg.startsWith('class:')) customClasses = arg.substring(6);
+            else if (arg.startsWith('style:')) inlineStyle = arg.substring(6);
+          }
         }
-
         const options = [];
         let selectedIdx = -1;
         const uniqueId = `${Date.now()}-${Math.random().toString(36)}`;
@@ -370,6 +379,8 @@
           })
           .addClass('macro-lanListbox')
           .on('change.macros', this.createShadowWrapper(function () { State.setVar(varName, options[Number(this.value)].value); }));
+        if (customClasses) customClasses.split(/\s+/).forEach(cls => { if (cls.trim()) $select.addClass(cls.trim()); });
+        if (inlineStyle) $select.attr('style', inlineStyle);
         options.forEach((opt, i) => {
           jQuery(document.createElement('option'))
             .val(i)
@@ -430,21 +441,18 @@
     }
 
     _fixDynamicTask(fn, name) {
-      const taskFn = function() {
+      const taskFn = (...args) => {
         try {
-          return fn.apply(this, arguments);
+          return fn.apply(this, args);
         } catch (error) {
-        console.error('[Dynamic.task] Error in task "' + name + '":', error);
+          console.error(`[Dynamic.task] Error in task "${name}":`, error);
           return null;
         }
       };
-      Object.defineProperty(taskFn, 'toString', {
-        value: function() { return name; },
-        writable: true,
-        configurable: true
-      });
+      Object.defineProperty(taskFn, 'toString', { value: () => name, writable: true, configurable: true });
       if (Dynamic.stage === Dynamic.Stage.Settled) {
-        taskFn();
+        try { taskFn(); }
+        catch (e) { console.warn(`Encountered an unexpected critical error while performing a dynamic render task`, name, e); }
       } else {
         Dynamic.tasks.push(taskFn);
       }
@@ -480,17 +488,16 @@
     }
 
     _showModVersions() {
-      const html = `<div id='modversions'>Maplebirch Framework v${maplebirch.constructor.meta.version} | 
-      ${maplebirch.autoTranslate('Dependence')}: ${maplebirch.modList.length}</div>`;
+      const html = `<div id='modversions'>Maplebirch Framework v${maplebirch.constructor.meta.version}|${maplebirch.modList.length}</div>`;
       return html;
     }
 
     _showFrameworkInfo() {
       let html_1 = `<div class='p-2 text-align-center'>
-          <h3>[[${maplebirch.t('Maplebirch Frameworks')}|'https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchframework']]</h3>
-          <div class='m-2'><span class='gold'>${maplebirch.t('Version')}：</span>${maplebirch.constructor.meta.version}<br></div>
-          <div class='m-2'><span class='gold'>${maplebirch.t('Author')}：</span>${maplebirch.autoTranslate(maplebirch.constructor.meta.author)}<br></div>
-          <div class='m-2'><span class='gold'>${maplebirch.t('Last Modified By')}：</span>${maplebirch.autoTranslate(maplebirch.constructor.meta.modifiedby)}<br></div>
+          <h3>[[<<lanSwitch 'Maplebirch Framework' '秋枫白桦框架'>>|'https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchframework']]</h3>
+          <div class='m-2'><span class='gold'><<lanSwitch 'Version: ' '版本：'>></span>${maplebirch.constructor.meta.version}<br></div>
+          <div class='m-2'><span class='gold'><<lanSwitch 'Author: ' '作者：'>></span>${maplebirch.autoTranslate(maplebirch.constructor.meta.author)}<br></div>
+          <div class='m-2'><span class='gold'><<lanSwitch 'Last Modified By: ' '最后修改者：'>></span>${maplebirch.autoTranslate(maplebirch.constructor.meta.modifiedby)}<br></div>
       </div>`;
 
       this.#getModDependenceInfo();
@@ -507,14 +514,7 @@
         html.push(text);
       }
 
-      if (html.length > 0) {
-        html_1 += `
-          <div class='p-2 text-align-center'>
-            <h3>${maplebirch.t('Maplebirch Frameworks Mod List')}</h3>
-            <div id='modlist'>${html.join('')}</div>
-          </div>
-        `;
-      }
+      if (html.length > 0) html_1 += `<div class='p-2 text-align-center'><h3><<lanSwitch 'Framework Mod List' '框架模组列表'>></h3><div id='modlist'>${html.join('')}</div></div>`;
       
       return html_1;
     }
@@ -590,22 +590,17 @@
 
       maplebirch.on(':loadSaveData', () => maplebirch.Language = V?.maplebirch?.language);
 
-      $(document).on('mouseup touchend', '.settingsToggleItem', () => {
+      $(document).on('change', 'select[name="lanListbox--maplebirchlanguage"]', function () {
         if (!maplebirch.modules.initPhase.preInitCompleted) return;
-        try {
-          let needsRefresh = false;
-          if (typeof T.selectedLang === 'string' && maplebirch.constructor.meta.availableLanguages.includes(T.selectedLang)) {
-            if (T.selectedLang !== maplebirch.lang.language) {
-              maplebirch.Language = T.selectedLang;
-              if (typeof V.maplebirch !== 'object') V.maplebirch = {};
-              V.maplebirch.language = T.selectedLang;
-              needsRefresh = true;
-            }
-          }
-          const npcSidebarName = V.options?.maplebirch?.npcsidebar?.nnpc;
-          if (T.fixedName && typeof T.fixedName === 'string' && npcSidebarName) if (T.fixedName.split('.')[T.fixedName.split('.').length - 1] !== npcSidebarName) needsRefresh = true;
-          if (needsRefresh) $.wiki('<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>');
-        } catch (error) { console.log('鼠标事件处理错误:', error); }
+        try { 
+          V.maplebirch.language = T.maplebirchLanguage;
+          maplebirch.Language = T.maplebirchLanguage;
+        } catch (error) { console.log('语言切换错误:', error); }
+      });
+
+      $(document).on('change', 'select[name="lanListbox-optionsmaplebirchnpcsidebarnnpc"]', function () {
+        if (!maplebirch.modules.initPhase.preInitCompleted) return;
+        try { $.wiki('<<replace #customOverlayContent>><<maplebirchOptions>><</replace>>'); } catch (error) { console.log('图形选择错误:', error); }
       });
 
       $(document).on('click', '.link-internal.macro-button', () => {

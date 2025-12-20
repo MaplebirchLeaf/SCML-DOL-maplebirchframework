@@ -379,7 +379,8 @@
       return true;
     }
 
-    /** @param {{ type: { loveInterestNpcs: any; importantNPCs: any; specialNPCs: any; }; data: any; }} manager */
+
+    /** @param {{ type: any; data: any; romanceConditions: { [x: string]: (() => any)[]; }; }} manager */
     function updateNPCdata(manager) {
       setup.loveInterestNpc = [...new Set([...setup.loveInterestNpc, ...manager.type.loveInterestNpcs])];
       for (const [npcName, npcEntry] of manager.data) {
@@ -391,12 +392,12 @@
             const value = typeof config[key] === 'function' ? config[key]() : config[key];
             if (value === true && !arr.includes(npcName)) arr.push(npcName);
           });
-          
+          setupRomanceCondition(manager, npcName, config);
         }
       }
     }
 
-    /** @param {string|number} npcName @param {string|any[]} loveAliasConfig */
+    /** @param {string} npcName @param {string|any[]} loveAliasConfig */
     function setupLoveAlias(npcName, loveAliasConfig) {
       if (typeof loveAliasConfig === 'function') {
         setup.loveAlias[npcName] = loveAliasConfig;
@@ -405,6 +406,16 @@
         setup.loveAlias[npcName] = () => maplebirch.Language === 'CN' ? cnAlias : enAlias;
       } else {
         setup.loveAlias[npcName] = () => maplebirch.Language === 'CN' ? '好感' : 'Affection';
+      }
+    }
+
+    /** @param {{ type: any; data?: any; romanceConditions: any; }} manager @param {string} npcName @param {{ romance: any; }} config */
+    function setupRomanceCondition(manager, npcName, config) {
+      if (Array.isArray(config.romance)) {
+        manager.romanceConditions[npcName] = config.romance;
+      } else if (manager.type.loveInterestNpcs.includes(npcName) && !manager.romanceConditions[npcName]) {
+        const npcKey = npcName.toLowerCase().replace(/\s+/g, '');
+        manager.romanceConditions[npcName] = [() => V[npcKey + 'Seen']?.includes('romance')];
       }
     }
 
@@ -648,6 +659,12 @@
   })()
 
   class NPCUtils {
+    /** @param {NPCManager} manager @param {string} name */
+    static isPossibleLoveInterest(manager, name) {
+      if (manager.romanceConditions[name]) return manager.romanceConditions[name].every(condition => condition());
+      return false;
+    }
+
     /** @param {string} npcName */
     static npcSeenProperty(npcName) {
       const npcNameNoSpace = npcName.replace(/\s+/g, '');
@@ -659,10 +676,12 @@
       Object.defineProperty(V.maplebirch.npc[npcName], 'Seen', {
         get: () => V[SeenName],
         set: (val) => { V[SeenName] = val; },
+        configurable: true,enumerable: true
       });
       Object.defineProperty(V.maplebirch.npc[npcName], 'FirstSeen', {
         get: () => V[FirstSeenName],
         set: (val) => { V[FirstSeenName] = val; },
+        configurable: true,enumerable: true
       });
     }
 
@@ -670,8 +689,10 @@
     static bodyDataProperties(npcName) {
       const name = npcName.toLowerCase();
       const bodyProperties = ['eyeColour', 'hairColour', 'penissize', 'breastsize'];
+      const bodyData = V.maplebirch.npc[name].bodydata;
       bodyProperties.forEach(prop => {
-        Object.defineProperty(V.maplebirch.npc[name].bodydata, prop, {
+        if (Object.getOwnPropertyDescriptor(bodyData, prop)) return;
+        Object.defineProperty(bodyData, prop, {
           get: () => {
             const npc = V.NPCName.find((/**@type {{ nam: string; }}*/ n) => n.nam === npcName);
             return npc ? npc[prop] : undefined;
@@ -679,7 +700,7 @@
           set: (val) => {
             const npcIndex = V.NPCName.findIndex((/**@type {{ nam: string; }}*/ n) => n.nam === npcName);
             if (npcIndex !== -1) V.NPCName[npcIndex][prop] = val;
-          },
+          },configurable: true,enumerable: true
         });
       });
     }
@@ -695,7 +716,7 @@
         set: (val) => {
           const npcIndex = V.NPCName.findIndex((/**@type {{ nam: string; }}*/ n) => n.nam === npcName);
           if (npcIndex !== -1) V.NPCName[npcIndex].outfits = Array.isArray(val) ? val : [];
-        }
+        },configurable: true,enumerable: true
       });
     }
 
@@ -749,6 +770,19 @@
       this.NPCNameList = [];
       /** @type {{[x: string]: any}} */
       this.customStats = {};
+      /** @type {{[key: string]: (() => boolean)[]}} */
+      this.romanceConditions = {
+        Robin: [() => V.robinromance === 1],
+        Whitney: [() => V.whitneyromance === 1,() => C.npc.Whitney.state !== 'dungeon'],
+        Kylar: [() => V.kylarenglish >= 1,() => C.npc.Kylar.state !== 'prison'],
+        Sydney: [() => V.sydneyromance === 1],
+        Eden: [() => V.syndromeeden === 1],
+        Avery: [() => V.auriga_artefact,() => C.npc.Avery.state !== 'dismissed'],
+        'Black Wolf': [() => V.syndromewolves === 1,() => hasSexStat('deviancy', 3)],
+        'Great Hawk': [() => V.syndromebird === 1],
+        Alex: [() => V.farm_stage >= 7,() => V.alex_countdown === undefined],
+        Gwylan: [() => V.gwylanSeen.includes('partners') || V.gwylanSeen.includes('romance')]
+      };
       core.trigger(':npc-init', this);
       core.once(':passagestart',() => {
         if (['Start', 'Downgrade Waiting Room'].includes(core.state.passage.title)) return;
@@ -768,6 +802,7 @@
      * @param {boolean} [config.important=false] - 是否重要NPC（显示在状态栏）
      * @param {boolean} [config.special=false] - 是否为特殊NPC
      * @param {boolean} [config.loveInterest=false] - 是否为恋爱NPC
+     * @param {(() => boolean)[]} [config.romance] - 恋爱条件数组，每个元素是一个返回布尔值的函数
      * @param {Object} [translationsData] - 翻译数据对象
      */
     add(npcData, config, translationsData) {
@@ -871,7 +906,7 @@
         const modConfig = npcEntry.Config;
         if (modConfig && Object.keys(modConfig).length > 0) {
           const configClone = this.tool.clone(modConfig);
-          ['loveAlias', 'loveInterest'].forEach(key => delete configClone[key]);
+          ['loveAlias','loveInterest','romance'].forEach(key => delete configClone[key]);
           if (Config[npcName]) {
             Config[npcName] = this.#mergeConfigs(Config[npcName], configClone);
             this.log(`合并NPC配置: ${npcName}`, 'DEBUG');
@@ -928,6 +963,7 @@
 
     Init() {
       NPCUtils.setupNpcData(this, 'init');
+      isPossibleLoveInterest = (name) => NPCUtils.isPossibleLoveInterest(this, name);
       // @ts-ignore
       this.Clothes.init();
     }
