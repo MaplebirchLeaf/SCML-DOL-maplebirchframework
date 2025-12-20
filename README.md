@@ -896,59 +896,90 @@ colorSelector.match('light blue'); // 'Light variant'
 colorSelector.match('dark red'); // 'Dark variant'
 colorSelector.match('yellow'); // '#FFFFFF'
 ```
- #### Sugarcube宏
- + **`<<lanSwitch>>`** - 简易双语的使用
+ #### Sugarcube 宏
++ **`<<lanSwitch>>`** - 简易双语切换，根据当前语言显示对应的文本。  
+**用法：**
 ```
-<<lanSwitch { EN: 'Hello', CN: '你好' }>>
-<<lanSwitch 'Hello' '你好'>>
-<<lanSwitch ['Hello', '你好']>>
-<<lanSwitch 'language' '语言'>> 会在中文时输出语言，英文时输出language 在模组设置中选择。
+<<lanSwitch {EN: "Hello", CN: "你好"}>> // 对象模式
+<<lanSwitch "Hello" "你好">> // 多个参数模式
+<<lanSwitch ["Hello", "你好"]>>// 数组模式
 ```
- + **`<<lanLink>>`** - **`<<lanLink>>`** 完全支持原版的 **`<<link>>`** 逻辑 [多语言管理](#多语言管理)，**`<<lanLink>>`** 的第三个字符串将支持 **`convert`** 函数。
+**说明：**
+- 根据游戏语言设置自动切换显示文本
+- 支持多种参数格式，使用灵活
+- 可在选项设置的模组设置中选择语言
++ **`<<lanLink>>`** - 多语言链接，完全支持原版 **`<<link>>`** 语法，添加多语言支持，支持文本转换功能和样式设置。  
+**用法：**
 ```
-在你的翻译文件有对应数据时，使用 <<lanLink '卧室' 'Bedroom'>><</lanLink>> 会在游戏中英文时显示 (1)Bedroom ，中文时显示(1)卧室。
-使用 <<lanLink 'Temple' 'Temple'>><</lanLink>> 会在游戏中英文时显示 (1)Temple ,中文时显示(1)神殿。
-使用 <<lanLink 'Temple' 'Temple' 'upper'>> 在英文情况将显示 (1)TEMPLE
-使用 <<lanLink [[卧室|Bedroom]]>><</lanLink>> 时与 <<lanLink 'Temple' 'Temple'>><</lanLink>> 同理
+<<lanLink '卧室' 'Bedroom'>>返回卧室<</lanLink>>// 基本用法
+<<lanLink 'Temple' 'Temple' 'upper'>>前往神殿<</lanLink>>// 带转换模式
+<<lanLink [[卧室|Bedroom]]>>返回卧室<</lanLink>>// 对象模式（SugarCube标准语法）
+<<lanLink '设置' 'Options' 'class:settings-link' 'style:padding:5px'>>设置<</lanLink>>// 带样式
+<<lanLink '返回' 'capitalize' 'Home' 'class:btn' 'style:text-decoration:none'>>返回首页<</lanLink>>// 混合使用
 ```
- + **`<<lanButton>>`** - **`<<lanButton>>`** 完全支持原版的 **`<<button>>`** 逻辑，但添加了语言支持 [多语言管理](#多语言管理)，**`<<lanButton>>`** 的第三个字符串将支持 **`convert`** 函数。
+**参数说明：**
+- 第一个参数：翻译键或文本
+- 第二个参数：目标通道 或 转换模式
+- 第三个参数：目标通道 或 转换模式
+- 可选参数：```class:样式类```，```style:内联样式```
+**注意：**
+- 支持 **`convert`** 函数的所有转换模式
+- 当翻译文件有对应数据时，自动显示对应语言的文本
+- 中文环境下短语自动合并（如"clear cache" → "清除缓存"）
+**转换模式：** `lower`, `upper`, `capitalize`, `title`, `camel`, `pascal`, `snake`, `kebab`, `constant`
++ **`<<lanButton>>`** - 多语言按钮，完全支持原版 ```<<button>>``` 语法，添加多语言支持，支持文本转换功能。  
+**用法：**
 ```
-在你的翻译文件有对应数据时，使用 <<lanButton '卧室'>><</lanButton>> 会在游戏中英文时显示 (1)Bedroom ，中文时显示(1)卧室。
-使用 <<lanButton 'Temple'>><</lanButton>> 会在游戏中英文时显示 (1)Temple ，中文时显示(1)神殿。
-使用 <<lanButton 'Temple' 'upper'>><</lanButton>> 会在游戏中英文时显示 (1)TEMPLE
+<<lanButton "save_game">>保存<</lanButton>>// 基本用法
+<<lanButton "button_text" "capitalize">>按钮<</lanButton>>// 带转换模式
+<<lanButton {isImage: true, source: "icon.png"}>><</lanButton>>// 图片按钮
+<<lanButton "text" "upper" "class:btn" "style:color:red">>按钮<</lanButton>>// 带样式
 ```
- + **`<<lanListbox>>`** - **`<<lanListbox>>`** 为 **`<<listbox>>`** 的变种，但添加了语言支持 [多语言管理](#多语言管理)。
+**说明：**
+- 第一个参数：翻译键或文本
+- 第二个参数：转换模式（可选）
+- 可选参数：```class:样式类```, ```style:内联样式```
+- 支持图片按钮（通过对象模式）
++ **`<<lanListbox>>`** - 多语言下拉列表，**`<<listbox>>`** 的变种，添加多语言支持。  
+**参数：** `$变量名` [autoselect] [class:...] [style:...]  
+**选项：**  
+- `<<option "显示文本" "值" [selected]>>` - 定义单个选项
+- `<<optionsfrom 表达式>>` - 从表达式获取选项
+**示例：**
 ```
-参数：$变量名 [autoselect]
-选项：
-  <<option "显示文本" "值" [selected]>>
-  <<optionsfrom 表达式>>
-示例：
-<<lanlistbox "$fruit">>
+<<lanlistbox "$fruit">>// 基本用法
   <<option "apple" "A">>
   <<option "banana" "B" selected>>
 <</lanlistbox>>
-<<lanlistbox "$color" autoselect>>
+<<lanlistbox "$color" autoselect>>// 自动选中当前值
   <<optionsfrom { "红色": "red", "蓝色": "blue" }>>
 <</lanlistbox>>
+<<lanlistbox "$theme" "class:select-box" "style:width:200px">>// 带样式
+  <<option "light" "Light">>
+  <<option "dark" "Dark">>
+<</lanlistbox>>
 ```
- + **`<<radiobuttonsfrom>>`** - **`<<radiobutton>>`** 宏的变种
+**说明：**
+- 变量名必须以 `$` 或 `_` 开头
+- `autoselect`：自动选中与变量当前值匹配的选项
+- 选项的显示文本会自动翻译
+- 支持从数组、对象、Map 等数据结构获取选项
++ **`<<radiobuttonsfrom>>`** - 单选按钮组，**`<<radiobutton>>`** 宏的变种，从数组快速创建单选按钮组。  
+**参数：** `$变量名` 选项数组 [分隔符]  
+**示例：**
 ```
-生成包含多个label元素的span容器，每个label包含：
-- 一个单选按钮input元素
-- 对应的选项文本
-- 选项间的分隔符
-基本用法 - 创建颜色选择单选按钮组
-<<radiobuttonsfrom "favoriteColor" ["红色", "蓝色", "绿色"]>>
-自定义分隔符
-<<radiobuttonsfrom "gender" ["男", "女", "其他"] " - ">>
-使用变量作为选项源
-<<set $colors = ["红", "蓝", "绿"]>>
-<<radiobuttonsfrom "selectedColor" $colors>>
+<<radiobuttonsfrom "$favoriteColor" ["红色", "蓝色", "绿色"]>>// 基本用法
+<<radiobuttonsfrom "$gender" ["男", "女", "其他"] " - ">>// 自定义分隔符
+<<radiobuttonsfrom "$fruit" [["apple", "苹果"], ["banana", "香蕉"]]>>// 自定义值和显示文本
 ```
- + **`<<language>>`** 的说明，在框架设置中切换语言时，刷新宏里语言并会执行对应的**Wikifier语法**。
+**说明：**
+- 生成包含多个 ```label``` 元素的 ```span``` 容器
+- 每个 ```label``` 包含一个单选按钮和对应的文本
+- 默认分隔符为 ```" | "```
+- 选项可以是字符串数组或 ```[值, 显示文本]``` 数组
++  **`<<language>>`** - 条件语言块，根据当前语言显示和执行不同的内容。
+**示例：**  
 ```
-:: TEST
 <<language>>
 <<option 'CN'>>
   <<set $chineseOnly to true>>
@@ -957,10 +988,12 @@ colorSelector.match('yellow'); // '#FFFFFF'
   <<set $englishOnly to true>>
   This content only shows and executes in English environment
 <</language>>
-在初始为中文时，进入passage段落会显示 '这段内容只会在中文环境下显示和执行'，并且$chineseOnly会变为true。
-切换成英文时，当前passage段落会转换成 'This content only shows and executes in English environment'，并且$englishOnly会变为true。
-所以警惕在其中使用累加累减语法。
 ```
+**说明：**  
+- 切换语言时，会自动刷新并执行对应语言块的内容
+- 支持内嵌任何 SugarCube 语法
+- **重要**：避免在语言块中使用累加/累减操作，因为语言切换时会重新执行对应块的内容
+- `option` 的语言代码必须大写
  ### 变量迁徙
   #### 变量迁徙使用示例
 ```
@@ -1188,7 +1221,7 @@ maplebirchFrameworks.addTo('CustomLinkZone', {
 @example 批量添加多个部件
 maplebirchFrameworks.addTo('Information', 
   'basicInfo',
-  () => { /* 动态内容 *\/ },
+  () => { /* 动态内容 */ },
   { widget: 'weatherDisplay', passage: 'Outdoor' }
 );
 ```
@@ -1437,7 +1470,7 @@ addBodywriting('public_toilet', {
 });
 // 添加罗宾相关的涂鸦（带指向性箭头）
 addBodywriting('robin_slave', {
-  writing: 'Robin\'s Toy',
+  writing: 'Robin's Toy',
   writ_cn: '罗宾的玩具',
   type: 'text',
   arrow: 1,
@@ -2014,3 +2047,4 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
+
