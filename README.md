@@ -72,9 +72,7 @@
 
 ## 基本介绍
 - 本框架目前最低使用版本为 **`Degrees-of-Lewdity-v0.5.6.10`** 版本，因历史版本丢失，如有一定问题，请**自行修改**。
-
 - 对于原来使用[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的模组，可以直接将[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)替换成[**秋枫白桦框架**](https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchframework)尝试执行，基本兼容了原依赖[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)的模组(如: [**猫咖出租屋**](https://github.com/Maomaoi/Degrees-of-Lewdity-Cattery))，但不兼容强依赖的模组(即**秋枫白桦拓展**，除此之外基本兼容)。  
-
 - 提供了映射接口 `maplebirchFrameworks` 和 `simplebirchFrameworks` 对 `maplebirch` 的映射和快捷使用，以防止大幅破坏原结构。
 - 对于使用[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework) `lanSwitch` 函数或宏的模组依然可以继续使用。
 
@@ -128,10 +126,8 @@
 ## 安装与依赖方式说明
 
 - 在侧边／底部的 **Releases** 中下载最新版的 `maplebirchframework.zip` 文件。
-
 - 依赖申明(依赖模组加载器申明依赖: 可选): 在模组 `boot.js` 文件中的 `dependenceInfo` 区域添加下方内容。
-  
-```
+```json
 "dependenceInfo": [
     {
       "modName": "maplebirch",
@@ -146,7 +142,7 @@
 
 - `addonPlugin` 的功能注册，**详情**看对应区块说明*。
 
-```
+```json
 "addonPlugin": [
     {
       "modName": "maplebirch",
@@ -193,7 +189,7 @@
     <<= XX>> 等效于 <<print XX>>
   ```
   - 在 `cn.json` 文件中的示例
-  ```
+  ```json
 {
   "View All" : "查看全部",
   "View Headgear" : "查看外衣(头套)",
@@ -222,7 +218,7 @@
 }
   ```
   #### 语言addonPlugin注册
-```
+```json
 "params": {
   "language": true, // 布尔值：导入所有默认语言
   "language": ["CN", "EN"], // 数组：导入指定语言
@@ -257,7 +253,7 @@
 - postInit(): 执行后初始化阶段
 ```
   + 使用示例(必须要在 **`scriptFileList_earlyload`** 时机进行注册，且在注册前使用 **`maplebirch.ExModCount = maplebirch.expectedModuleCount + 1`** 来提升预期数量。)  
-```
+```javascript
 // 1. 注册UI组件模块（无依赖）
 maplebirch.register('uiComponents', {
   preInit() {
@@ -305,7 +301,7 @@ maplebirch.register('aiSystem', {
  ### 状态事件
    #### 状态事件的注册方式
    - 使用 `maplebirchFrameworks.addStateEvent` 、 `simpleFrameworks.addStateEvent` 和 `maplebirch.state.regStateEvent` 任选其一注册状态事件
-```
+```javascript
 maplebirchFrameworks.addStateEvent(
   type,       // 事件类型 (字符串)
   eventId,    // 事件唯一标识符 (字符串)
@@ -318,7 +314,7 @@ maplebirchFrameworks.addStateEvent(
 ```
   #### 状态事件的配置选项
  + **`output`** 文本输出 可与 **`action`** 回调函数 同时具有，但至少有其一
-```
+```javascript
 {
   output: 'widgetName',        // 可选：事件触发时输出的widget名称
   action: function() { ... },  // 可选：事件触发时执行的回调函数
@@ -334,7 +330,7 @@ maplebirchFrameworks.addStateEvent(
 }
 ```
   #### 状态事件使用示例  
-```
+```javascript
 // 中断型事件 - 压力崩溃
 maplebirchFrameworks.addStateEvent('interrupt', 'stress', {
   output: 'stress-widget',
@@ -345,7 +341,6 @@ maplebirchFrameworks.addStateEvent('interrupt', 'stress', {
   cond: () => V.stress >= V.stressmax;,
   forceExit: true, // 强制中断当前段落
 });
-
 // 叠加型事件 - 低金钱警告
 maplebirchFrameworks.addStateEvent('overlay', 'low-money-warning', {
   output: 'moneyWarningWidget',
@@ -356,7 +351,7 @@ maplebirchFrameworks.addStateEvent('overlay', 'low-money-warning', {
  + 支持 **[**简易框架**](https://github.com/emicoto/SCMLSimpleFramework)** 的 **`new TimeEvent`** 写法。
   #### 时间事件的注册方式
    - 使用 `maplebirchFrameworks.addTimeEvent` 、 `simpleFrameworks.addTimeEvent` 和 `maplebirch.state.regTimeEvent` 任选其一注册时间事件  
-```
+```javascript
 maplebirchFrameworks.addTimeEvent(
   type,       // 事件类型 (字符串)
   eventId,    // 事件唯一标识符 (字符串)
@@ -377,7 +372,7 @@ maplebirchFrameworks.addTimeEvent(
 - 'onTimeTravel': 时间穿越时触发
 ```
   #### 时间事件的配置选项
-```
+```javascript
 {
   action: function(enhancedTimeData) { ... },  // 必需：事件触发时执行的回调函数
   cond: function(enhancedTimeData) { ... },    // 可选：条件检查函数，返回true时触发
@@ -391,7 +386,7 @@ maplebirchFrameworks.addTimeEvent(
 }
 ```
   #### 时间数据对象
-```
+```javascript
 传递给 cond 和 action 函数的时间数据对象包含以下属性：
 {
   passed: number,           // 实际流逝的秒数
@@ -438,7 +433,7 @@ maplebirchFrameworks.addTimeEvent(
 }
 ```
   #### 时间事件使用示例  
-```
+```javascript
 // 基础事件类型示例
 maplebirchFrameworks.addTimeEvent('onSec', 'sec-counter', {
   action: () => V.secondCounter = (V.secondCounter || 0) + 1,
@@ -572,7 +567,7 @@ maplebirchFrameworks.addTimeEvent('onHour', 'guard-patrol', {
  ### 时间旅行
   #### 时间旅行使用示例
   - 此功能允许游戏时间向前或向后跳跃，支持精确时间点和相对时间偏移两种模式(时间旅行会触发 **'onTimeTravel'** 事件，并自动重置累积时间计数器)  
-```
+```javascript
 // 1. 精确时间点旅行（跳转到特定日期时间）
 maplebirch.state.timeTravel({
   year: 2025,      // 目标年份
@@ -646,7 +641,7 @@ B. 相对时间偏移模式:
 ],
 ```
   #### 音频使用示例
-```
+```javascript
 // 1. 从文件添加音频(导入步骤)
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
@@ -656,39 +651,29 @@ fileInput.onchange = async (e) => {
   await maplebirch.audio.addAudioFromFile(file, my-mod);
 };
 fileInput.click();
-
 // 2. 从Mod加载音频(导入步骤)
 await maplebirch.audio.importAllAudio('<模组名称>my-mod', '<音频路径>audio');
-
 // 3. 获取音频播放器(播放步骤)
 const player = maplebirch.audio.getPlayer('<模组名称>maplebirch-audio');
-
 // 4. 播放音频
 player.play('background-music', {
   loop: true,
   volume: 0.7,
   allowOverlap: false
 });
-
 // 5. 暂停/恢复音频
 player.togglePause('background-music');
-
 // 6. 停止音频
 player.stop('background-music');
-
 // 7. 设置全局音量
 player.setVolume(0.5);
-
 // 8. 设置单个音频音量
 player.setVolumeFor('sound-effect', 0.8);
-
 // 9. 设置循环次数
 player.setLoopCount('notification', 3);
-
 // 10. 检查正在播放的音频
 const playing = player.isPlaying();
 console.log('正在播放:', playing);
-
 // 11. 获取音频时长
 const duration = player.getDuration('background-music');
 console.log('音频时长:', duration);
@@ -705,9 +690,8 @@ play() 方法选项:
   - stopOthers: 是否停止其他正在播放的同名音频 (默认false)
   - onEnded: 播放结束回调函数
 ```
-
   #### 音频addonPlugin注册
-```
+```json
 "params": {
   "audio": true, // 布尔型：默认的 根目录/audio/ 的文件夹下的音频文件
   "audio": ["music", "audio"], // 数组型：自定义的 根目录/music/ 和 根目录/audio/ 文件夹下的音频文件
@@ -717,7 +701,7 @@ play() 方法选项:
  + 可在 **非 `scriptFileList_inject_early` 时机** 使用如下逻辑，或 **确保可以使用的情况下** 使用。
  #### 一般实用工具
  + **`lanSwitch`** 函数 - 根据当前语言输出内容
-```
+```javascript
 参数格式：
 1. 对象格式：{ EN: '英文内容', CN: '中文内容', ... }
 2. 两个独立参数：<<lanSwitch '英文内容' '中文内容'>>
@@ -728,7 +712,7 @@ lanSwitch('Hello' '你好');
 lanSwitch(['Hello', '你好']);
 ```
  + **`clone`** 函数 - 深度克隆对象
-```
+```javascript
 @param {any} source - 要克隆的对象
 @param {Object} [opt={}] - 选项
 @param {boolean} [opt.deep=true] - 是否深克隆
@@ -740,7 +724,7 @@ lanSwitch(['Hello', '你好']);
 @example clone(new Date(), {proto:false}) // 克隆Date对象
 ```
  + **`equal`** 函数 - 深度比较两个值
-```
+```javascript
 深度比较两个值
 @param {any} a - 第一个值
 @param {any} b - 第二个值
@@ -751,7 +735,7 @@ lanSwitch(['Hello', '你好']);
 @example equal({a:1}, {a:2}) // false
 ```
  + **`merge`** 函数 - 递归合并对象
-```
+```javascript
 @param {Object} target - 目标对象
 @param {...Object} sources - 源对象
 @param {Object} [opt] - 选项
@@ -764,7 +748,7 @@ lanSwitch(['Hello', '你好']);
 @example merge({obj:{x:1}}, {obj:{y:2}}) // {obj:{x:1, y:2}}
 ```
  + **`contains`** 函数 - 检查数组是否包含指定元素
-```
+```javascript
 @param {Array<any>} arr - 目标数组
 @param {any|Array<any>} value - 要查找的值或值数组
 @param {string} [mode='all'] - 匹配模式: 'all'|'any'|'none'
@@ -779,7 +763,7 @@ lanSwitch(['Hello', '你好']);
 @example contains([{x:1}], {x:1}, 'all', {deep:true}) // true
 ```
  + **`random`** 函数 - 生成随机数
-```
+```javascript
 @param {number|Object} [min] - 最小值或配置对象
 @param {number} [max] - 最大值
 @param {boolean} [float=false] - 是否生成浮点数
@@ -791,7 +775,7 @@ lanSwitch(['Hello', '你好']);
 @example random({min:5, max:10, float:true}) // 5-10的浮点数
 ```
  + **`either`** 函数 - 从选项中随机选择一个
-```
+```javascript
 @param {Array<any>|any} itemsOrA - 选项数组或第一个选项
 @param {...any} rest - 其他选项或配置
 @param {Object} [opt] - 配置
@@ -803,7 +787,7 @@ lanSwitch(['Hello', '你好']);
 @example either(['a','b'],{null:true}) // 33%返回null，33%'a'，33%'b'
 ```
  + **`convert`** 函数 - 字符串格式转换
-```
+```javascript
 @param {string} str - 原始字符串
 @param {string} [mode='lower'] - 转换模式
 @param {Object} [opt={}] - 选项
@@ -826,7 +810,7 @@ lanSwitch(['Hello', '你好']);
 ```
  #### 灵活的条件匹配
 + 这个类提供了多种匹配模式，包括精确匹配、范围匹配、集合匹配、子串匹配、正则匹配和比较匹配以及自定义条件函数匹配
-```
+```javascript
 **caseIncludes(substrings, result)**
   - 添加子字符串包含匹配条件
   - @param {string|string[]} substrings - 要匹配的子字符串或子字符串数组
@@ -866,7 +850,7 @@ lanSwitch(['Hello', '你好']);
   - 当输入值是数字且满足比较条件时匹配
 ```
 + 演示示例
-```
+```javascript
 @example <caption>基本用法（单一类型匹配）</caption>
 // 创建数字选择器（所有条件都是数字类型）
 const numberSelector = new selectCase()
@@ -896,7 +880,7 @@ colorSelector.match('light blue'); // 'Light variant'
 colorSelector.match('dark red'); // 'Dark variant'
 colorSelector.match('yellow'); // '#FFFFFF'
 ```
- #### Sugarcube 宏
+ #### Sugarcube宏
 + **`<<lanSwitch>>`** - 简易双语切换，根据当前语言显示对应的文本。  
 **用法：**
 ```
@@ -996,7 +980,7 @@ colorSelector.match('yellow'); // '#FFFFFF'
 - `option` 的语言代码必须大写
  ### 变量迁徙
   #### 变量迁徙使用示例
-```
+```javascript
 // 创建迁移系统（带日志记录）
 const migrator = maplebirchFrameworks.migration();
 
@@ -1043,21 +1027,21 @@ migrator.utils.fill(userData, { settings: { theme: 'dark' } });
 ```
   #### 文本替换
   - 使用 replaceText(oldText, newText) 方法来替换当前页面文本， **(要注意当前语言)**
-```
+```javascript
 使用示例：
 maplebirch.tool.text.replaceText("旧文本", "新文本");
 maplebirch.tool.text.replaceText({CN: "中文", EN: "English"}, {CN: "新中文", EN: "New English"});
 maplebirch.tool.text.replaceText(["old", "旧"], ["new", "新"]);
 ```
   - 使用 replaceLink(oldLink, newLink) 方法来替换当前页面链接， **(要注意当前语言)**
-```
+```javascript
 使用示例：
 maplebirch.tool.text.replaceLink("点击这里", "[[新页面|新链接]]");
 maplebirch.tool.text.replaceLink({CN: "链接", EN: "Link"}, {CN: "[[页面|中文链接]]", EN: "[[page|English Link]]"});
 ```
   #### 注册文本
   - 使用 maplebirchFrameworks.addText 方法注册文本处理器
-```
+```javascript
 // 基本文本
 maplebirchFrameworks.addText('welcome', t => {
   t.text('欢迎来到游戏世界！');
@@ -1180,7 +1164,7 @@ maplebirchFrameworks.addText('hint_links', t => {
 </details>
 
   #### 添加内容到指定区域
-```
+```javascript
 添加部件到指定区域
 @param {string} zone - 目标区域名称（如 'Header', 'Footer', 'CustomLinkZone' 等）
 @param {...(string|Function|Object|Array)} widgets - 要添加的部件，支持多种格式
@@ -1227,7 +1211,7 @@ maplebirchFrameworks.addTo('Information',
 ```
   #### 注册初始化函数
  - 注册在游戏初始化时需要执行的函数，用于设置初始变量、加载数据等
-```
+```javascript
 maplebirchFrameworks.onInit(() => {
   setup.modEnabled = true;
   console.log('模组已激活');
@@ -1262,7 +1246,7 @@ maplebirchFrameworks.onInit(() => {
 ```
  #### 区域addonPlugin注册
  + **CustomLinkZone区域** 为数组形式 如 **`[1, 'preLinkMenu']`**
-```
+```json
 "params": {
   "framework": [
     // 类型1: 简单部件注入
@@ -1327,7 +1311,7 @@ maplebirchFrameworks.onInit(() => {
 | Acceptance Traits  | 接纳特质     |
 
  - 使用 `maplebirchFrameworks.addTraits(...data)` 添加或更新角色特质
-```
+```javascript
 特质对象结构：
 {
   title: "特质类别", // 如"一般特质" (支持函数)
@@ -1363,7 +1347,7 @@ maplebirchFrameworks.addTraits(
 );
 ```
   #### 特质addonPlugin注册
-```
+```json
 "params": {
   "framework": [
     {
@@ -1396,7 +1380,7 @@ maplebirchFrameworks.addTraits(
 ```
  ### 地点注册
   + 使用 `maplebirchFrameworks.addLocation(locationId, config, options = {})` 定制游戏地点，模板可查看原版 **setup.LocationImages** 功能后续可能做改动
-```
+```javascript
 参数说明：
 @param {string} locationId - 地点ID
 @param {object} config - 配置对象
@@ -1441,7 +1425,7 @@ maplebirchFrameworks.addLocation('forest', {
  ### 地点注册
    + 使用 `maplebirchFrameworks.addBodywriting(key, config)` 为原版添加纹身以及涂鸦。
    + 身体涂鸦配置参数说明
-```
+```javascript
 @param {string} key - 涂鸦的唯一标识符，将用作 setup.bodywriting 的键名
 @param {object} config - 涂鸦配置对象
 @param {string} [config.writing] - 英文涂鸦文本
@@ -1456,7 +1440,7 @@ maplebirchFrameworks.addLocation('forest', {
 @param {string[]} [config.sprites] - 精灵图身体部位
 ```
   + 使用示例
-```
+```javascript
 // 添加简单的羞辱性涂鸦（中英双语）
 addBodywriting('public_toilet', {
   writing: 'Public Toilet',
@@ -1485,7 +1469,7 @@ addBodywriting('robin_slave', {
  + 关于你的商店页面名称为 **"商店唯一标识名称" + Shop**，通过 **`<<link [[你的商店|"商店唯一标识名称" Shop]]>><</link>>`** 来进入，所以入口需要你自己填写
  #### 特别参数说明
  + 关于**三个额外外套槽**需要**ReOverfits模组**加载后才会在商店中生效逻辑，否则将不显示
-```
+```javascript
 "clothesType":  // 商店种类
 [
   "all",         // 查看全部
@@ -1521,7 +1505,7 @@ addBodywriting('robin_slave', {
 ```
  #### 商店addonPlugin的注册
  + 在你的 `boot.json` 中申明载入此文件
-```
+```json
 "additionFile": [
   "shop/XXX.json"
 ],
@@ -1537,7 +1521,7 @@ addBodywriting('robin_slave', {
 ```
  #### 商店使用示例
  + 写在你的模组 **`根目录/shop/XXX.josn`** 或者 **`根目录/XXX/XXX.josn`** 都可以，这里涉及框架另一个功能: [文本片段](#文本片段)
-```
+```json
 {
   "shopName": "商店唯一标识名称", // 必填：商店的唯一标识名称（英文或拼音）
   "clothesType": ["类别1", "类别2"], // 必填：支持的服装类别数组
@@ -1600,7 +1584,7 @@ addBodywriting('robin_slave', {
  ### NPC注册
  #### NPC的基本数据
  - 添加NPC角色 (maplebirchFrameworks.addNPC)
-```
+```javascript
 添加NPC角色 (maplebirchFrameworks.addNPC(npcData, config, translationsData))
 ----------------------------------------------
 向游戏中添加新的NPC角色或更新现有NPC
@@ -1642,7 +1626,7 @@ maplebirchFrameworks.addNPC({
 ```
  #### 添加自定义状态
  - 添加或更新NPC的自定义状态系统(maplebirchFrameworks.addStats(statsObject))
-```
+```javascript
 @param {Object} statsObject - 状态配置对象
 @param {Object} statsObject[statName] - 状态配置
   - position: 在状态列表中的位置 (数字索引/"first"/"last"/"secondLast")
@@ -1670,7 +1654,7 @@ maplebirch.npc.addStats({
 ```
  #### 添加NPC服装库数据
 - **`setup.npcClothesSets`** 方便扩充原版的NPC服装库数据
-```
+```javascript
 添加NPC服装套装
 @param {...Object} configs - 套装配置对象或配置对象数组
 配置对象详细说明：
@@ -1701,7 +1685,7 @@ maplebirch.npc.addStats({
 @param {string} [config.desc] - 套装描述，如未提供则自动生成
 ```
  - 使用示例
-```
+```javascript
 maplebirchFrameworks.addNPCClothes({
     name: "formalSet",
     type: "formal",
@@ -1775,7 +1759,7 @@ maplebirchFrameworks.addNPCClothes(outfits);
 </details>
 
   #### NPC的addonPlugin注册
-```
+```json
 "params": {
   "npc": [
     {
@@ -1825,7 +1809,7 @@ maplebirchFrameworks.addNPCClothes(outfits);
 + 在模组设置中可以开启已命名npc的侧边栏立绘，需要自行导入相应的图片
 + 画布模式尚未完成，它将会是以pc模型为制作的立绘
  #### NPC侧绘的addonPlugin注册
-```
+```json
 "params": {
     "npcSidebar": [
       {
@@ -1868,7 +1852,7 @@ maplebirchFrameworks.addNPCClothes(outfits);
   - 'merge': 递归合并对应索引的元素
 ```
  + 如果想添加原版没有的 效果和图层，直接使用 **`maplebirch.once(':weather', () => {});`** 即可
-```
+```javascript
 maplebirch.once(':weather', () => {
  Weather.Renderer.Effects.add({
   // 你要添加的逻辑
@@ -1879,7 +1863,7 @@ maplebirch.once(':weather', () => {
 });
 ```
  #### 天气渲染修改示例
-```
+```javascript
 @example
 // 修改颜色覆盖效果 - 添加日食支持
 modifyWeather.addEffect('colorOverlay', {
@@ -1921,7 +1905,7 @@ modifyWeather.addLayer('sun', {
 ### 转化管理
  #### 转化的添加
 - 使用 **`maplebirchFramework.addTransform`** 或 **`maplebirch.char.transformation.add`** 来注册
-```
+```javascript
 添加新的变形配置
 @param {string} name - 转化名称（唯一标识符）
 @param {string} type - 转化类型：'physical'（动物转化）或 'special'（神圣）或新增类型
@@ -1946,7 +1930,7 @@ modifyWeather.addLayer('sun', {
 maplebirchFramework.addTransform(name, type, options);
 ```
 - 添加示例
-```
+```javascript
 maplebirch.char.transformation.add('dragon', 'physical', {
     build: 100,
     level: 6,
@@ -2047,4 +2031,5 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
+
 
