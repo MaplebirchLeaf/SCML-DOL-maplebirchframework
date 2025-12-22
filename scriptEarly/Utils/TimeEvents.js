@@ -2,7 +2,6 @@
 /// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  const maplebirch = window.maplebirch;
 
   const createDateFormatters = () => {
     const getFormattedDate = function(date, includeWeekday = false) {
@@ -450,7 +449,7 @@
       class DateTime extends OriginalDateTime {
         constructor(year = 2020, month = 1, day = 1, hour = 0, minute = 0, second = 1) {
           if (arguments.length === 1 && year && typeof year === 'object') {
-            if (year instanceof DateTime || (year.timeStamp !== undefined && year.year !== undefined)) {
+            if (year instanceof DateTime || (year.timeStamp != null && year.year != null)) {
               super(year.year, year.month, year.day, year.hour || 0, year.minute || 0, year.second || 0);
               return;
             }

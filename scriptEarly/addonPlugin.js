@@ -2,14 +2,7 @@
 /// <reference path='../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  if (!window.maplebirch) return;
-  const modUtils = window.maplebirch.modUtils;
   const logger = modUtils.getLogger();
-  const modSC2DataManager = window.modSC2DataManager;
-  const addonBeautySelectorAddon = window.addonBeautySelectorAddon;
-  const addonTweeReplacer = window.addonTweeReplacer; // Twee
-  const addonReplacePatcher = window.addonReplacePatcher; // JavaScript
-  const maplebirch = window.maplebirch;
   logger.log('[maplebirchMod] 开始执行');
 
   async function modifyEffect() {
@@ -136,7 +129,7 @@
       await this.core.trigger(':import');
       await this.#vanillaDataReplace();
       await this.#processInit();
-      try { await this.core.shop.beforePatchModToGame();; } catch (/** @type {any} */e) { this.core.log(`商店数据注入失败: ${e.message}`, 'ERROR'); }
+      try { await this.core.shop.beforePatchModToGame(); } catch (/** @type {any} */e) { this.core.log(`商店数据注入失败: ${e.message}`, 'ERROR'); }
     }
 
     async #simpleFrameworkCheck() {
@@ -411,5 +404,5 @@
   }
 
   // @ts-ignore
-  maplebirch.addonPlugin = new MaplebirchFrameworkAddon(maplebirch, modSC2DataManager, modUtils);
+  await maplebirch.register('addonPlugin', new MaplebirchFrameworkAddon(maplebirch, modSC2DataManager, modUtils), []);
 })();

@@ -2,7 +2,6 @@
 /// <reference path='../../maplebirch.d.ts' />
 (() => {
 	'use strict';
-	const maplebirch = window.maplebirch;
 
 	class Transformation {
 		/** @param {{ log: any; core: MaplebirchCore; }} manager */
@@ -30,7 +29,7 @@
 			this.layers = {};
 			manager.core.once(':passagestart', () => {
 				this.canvas();
-				if (['Start', 'Downgrade Waiting Room'].includes(manager.core.state.passage.title)) return;
+				if (['Start', 'Downgrade Waiting Room'].includes(manager.core.state.Passage.title)) return;
 				this.inject();
 			});
 			manager.core.once(':finally', () => {

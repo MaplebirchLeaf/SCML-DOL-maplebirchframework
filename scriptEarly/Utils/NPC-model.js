@@ -1,6 +1,5 @@
 (() => {
   'use strict';
-  const maplebirch = window.maplebirch;
 
   const modelShow = (options) => !!options.show_nnpc && !!options.canvas_mode;
 

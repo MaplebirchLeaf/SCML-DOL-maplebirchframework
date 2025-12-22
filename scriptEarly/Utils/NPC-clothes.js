@@ -1,7 +1,6 @@
 // @ts-check
 /// <reference path='../../maplebirch.d.ts' />
 (() => {
-  const maplebirch = window.maplebirch;
 
   const NPCClothes = (() => {
     /** @type {any[]} */

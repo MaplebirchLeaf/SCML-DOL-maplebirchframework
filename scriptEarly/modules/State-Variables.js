@@ -2,12 +2,7 @@
 /// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  if (!window.maplebirch) {
-    console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
-    return;
-  }
 
-  const maplebirch = window.maplebirch;
   const currentVersion = '1.0.4';
 
   class variablesModule {
@@ -91,7 +86,7 @@
 
     Init() {
       try {
-        if (maplebirch.state.passage.title === 'Start2') {
+        if (this.tool.core.state.passage.title === 'Start2') {
           V.maplebirch = this.tool.clone({
             ...variablesModule.defaultVar,
             version: this.version

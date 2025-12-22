@@ -2,12 +2,6 @@
 /// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  if (!window.maplebirch) {
-    console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
-    return;
-  }
-
-  const maplebirch = window.maplebirch
 
   const NamedNPC = (() => {
     'use strict';
@@ -495,7 +489,7 @@
 
       // @ts-ignore
       get location() {
-        const date = Time.date;
+        const date = new DateTime(Time.date);
         if (this.specials.length > 0) {
           if (!this.sortedSpecials) this.sortedSpecials = [...this.specials].sort((a, b) => b.priority - a.priority);
           for (const special of this.sortedSpecials) {

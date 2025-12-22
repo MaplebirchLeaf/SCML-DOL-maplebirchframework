@@ -2,12 +2,6 @@
 /// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  if (!window.maplebirch) {
-    console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
-    return;
-  }
-
-  const maplebirch = window.maplebirch;
 
   /** @param {string} npcName @param {{ (): string; (): void; (): any; }} original */
   function Schedules(npcName, original) {
@@ -45,9 +39,8 @@
 
     /** @param {MaplebirchCore} core */
     constructor(core) {
-      this.lang = core.lang;
-      this.tool = core.tool;
-      this.log = this.tool.createLog('widget');
+      this.core = core;
+      this.log = this.core.tool.createLog('internals');
       this.updateTimer = null;
     }
 
@@ -460,30 +453,28 @@
     }
 
     #getModName(modinfo) {
-      if (!modinfo.nickName) return this.lang.autoTranslate(modinfo.name);
-      if (typeof modinfo.nickName === 'string') return this.lang.autoTranslate(modinfo.nickName);
+      if (!modinfo.nickName) return this.core.lang.autoTranslate(modinfo.name);
+      if (typeof modinfo.nickName === 'string') return this.core.lang.autoTranslate(modinfo.nickName);
       if (typeof modinfo.nickName === 'object') {
         const translationsObj = Object.entries(modinfo.nickName).reduce((acc, [lang, text]) => {
           acc[lang.toUpperCase()] = text;
           return acc;
         }, {});
         const mapKey = `modList_${modinfo.name}`;
-        if (!this.lang.translations.has(mapKey)) this.lang.translations.set(mapKey, translationsObj);
-        return this.lang.t(mapKey);
+        if (!this.core.lang.translations.has(mapKey)) this.core.lang.translations.set(mapKey, translationsObj);
+        return this.core.lang.t(mapKey);
       }
       return false
     }
 
     #getModDependenceInfo() {
-      const modList = maplebirch.modUtils.getModListName();
+      const modList = this.core.modUtils.getModListName();
       for (let i = 0; i < modList.length; i++) {
         const modName = modList[i];
-        const modinfo = maplebirch.modUtils.getMod(modName);
+        const modinfo = this.core.modUtils.getMod(modName);
         if (!modinfo) continue;
         if (!modinfo.bootJson.dependenceInfo) continue;
-        if (modinfo.bootJson.dependenceInfo.some(dep => dep.modName === 'maplebirch') && !maplebirch.modList.includes(modinfo.name)) {
-          maplebirch.modList.push(modinfo.name);
-        }
+        if (modinfo.bootJson.dependenceInfo.some(dep => dep.modName === 'maplebirch') && !this.core.modList.includes(modinfo.name)) this.core.modList.push(modinfo.name);
       }
     }
 
@@ -495,13 +486,13 @@
     _showFrameworkInfo() {
       let html_1 = `<div class='p-2 text-align-center'>
           <h3>[[<<lanSwitch 'Maplebirch Framework' '秋枫白桦框架'>>|'https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchframework']]</h3>
-          <div class='m-2'><span class='gold'><<lanSwitch 'Version: ' '版本：'>></span>${maplebirch.constructor.meta.version}<br></div>
-          <div class='m-2'><span class='gold'><<lanSwitch 'Author: ' '作者：'>></span>${maplebirch.autoTranslate(maplebirch.constructor.meta.author)}<br></div>
-          <div class='m-2'><span class='gold'><<lanSwitch 'Last Modified By: ' '最后修改者：'>></span>${maplebirch.autoTranslate(maplebirch.constructor.meta.modifiedby)}<br></div>
+          <div class='m-2'><span class='gold'><<lanSwitch 'Version: ' '版本：'>></span>${this.core.constructor.meta.version}<br></div>
+          <div class='m-2'><span class='gold'><<lanSwitch 'Author: ' '作者：'>></span>${this.core.autoTranslate(this.core.constructor.meta.author)}<br></div>
+          <div class='m-2'><span class='gold'><<lanSwitch 'Last Modified By: ' '最后修改者：'>></span>${this.core.autoTranslate(this.core.constructor.meta.modifiedby)}<br></div>
       </div>`;
 
       this.#getModDependenceInfo();
-      const modlist = maplebirch.modList;
+      const modlist = this.core.modList;
       const html = [];
 
       for (let i = 0; i < modlist.length; i++) {
@@ -520,21 +511,21 @@
     }
 
     compatibleModI18N() {
-      if (maplebirch.modUtils.getMod('ModI18N')) {
+      if (this.core.modUtils.getMod('ModI18N')) {
         const originalName = setup.NPC_CN_NAME;
-        setup.NPC_CN_NAME = function (args) {
+        setup.NPC_CN_NAME = (args) => {
           if (!args || typeof args !== 'string') return args;
           const originalResult = originalName(args);
           if (originalResult !== args) return originalResult;
-          if (maplebirch.lang.translations.has(args)) return maplebirch.autoTranslate(args);
+          if (this.core.lang.translations.has(args)) return this.core.autoTranslate(args);
           return args;
         };
         const originalTitle = setup.NPC_CN_TITLE;
-        setup.NPC_CN_TITLE = function (str) {
+        setup.NPC_CN_TITLE = (str) => {
           if (!str || typeof str !== 'string') return str;
           const originalResult = originalTitle(str);
           if (originalResult !== str) return originalResult;
-          if (maplebirch.lang.translations.has(str)) return maplebirch.autoTranslate(str);
+          if (this.core.lang.translations.has(str)) return this.core.autoTranslate(str);
           return str;
         };
       }
@@ -543,7 +534,7 @@
     preInit() {
       Object.defineProperties(window, { lanSwitch: { value: this._languageSwitch }, });
 
-      this.tool.framework.onInit(() => {
+      this.core.tool.framework.onInit(() => {
         setup.maplebirch = {};
         this.#languageWidgetManager();
         setup.maplebirch.hint = (() => {
@@ -557,30 +548,30 @@
           return { push, get play() { return content.map(item => `${item}`).join(''); } };
         })();
       });
-      this.tool.framework.addTo('HintMobile', 'maplebirchModHintMobile');
-      this.tool.framework.addTo('MenuBig', 'maplebirchModHintDesktop');
+      this.core.tool.framework.addTo('HintMobile', 'maplebirchModHintMobile');
+      this.core.tool.framework.addTo('MenuBig', 'maplebirchModHintDesktop');
       
-      this.tool.other.configureLocation('lake_ruin', {
+      this.core.tool.other.configureLocation('lake_ruin', {
         condition: () => Weather.bloodMoon && !Weather.isSnow
       }, { layer: 'base', element: 'bloodmoon' });
 
-      this.tool.other.configureLocation('lake_ruin', {
+      this.core.tool.other.configureLocation('lake_ruin', {
         condition: () => Weather.bloodMoon && Weather.isSnow
       }, { layer: 'base', element: 'bloodmoon_snow' });
 
-      maplebirch.once(':defineSugarcube', () => {
-        this.tool.widget.defineMacro('language', this._language, ['option'], false, false);
-        this.tool.widget.defineMacro('lanSwitch', this._languageSwitch);
-        this.tool.widget.defineMacro('lanButton', this._languageButton, null, false, true);
-        this.tool.widget.defineMacro('lanLink', this._languageLink, null, false, true);
-        this.tool.widget.defineMacro('lanListbox', this._lanListbox, ['option', 'optionsfrom'], ['optionsfrom'], true);
-        this.tool.widget.defineMacro('radiobuttonsfrom', this._radiobuttonsfrom);
-        this.tool.widget.defineMacro('maplebirchTextOutput', this.tool.text.makeMacroHandler());
-        this.tool.widget.defineMacroS('maplebirchFrameworkVersions', this._showModVersions);
-        this.tool.widget.defineMacroS('maplebirchFrameworkInfo', () => this._showFrameworkInfo());
+      this.core.once(':defineSugarcube', () => {
+        this.core.tool.widget.defineMacro('language', this._language, ['option'], false, false);
+        this.core.tool.widget.defineMacro('lanSwitch', this._languageSwitch);
+        this.core.tool.widget.defineMacro('lanButton', this._languageButton, null, false, true);
+        this.core.tool.widget.defineMacro('lanLink', this._languageLink, null, false, true);
+        this.core.tool.widget.defineMacro('lanListbox', this._lanListbox, ['option', 'optionsfrom'], ['optionsfrom'], true);
+        this.core.tool.widget.defineMacro('radiobuttonsfrom', this._radiobuttonsfrom);
+        this.core.tool.widget.defineMacro('maplebirchTextOutput', this.core.tool.text.makeMacroHandler());
+        this.core.tool.widget.defineMacroS('maplebirchFrameworkVersions', this._showModVersions);
+        this.core.tool.widget.defineMacroS('maplebirchFrameworkInfo', () => this._showFrameworkInfo());
       });
 
-      maplebirch.on(':passagestart', () => {
+      this.core.on(':passagestart', () => {
         if (!V.options) return;
         const c = V.options.maplebirch?.debug, d = V.debug
         this.debug ??= typeof c === 'boolean' ? c : (d === 0 || d === 1 ? d === 1 : false)
@@ -588,7 +579,7 @@
         V.options.maplebirch.debug = this.debug, V.debug = this.debug ? 1 : 0
       });
 
-      maplebirch.on(':loadSaveData', () => maplebirch.Language = V?.maplebirch?.language);
+      this.core.on(':loadSaveData', () => maplebirch.Language = V?.maplebirch?.language);
 
       $(document).on('change', 'select[name="lanListbox--maplebirchlanguage"]', function () {
         if (!maplebirch.modules.initPhase.preInitCompleted) return;
@@ -634,7 +625,7 @@
 
     Init() {
       Dynamic.task = (fn, name) => this._fixDynamicTask(fn, name);
-      if (maplebirch.gameVersion >= '0.5.6.10') this.compatibleModI18N();
+      if (this.core.gameVersion >= '0.5.6.10') this.compatibleModI18N();
       getRobinLocation = Schedules('Robin', getRobinLocation);
       sydneySchedule = Schedules('Sydney', sydneySchedule);
     }

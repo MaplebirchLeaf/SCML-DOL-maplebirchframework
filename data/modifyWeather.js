@@ -2,17 +2,17 @@
 /// <reference path='../maplebirch.d.ts' />
 (() => {
   'use strict';
-  const maplebirch = window.maplebirch;
 
   class modifyWeather {
-    /** @param {any} modSC2DataManager @param {any} addonReplacePatcher */
-    constructor(modSC2DataManager, addonReplacePatcher) {
+    /** @param {MaplebirchCore} core @param {any} modSC2DataManager @param {any} addonReplacePatcher */
+    constructor(core, modSC2DataManager, addonReplacePatcher) {
+      this.core = core;
       this.modSC2DataManager = modSC2DataManager;
       this.addonReplacePatcher = addonReplacePatcher;
       this.layerModifications = new Map();
       this.effectModifications = new Map();
       this.weathertrigger = false;
-      maplebirch.once(':defineSugarcube', () => {
+      this.core.once(':defineSugarcube', () => {
         this.#modifyDescriptions();
         this.#modifyProperty();
       });
@@ -35,7 +35,7 @@
     /** @param {{ name: any; }} params */
     trigger(params) {
       const layerName = params.name;
-      if (!this.weathertrigger) { maplebirch.trigger(':weather'); this.weathertrigger = true; }
+      if (!this.weathertrigger) { this.core.trigger(':weather'); this.weathertrigger = true; }
       if (this.layerModifications.has(layerName)) {
         const modifications = this.layerModifications.get(layerName);
         for (const { patch, mode } of modifications) {
@@ -43,7 +43,7 @@
           merge(params, patch, options);
         }
         this.layerModifications.delete(layerName);
-        maplebirch.log(`[weather] 处理层 ${layerName}: 应用了 ${modifications.length} 个修改`, 'DEBUG');
+        this.core.log(`[weather] 处理层 ${layerName}: 应用了 ${modifications.length} 个修改`, 'DEBUG');
       }
       if (this.effectModifications.size > 0) {
         for (const [effectName, modifications] of this.effectModifications) {
@@ -53,7 +53,7 @@
               const options = { mode };
               merge(effect, patch, options);
             }
-            maplebirch.log(`[weather] 修改效果 ${effectName}: 应用了 ${modifications.length} 个修改`, 'DEBUG');
+            this.core.log(`[weather] 修改效果 ${effectName}: 应用了 ${modifications.length} 个修改`, 'DEBUG');
           }
         }
         this.effectModifications.clear();
@@ -196,10 +196,10 @@
         lightClouds: {
           solarEclipse: () => {
             const phase = Weather.solarEclipsePhase;
-            const lang = window.maplebirch.Language;
+            const lang = maplebirch.Language;
             if (lang === 'CN') {
               if (phase < 0.3) return '透过云层的光线开始减弱，天色变得诡异。';
-              else if (phase > 0.7) return '光线透过云层逐渐增强，日食即将结束。';
+              else if (phase > 0.7) return '光线透过云层逐渐增强，日蚀即将结束。';
               else return '在日蚀的黑暗中，云朵边缘泛着奇异的光晕。';
             } else {
               if (phase < 0.3) return 'The light filtering through the clouds begins to weaken, the sky turning eerie.';
@@ -211,10 +211,10 @@
         heavyClouds: {
           solarEclipse: () => {
             const phase = Weather.solarEclipsePhase;
-            const lang = window.maplebirch.Language;
+            const lang = maplebirch.Language;
             if (lang === 'CN') {
-              if (phase < 0.3) return '厚重的云层下，日食让世界陷入更深的昏暗。';
-              else if (phase > 0.7) return '日食即将结束，但阴云依旧笼罩着昏暗的天空。';
+              if (phase < 0.3) return '厚重的云层下，日蚀让世界陷入更深的昏暗。';
+              else if (phase > 0.7) return '日蚀即将结束，但阴云依旧笼罩着昏暗的天空。';
               else return '日蚀的黑暗中，阴沉的天空几乎如同深夜。';
             } else {
               if (phase < 0.3) return 'Beneath the thick clouds, the eclipse plunges the world into deeper gloom.';
@@ -226,11 +226,11 @@
         lightPrecipitation: {
           solarEclipse: () => {
             const phase = Weather.solarEclipsePhase;
-            const lang = window.maplebirch.Language;
+            const lang = maplebirch.Language;
             if (Weather.precipitation === 'rain') {
               if (lang === 'CN') {
                 if (phase < 0.3) return '天色渐暗，细雨在异常的光线下闪烁着银光。';
-                else if (phase > 0.7) return '日食将尽，雨滴开始映出逐渐恢复的光亮。';
+                else if (phase > 0.7) return '日蚀将尽，雨滴开始映出逐渐恢复的光亮。';
                 else return '日蚀的黑暗中，雨声显得格外清晰而神秘。';
               } else {
                 if (phase < 0.3) return 'The sky darkens, and the drizzle shimmers silver in the abnormal light.';
@@ -240,7 +240,7 @@
             } else {
               if (lang === 'CN') {
                 if (phase < 0.3) return '天色渐暗，雪花在异常的光线下如同飘落的萤火。';
-                else if (phase > 0.7) return '日食将尽，雪地开始反射出微弱的光亮。';
+                else if (phase > 0.7) return '日蚀将尽，雪地开始反射出微弱的光亮。';
                 else return '日蚀的黑暗中，飘雪为世界披上了一层银白的寂静。';
               } else {
                 if (phase < 0.3) return 'The sky darkens, and snowflakes fall like fireflies in the strange light.';
@@ -253,11 +253,11 @@
         heavyPrecipitation: {
           solarEclipse: () => {
             const phase = Weather.solarEclipsePhase;
-            const lang = window.maplebirch.Language;
+            const lang = maplebirch.Language;
             if (Weather.precipitation === 'rain') {
               if (lang === 'CN') {
-                if (phase < 0.3) return '暴雨在日食的昏暗天空中更显狂暴。';
-                else if (phase > 0.7) return '日食渐退，但暴雨依旧倾盆而下。';
+                if (phase < 0.3) return '暴雨在日蚀的昏暗天空中更显狂暴。';
+                else if (phase > 0.7) return '日蚀渐退，但暴雨依旧倾盆而下。';
                 else return '日蚀的黑暗中，暴雨声如同天地的怒吼。';
               } else {
                 if (phase < 0.3) return 'The storm seems even more violent under the dim sky of the eclipse.';
@@ -266,8 +266,8 @@
               }
             } else {
               if (lang === 'CN') {
-                if (phase < 0.3) return '暴雪在日食的昏暗天空中更显猛烈。';
-                else if (phase > 0.7) return '日食渐退，但暴风雪依旧肆虐。';
+                if (phase < 0.3) return '暴雪在日蚀的昏暗天空中更显猛烈。';
+                else if (phase > 0.7) return '日蚀渐退，但暴风雪依旧肆虐。';
                 else return '日蚀的黑暗中，暴风雪将世界笼罩在白色的混沌中。';
               } else {
                 if (phase < 0.3) return 'The blizzard seems even more fierce under the dim sky of the eclipse.';
@@ -280,10 +280,10 @@
         thunderStorm: {
           solarEclipse: () => {
             const phase = Weather.solarEclipsePhase;
-            const lang = window.maplebirch.Language;
+            const lang = maplebirch.Language;
             if (lang === 'CN') {
-              if (phase < 0.3) return '日食开始，雷暴在逐渐暗淡的天空中显得更加骇人。';
-              else if (phase > 0.7) return '日食即将结束，但雷电依旧在昏暗的天空中闪烁。';
+              if (phase < 0.3) return '日蚀开始，雷暴在逐渐暗淡的天空中显得更加骇人。';
+              else if (phase > 0.7) return '日蚀即将结束，但雷电依旧在昏暗的天空中闪烁。';
               else return '日蚀的黑暗中，闪电的光芒格外刺眼。';
             } else {
               if (phase < 0.3) return 'The eclipse begins, and the thunderstorm appears even more terrifying in the fading sky.';
@@ -326,13 +326,13 @@
         this.addonReplacePatcher.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);
         this.#modifyRender();
       } catch (/** @type {any} */error) {
-        maplebirch.log(`处理天气JavaScript时发生错误: ${error.message}`, 'ERROR');
+        this.core.log(`处理天气JavaScript时发生错误: ${error.message}`, 'ERROR');
       }
     }
   }
 
   class EclipseSystem {
-    /** @param {{ regTimeEvent: (arg0: string, arg1: string, arg2: { action: () => void; cond: () => any; exact: boolean; }) => void; }} state @param { { rand: new () => any; createLog: (arg0: string) => (...data: any[]) => void;} } manger */
+    /** @param {TimeStateManager} state @param {tools} manger */
     constructor(state, manger) {
       this.log = manger.createLog('eclipse');
       this.Config = {
@@ -353,7 +353,7 @@
         cond: () => V.options?.maplebirch?.solarEclipse,
         exact: true,
       });
-      maplebirch.on(':dataInit', () => this.#updateStored(4));
+      manger.core.on(':dataInit', () => this.#updateStored(4));
     }
 
     #updateStored(count = 4) {
@@ -466,9 +466,7 @@
   }
 
   maplebirch.once(':beforePatch', (/** @type {{ gSC2DataManager: any; addonReplacePatcher: any; }} */data) => {
-    Object.assign(data, {
-      modifyWeather: new modifyWeather(data.gSC2DataManager, data.addonReplacePatcher)
-    });
+    Object.assign(data, { modifyWeather: new modifyWeather(maplebirch, data.gSC2DataManager, data.addonReplacePatcher) });
   });
   maplebirch.once(':state-init', (/** @type {{ constructor: any; }} */data) => Object.assign(data.constructor, { solarEclipse: Object.freeze(EclipseSystem) }));
 })();

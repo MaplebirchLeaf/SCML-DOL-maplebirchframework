@@ -1,9 +1,9 @@
 // @ts-check
 /// <reference path='../maplebirch.d.ts' />
-(async() => {
+var maplebirch = (() => {
   'use strict';
-  const frameworkVersion = '2.6.4';
-  const lastUpdate = '2025.12.19';
+  const frameworkVersion = '2.6.5';
+  const lastUpdate = '2025.12.21';
   const lastModifiedBy = '楓樺葉';
   const DEBUGMODE = true;
 
@@ -12,8 +12,6 @@
     MOUNTED: 1,
     ERROR: 2
   };
-
-  if (window.maplebirch) return;
 
   const jsyaml = (function() {
     /**@type {any} */var exports = {};// @ts-ignore
@@ -29,6 +27,7 @@
       WARN:  { level: 2, tag: '[警告]', style: 'color: #FF8F00; font-weight: bold;' },
       ERROR: { level: 3, tag: '[错误]', style: 'color: #C62828; font-weight: bold;' }
     };
+
     /** @type {Object<string|number, string|number>} */
     static LogLevel = (() => {
       /** @type {Object<string|number, string|number>} */
@@ -39,6 +38,7 @@
       });
       return map;
     })();
+
     /** @param {MaplebirchCore} core */
     constructor(core) {
       this.core = core;
@@ -1211,8 +1211,8 @@
     constructor() {
       this.meta = {
         state: ModuleState.PENDING,
-        coreModules: ['state', 'tool', 'audio', 'var', 'char', 'npc', 'combat', 'shop'],
-        earlyMount: ['state', 'tool'],
+        coreModules: ['addonPlugin', 'state', 'tool', 'audio', 'var', 'char', 'npc', 'combat', 'shop'],
+        earlyMount: ['addonPlugin', 'state', 'tool'],
         initializedAt: new Date().toLocaleString(),
       };
       /** @type {string[]} */
@@ -1317,15 +1317,15 @@
     }
 
     get modLoader() {
-      return window.modSC2DataManager.getModLoader()
+      return modSC2DataManager.getModLoader()
     }
 
     get modUtils() {
-      return window.modSC2DataManager.getModUtils()
+      return modSC2DataManager.getModUtils()
     }
 
     get gameVersion() {
-      return window.StartConfig.version;
+      return StartConfig.version;
     }
 
     #Ready() {
@@ -1350,12 +1350,12 @@
 
       this.once(':allModuleRegistered', async () => {
         this.log('所有模块注册完成，开始预初始化', 'INFO');
-        await this.trigger(':IndexedDB');
-        await this.idb.init();
+        try { await this.trigger(':IndexedDB'); } catch { this.log(':IndexedDB注册错误', 'ERROR'); };
+        try { await this.idb.init(); } catch { this.log('IndexedDB初始化错误', 'ERROR'); };
         await this.preInit();
       });
 
-      this.on(':passageinit', async (/** @type {{ passage: any; }} */ev) => {
+      this.on(':passageinit', async (/**@type {{ passage: any; }}*/ev) => {
         const passage = ev.passage;
         if (!passage || passage.tags.includes('widget')) return;
         if (passage.title == 'Start' || passage.title == 'Downgrade Waiting Room') return;
@@ -1409,11 +1409,10 @@
         });
       });
       
-      this.ExModCount = 9;
+      this.ExModCount = 10;
       this.log('初始化流程设置结束', 'INFO');
     }
   }
 
-  // @ts-ignore
-  window.maplebirch = new MaplebirchCore();
+  return new MaplebirchCore();
 })();

@@ -2,7 +2,6 @@
 /// <reference path='../maplebirch.d.ts' />
 (() => {
   'use strict';
-  const maplebirch = window.maplebirch;
 
   maplebirch.npc.Schedules.add('Robin', [0, 23], 'orphanage')
     .if((date) => C.npc.Robin.init !== 1, 

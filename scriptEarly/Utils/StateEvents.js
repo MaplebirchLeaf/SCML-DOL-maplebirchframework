@@ -2,7 +2,6 @@
 /// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  const maplebirch = window.maplebirch;
 
   /**
    * 状态事件

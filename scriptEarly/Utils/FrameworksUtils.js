@@ -2,8 +2,6 @@
 /// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  if (!window.maplebirch) return;
-  const maplebirch = window.maplebirch;
 
   // 变量迁徙系统 - 用于管理数据迁移和版本控制
   class migration {
@@ -313,10 +311,7 @@
      * @param {boolean} [skipArgs] - 是否跳过参数解析
      */
     defineMacro(macroName, macroFunction, tags, skipArgs, isAsync=false) {
-      if (this.Macro.has(macroName)) {
-        this.Macro.delete(macroName);
-        this.log(`已删除现有宏: ${macroName}`, 'DEBUG');
-      }
+      if (this.Macro.has(macroName)) { this.Macro.delete(macroName); this.log(`已删除现有宏: ${macroName}`, 'DEBUG'); }
       const logger = this.log; 
       this.Macro.add(macroName, {
         isAsync: isAsync ? true : false,
@@ -1048,9 +1043,6 @@
 
     // 在Mod注入后执行的主要处理函数
     async afterPatchModToGame() {
-      const modSC2DataManager = window.modSC2DataManager;
-      const addonTweeReplacer = window.addonTweeReplacer;
-
       const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
       const SCdata = oldSCdata.cloneSC2DataInfo();
       const passageData = SCdata.passageDataItems.map;
@@ -1611,12 +1603,12 @@
     migration.init(data.createLog);
     randSystem.init(data.createLog);
     Object.assign(data, {
-      migration,
-      rand: randSystem,
+      migration: Object.freeze(migration),
+      rand: Object.freeze(randSystem),
       widget: new defineWidget(data.createLog('widget')),
       text: new htmlTools(data.createLog('text')),
       framework: new frameworks(data.createLog('framework')),
-      linkzone: applyLinkZone,
+      linkzone: Object.freeze(applyLinkZone),
       other: new others(data.createLog('other')),
     });
   });

@@ -1,7 +1,6 @@
 (() => {
   'use strict';
-  if (!window.maplebirch) return;
-  const maplebirch = window.maplebirch;
+
   const variable = maplebirch.var;
   const migration = variable.migration;
 

@@ -1,11 +1,5 @@
 (async() => {
   'use strict';
-  if (!window.maplebirch) {
-    console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
-    return;
-  }
-
-  const maplebirch = window.maplebirch;
 
   class ShopManager {
     static categoryMap = {
@@ -59,7 +53,7 @@
         );
         return true;
       } catch (error) {
-        maplebirch.log(`加载商店JSON失败 (${path}): ${error.message}`, 'ERROR');
+        this.log(`加载商店JSON失败 (${path}): ${error.message}`, 'ERROR');
         return false;
       }
     }

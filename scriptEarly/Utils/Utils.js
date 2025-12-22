@@ -2,8 +2,6 @@
 /// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  if (!window.maplebirch) return;
-  const maplebirch = window.maplebirch;
 
   /**
    * 深度克隆对象
@@ -395,7 +393,6 @@
    */
   async function loadImage(src) {
     try {
-      const modSC2DataManager = window.modSC2DataManager;
       if (typeof modSC2DataManager?.getHtmlTagSrcHook?.()?.requestImageBySrc !== 'undefined') {
         const imageData = await modSC2DataManager.getHtmlTagSrcHook().requestImageBySrc(src);
         if (imageData) return imageData;

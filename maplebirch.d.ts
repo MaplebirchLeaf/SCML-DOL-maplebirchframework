@@ -2,22 +2,9 @@
 declare global {
   interface Window {
     maplebirch: MaplebirchCore;
-    StartConfig: {
-      debug: boolean,
-      enableImages: boolean,
-      enableLinkNumberify: boolean,
-      version: string,
-      versionName: string,
-      sneaky: boolean,
-      socialMediaEnabled: boolean,
-      sourceLinkEnabled: boolean,
-    };
+    StartConfig: typeof StartConfig;
     jQuery: typeof jQuery;
-    modSC2DataManager: any;
-    modUtils: any;
-    addonBeautySelectorAddon: any;
-    addonTweeReplacer: any;
-    addonReplacePatcher: any;
+    $: typeof $;
     DateTime: typeof DateTime;
     getFormattedDate: any;
     getShortFormattedDate: any;
@@ -26,44 +13,120 @@ declare global {
   }
 
   interface SugarCube {
-    Macro: {
-      add(name: string, definition: any): void;
-      delete(name: string): void;
-      get(name: string): any;
-      has(name: string): boolean;
-      [key: string]: any;
-    };
+    Macro: MacroModule;
     Wikifier: typeof Wikifier;
     Engine: {
       go(): any;
       show(): void;
       play(title: string, noHistory?: boolean): void;
     };
-    Save: {
-      autosave: any;
-      onSave: any;
-      onLoad: any;
-    };
+    Save: SaveModule;
     setup: any;
     State: any;
     Story: {
       title: string;
       get(title: string): any;
       has(title: string): boolean;
-    }
+    };
     Config: any;
     Scripting: {
-      evalJavaScript(code, output, data): any;
-      evalTwineScript(code, output, data): any;
-      parse(rawCodeString): any;
-    }
-  };
+      evalJavaScript(code: any, output: any, data: any): any;
+      evalTwineScript(code: any, output: any, data: any): any;
+      parse(rawCodeString: any): any;
+    };
+  }
 
   interface Math {
     clamp(value: number, min: number, max: number): number;
   }
 
-  declare class Wikifier {
+  interface MacroModule {
+    add(name: string | string[], def: any): void;
+    delete(name: string | string[]): void;
+    isEmpty(): boolean;
+    has(name: string): boolean;
+    get(name: string): any;
+    init(handler?: string): void;
+    hooks: {
+      on(event: string, fn: Function): void;
+      off(event: string, fn?: Function): void;
+      emit(event: string, payload: any): void;
+    };
+    tags: {
+      register(parent: string, bodyTags?: string[]): void;
+      unregister(parent: string): void;
+      has(name: string): boolean;
+      get(name: string): string[] | null;
+    };
+    evalStatements(...args: any[]): any;
+  }
+
+  interface SaveModule {
+    init: () => boolean;
+    get: () => {
+      autosave: SaveData | null;
+      slots: (SaveData | null)[];
+    };
+    clear: () => boolean;
+    ok: () => boolean;
+    autosave: {
+      ok: () => boolean;
+      has: () => boolean;
+      get: () => SaveData | null;
+      load: () => boolean;
+      save: (title?: string, metadata?: Record<string, any>) => boolean;
+      delete: () => boolean;
+    };
+    slots: {
+      ok: () => boolean;
+      readonly length: number;
+      isEmpty: () => boolean;
+      count: () => number;
+      has: (slot: number) => boolean;
+      get: (slot: number) => SaveData | null;
+      load: (slot: number) => boolean;
+      save: (slot: number, title?: string, metadata?: Record<string, any>) => boolean;
+      delete: (slot: number) => boolean;
+    };
+    export: (filename?: string, metadata?: Record<string, any>) => void;
+    import: (event: Event) => void;
+    serialize: (metadata?: Record<string, any>) => string | null;
+    deserialize: (base64Str: string) => Record<string, any> | null;
+    onLoad: {
+      add: (handler: SaveEventHandler) => void;
+      clear: () => void;
+      delete: (handler: SaveEventHandler) => boolean;
+      readonly size: number;
+      readonly handlers: Set<SaveEventHandler>;
+    };
+    onSave: {
+      add: (handler: SaveEventHandler) => void;
+      clear: () => void;
+      delete: (handler: SaveEventHandler) => boolean;
+      readonly size: number;
+      readonly handlers: Set<SaveEventHandler>;
+    };
+    readonly meta: Record<string, any>;
+  }
+
+  type SaveEventHandler = (saveObj: SaveData,details: { type: 'autosave' | 'disk' | 'serialize' | 'slot' }) => void;
+
+  interface SaveData {
+    id: string;
+    state: {
+      delta?: any;
+      history?: any;
+      idx: string;
+    };
+    idx: number | string;
+    version?: string;
+    title?: string;
+    date?: number;
+    metadata?: Record<string, any>;
+    [key: string]: any;
+  }
+
+  class Wikifier {
     constructor(
       destination: HTMLElement | DocumentFragment | JQuery | null,
       source: string,
@@ -116,6 +179,8 @@ declare global {
     static getPassageTitleLast(): string;
     static getPassageObjLast(): { title: string } | undefined;
   }
+
+  var maplebirch: MaplebirchCore;
 
   class MaplebirchCore {
     meta: {
@@ -339,12 +404,10 @@ declare global {
     TimeManager: TimeManager;
     StateManager: StateManager;
     passage: any;
-    savedata: any;
     solarEclipse: any;
 
     constructor();
 
-    receiveVariables(variables: { saveId?: number | string }): void;
     get Passage(): any;
     get modifyWeather(): any;
     regTimeEvent(type: string, eventId: string, options: any): void;
@@ -449,7 +512,7 @@ declare global {
     initialize(): void;
   }
 
-  declare class DateTime {
+  class DateTime {
     constructor(
       year?: number,
       month?: number,
@@ -620,7 +683,7 @@ declare global {
     SelectCase: typeof SelectCase;
     random: typeof random;
     either: typeof either;
-    loadImage: typeof loadImageWithModLoader;
+    loadImage: typeof loadImage;
     convert: typeof convert;
 
     constructor();
@@ -654,7 +717,7 @@ declare global {
     fill: (target: any, defaults: any, options?: { arr?: string }) => void;
   }
 
-  declare class randSystem {
+  class randSystem {
     static logger: (message: string, level?: string, ...objects: any[]) => void;
     static init(createLog: (logname: string) => (message: string, level?: string, ...objects: any[]) => void): void;
     constructor();
@@ -754,7 +817,7 @@ declare global {
     NPCspawn: any[];
   }
 
-  declare const applyLinkZone: typeof LinkZoneManager & {
+  const applyLinkZone: typeof LinkZoneManager & {
     apply(userConfig?: Partial<LinkZoneConfig>): boolean;
     add(config: LinkZoneConfig): void;
     removeZones(): void;
@@ -828,7 +891,7 @@ declare global {
     execute(type: 'javascript' | 'twine'): { success: boolean; error?: string; message?: string; result?: any };
   }
 
-  declare class cheat {
+  class cheat {
     constructor();
     
     cache: CheatEntry[];
@@ -883,7 +946,7 @@ declare global {
     loadInit(): void;
   }
 
-  declare class NPCManager {
+  class NPCManager {
     lang: LanguageManager;
     tool: tools;
     log: (message: string, level?: string, ...objects: any[]) => void;
@@ -905,7 +968,6 @@ declare global {
     customStats: Record<string, NPCStatConfig>;
     Sidebar: NPCSidebar;
     Clothes: typeof NPCClothes;
-    Schedules: typeof NPCSchedules;
 
     constructor(manager: any);
     add(npcData: NPCData, config?: NPCConfig, translationsData?: Record<string, any>): boolean;
@@ -929,7 +991,7 @@ declare global {
     clearAllSchedules(): void;
   }
 
-  declare class NPCSchedules {
+  class NPCSchedules {
     static schedules: Map<string, Schedule>;
     static init(manager: NPCManager): boolean;
     static add(npcName: string, scheduleConfig: ScheduleConfig, location: string | ((date: EnhancedDate) => string), options?: ScheduleOptions): Schedule;
@@ -942,7 +1004,7 @@ declare global {
     static location: Record<string, string>;
   }
 
-  declare class Schedule {
+  class Schedule {
     constructor();
     daily: string[];
     specials: ScheduleSpecial[];
@@ -984,7 +1046,7 @@ declare global {
     priority: number;
   }
 
-  declare interface EnhancedDate extends DateTime {
+  interface EnhancedDate extends DateTime {
     readonly schedule: Schedule;
     isAt(time: [number, number] | number): boolean;
     isAfter(time: [number, number] | number): boolean;
@@ -999,7 +1061,6 @@ declare global {
     readonly autumn: boolean;
     readonly winter: boolean;
     readonly dawn: boolean;
-    readonly day: boolean;
     readonly dusk: boolean;
     readonly night: boolean;
     readonly weekEnd: boolean;
@@ -1007,7 +1068,7 @@ declare global {
     [key: string]: any;
   }
 
-  declare interface EnhancedDateProto {
+  interface EnhancedDateProto {
     isAt(time: [number, number] | number): boolean;
     isAfter(time: [number, number] | number): boolean;
     isBefore(time: [number, number] | number): boolean;
@@ -1027,11 +1088,7 @@ declare global {
     readonly weekEnd: boolean;
   }
 
-  type ScheduleConfig = 
-    | [number, number]  // 时间范围 [开始小时, 结束小时]
-    | number            // 具体小时
-    | ((date: EnhancedDate) => boolean)  // 条件函数
-    | { condition: (date: EnhancedDate) => boolean };
+  type ScheduleConfig = [number, number]|number|((date: EnhancedDate) => boolean)|{ condition: (date: EnhancedDate) => boolean };
 
   interface ScheduleOptions {
     id?: string | number;
@@ -1042,11 +1099,11 @@ declare global {
   interface ScheduleSpecial {
     id: number;
     condition: (date: EnhancedDate) => boolean;
-    location: string | ((date: EnhancedDate) => string);
+    location: string|Schedule|((date: EnhancedDate) => string|Schedule);
     priority: number;
   }
 
-  declare class NPCClothes {
+  class NPCClothes {
     static log: (msg: string, level?: string) => void;
     manager: NPCManager;
     clothes: Map<string, NPCClothingItem>;
@@ -1141,7 +1198,7 @@ declare global {
     desc?: string;
   }
 
-  declare class NamedNPC {
+  class NamedNPC {
     nam: string;
     gender: 'm' | 'f' | 'h' | 'n' | 't';
     title: string;
@@ -1175,7 +1232,7 @@ declare global {
     static setup: (manager: any) => void;
   }
 
-  declare class NPCSidebar {
+  class NPCSidebar {
     init(force?: boolean): void;
     static get ZIndices(): any;
     display: object;
@@ -1257,7 +1314,7 @@ declare global {
   const V: any;
   const T: any;
   const C: any;
-  declare const Time: {
+  const Time: {
     readonly date: DateTime;
     readonly holidayMonths: number[];
     readonly second: number;
@@ -1307,7 +1364,7 @@ declare global {
     isWeekEnd(): boolean;
     readonly monthNames: string[];
   };
-  declare const Weather: {
+  const Weather: {
     rain: boolean;
     thunder: boolean;
     snow: boolean;
@@ -1317,11 +1374,11 @@ declare global {
     [key: string]: any;
   };
 
-  declare const Dynamic: {
+  const Dynamic: {
     [key: string]: any;
   };
 
-  declare const TimeConstants: {
+  const TimeConstants: {
     standardYearMonths: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     leapYearMonths: [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     secondsPerDay: 86400;
@@ -1452,26 +1509,26 @@ declare global {
 
   const ColourUtils: any;
 
-  declare function clone<T>(source: T, opt?: { deep?: boolean; proto?: boolean; }, map?: WeakMap<any, any>): T;
+  function clone<T>(source: T, opt?: { deep?: boolean; proto?: boolean; }, map?: WeakMap<any, any>): T;
 
-  declare function merge(target: any, ...sources: any[]): any;
+  function merge(target: any, ...sources: any[]): any;
 
-  declare function equal(a: any, b: any): boolean;
+  function equal(a: any, b: any): boolean;
 
-  declare function contains<T>(arr: T[], value: T, mode?: 'all' | 'any' | 'none', opt?: ContainsOptions<T>): boolean;
-  declare function contains<T>(arr: T[], value: T[], mode?: 'all' | 'any' | 'none', opt?: ContainsOptions<T>): boolean;
+  function contains<T>(arr: T[], value: T, mode?: 'all' | 'any' | 'none', opt?: ContainsOptions<T>): boolean;
+  function contains<T>(arr: T[], value: T[], mode?: 'all' | 'any' | 'none', opt?: ContainsOptions<T>): boolean;
 
-  declare function random(): number;
-  declare function random(max: number): number;
-  declare function random(min: number, max: number, float?: boolean): number;
-  declare function random(opt: { min?: number; max?: number; float?: boolean }): number;
+  function random(): number;
+  function random(max: number): number;
+  function random(min: number, max: number, float?: boolean): number;
+  function random(opt: { min?: number; max?: number; float?: boolean }): number;
 
-  declare function either(items: any[], opt?: { weights?: number[]; null?: boolean }): any;
-  declare function either(...args: any[]): any;
+  function either(items: any[], opt?: { weights?: number[]; null?: boolean }): any;
+  function either(...args: any[]): any;
 
-  declare function loadImage(src: string): Promise<string>;
+  function loadImage(src: string): Promise<string>;
 
-  declare function convert(str: string, mode?: 'upper' | 'lower' | 'capitalize' | 'title' | 'camel' | 'pascal' | 'snake' | 'kebab' | 'constant', opt?: { delimiter?: string; acronym?: boolean }): string;
+  function convert(str: string, mode?: 'upper' | 'lower' | 'capitalize' | 'title' | 'camel' | 'pascal' | 'snake' | 'kebab' | 'constant', opt?: { delimiter?: string; acronym?: boolean }): string;
 
   interface ContainsOptions<T> {
     case?: boolean;
@@ -1479,7 +1536,7 @@ declare global {
     deep?: boolean;
   }
 
-  declare class SelectCase {
+  class SelectCase {
     constructor();
 
     case(condition: any, result: any): SelectCase;
@@ -1493,12 +1550,29 @@ declare global {
     match(input: any, meta?: any): any;
   }
 
-  declare const Renderer: {
+  const Renderer: {
     CanvasModels: {
       main: any;
     };
     [key: string]: any;
   };
+
+  const StartConfig: {
+    debug: boolean;
+    enableImages: boolean;
+    enableLinkNumberify: boolean;
+    version: string;
+    versionName: string;
+    sneaky: boolean;
+    socialMediaEnabled: boolean;
+    sourceLinkEnabled: boolean;
+  };
+
+  const modSC2DataManager: any;
+  const modUtils: any;
+  const addonBeautySelectorAddon: any;
+  const addonTweeReplacer: any;
+  const addonReplacePatcher: any;
 
   function lanSwitch(text: any): string;
   function lanSwitch(english: string, chinese: string, ...args: any[]): string;
@@ -1507,12 +1581,11 @@ declare global {
   function between(x: any, min: number, max: number): boolean;
   function getRobinLocation(): string;
   function sydneySchedule(): void;
-  declare const combatActionColours: CombatActionColours;
+  const combatActionColours: CombatActionColours;
   interface CombatActionColours { [category: string]: { [attitude: string]: string[]; }; }
   let combatListColor: (name:any, value:any, type?:any) => any;
   function hasSexStat(input:string,required:number,modifiers?:boolean):boolean;
   let isPossibleLoveInterest: (name:string) => boolean;
-
   const ZIndices: {[key: string]: number};
 }
 

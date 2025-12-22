@@ -2,18 +2,12 @@
 /// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
-  if (!window.maplebirch) {
-    console.log('%c[maplebirch] 错误: 核心系统未初始化', 'color: #C62828; font-weight: bold;');
-    return;
-  }
 
-  const maplebirch = window.maplebirch;
-  
   class TimeStateManager {
-    constructor() {
-      this.logger = maplebirch.logger;
-      this.log = (/** @type {any} */message, level = 'DEBUG', /** @type {any} */...objects) => { this.logger.log(`[state] ${message}`, level, ...objects); };
-      maplebirch.trigger(':state-init', this);
+    /** @param {MaplebirchCore} core */
+    constructor(core) {
+      this.log = (/** @type {any} */message, level = 'DEBUG', /** @type {any} */...objects) => { core.logger.log(`[state] ${message}`, level, ...objects); };
+      core.trigger(':state-init', this);
       const constructor = 
       /** @type {typeof TimeStateManager & {TimeManager: new (manager: TimeStateManager) => any; StateManager: new (manager: TimeStateManager) => any; solarEclipse: new (manager: TimeStateManager, data: any) => any;}} */
       (this.constructor);
@@ -21,14 +15,8 @@
       this.StateManager = new constructor.StateManager(this);
 
       this.passage = null;
-      this.savedata = {};
-      maplebirch.once(':tool-init', (/** @type {any} */data) => this.solarEclipse = new constructor.solarEclipse(this, data));
-    }
-
-    /** @param {{ saveId?: number|string; }} variables */
-    receiveVariables(variables) {
-      this.savedata = variables;
-      this.log(`接收存档数据: ${variables.saveId || 'default'}`, 'DEBUG');
+      core.on(':passageinit', (/** @type {{ passage: any; }} */ev) => { this.passage = ev.passage; if (this.#shouldCollectPassage(this.passage)) this.log(`处理段落: ${this.passage.title}`, 'INFO'); });
+      core.once(':tool-init', (/** @type {any} */data) => this.solarEclipse = new constructor.solarEclipse(this, data));
     }
 
     /** @param {{ tags: string|string[]; }} passage */
@@ -77,18 +65,10 @@
     }
 
     async preInit() {
-      maplebirch.on(':passageinit', (/** @type {{ passage: any; }} */ev) => {
-        this.passage = ev.passage;
-        if (this.#shouldCollectPassage(this.passage)) this.log(`处理段落: ${this.passage.title}`, 'INFO');
-      });
-      maplebirch.on(':loadSaveData', (/** @type {{ variables: { saveId?: number|string; }; }} */ State) => this.receiveVariables(State.variables));
-      maplebirch.on(':onSave', (/** @type {{ variables: { saveId?: number|string; }; }} */ State) => this.receiveVariables(State.variables));
-      maplebirch.on(':storyready', (/** @type {{ variables: { saveId?: number|string; }; }} */ State) => this.receiveVariables(State.variables));
       this.TimeManager.initialize();
       this.StateManager.initialize();
     }
-
   }
 
-  await maplebirch.register('state', new TimeStateManager(), []);
+  await maplebirch.register('state', new TimeStateManager(maplebirch), ['addonPlugin']);
 })();
