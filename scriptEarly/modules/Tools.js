@@ -478,7 +478,7 @@
     deleteConfirm(name) {
       const cheatItem = this.cache.find(c => c.name === name);
       if (!cheatItem) return '';
-      const itemId = `cheat-item-${cheatItem.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+      const itemId = this.getItemDivID(cheatItem.name)
       return `<span class='red'><<lanSwitch 'Confirm to clear' '确认清除'>> "${cheatItem.name}"?</span><br><<lanLink 'confirm' 'capitalize'>><<run maplebirch.tool?.cheat.remove('${cheatItem.name.replace(/'/g, "\\'")}')>><<run maplebirch.tool?.cheat.displayAll()>><</lanLink>> | <<lanLink 'cancel' 'capitalize'>><<run maplebirch.tool?.cheat.cancelDelete('${cheatItem.name.replace(/'/g, "\\'")}')>><</lanLink>>`;
     }
 
@@ -486,7 +486,7 @@
     cancelDelete(name) {
       const cheatItem = this.cache.find(c => c.name === name);
       if (!cheatItem) return;
-      const itemId = `cheat-item-${cheatItem.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+      const itemId = this.getItemDivID(cheatItem.name)
       const normalHTML = `<span class='teal'>${cheatItem.name}</span><br><<lanLink 'execute' 'capitalize'>><<run maplebirch.tool?.cheat.execute('${cheatItem.name.replace(/'/g, "\\'")}')>><</lanLink>> | <<lanLink 'delete' 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${cheatItem.name.replace(/'/g, "\\'")}'))>><</lanLink>> | <<lanLink 'update' 'capitalize'>><<run maplebirch.tool?.cheat.updateFromForm('${cheatItem.name.replace(/'/g, "\\'")}')>><</lanLink>>`;
       this.updateContainer(itemId, normalHTML);
     }
@@ -494,9 +494,23 @@
     HTML(cheats = this.cache) {
       if (cheats.length === 0) return '';
       return cheats.map(item => {
-        const itemId = `cheat-item-${item.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        const itemId = this.getItemDivID(item.name)
         return `<div id="${itemId}" class='settingsToggleItem'><span class='teal'>${item.name}</span><br><<lanLink 'execute' 'capitalize'>><<run maplebirch.tool?.cheat.execute('${item.name.replace(/'/g, "\\'")}')>><</lanLink>> | <<lanLink 'delete' 'capitalize'>><<run maplebirch.tool?.cheat.updateContainer('${itemId}', maplebirch.tool?.cheat.deleteConfirm('${item.name.replace(/'/g, "\\'")}'))>><</lanLink>> | <<lanLink 'update' 'capitalize'>><<run maplebirch.tool?.cheat.updateFromForm('${item.name.replace(/'/g, "\\'")}')>><</lanLink>></div>`;
       }).join('');
+    }
+
+    /** @param {string} name @returns {string} */
+    getItemDivID(name) {
+      return `cheat-item-${this.stringDJB2Hash(name)}`
+    }
+
+    /** @param {string} str @returns {string} */
+    stringDJB2Hash(str) {
+      let hash = 5381;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash * 33) ^ str.charCodeAt(i);
+      }
+      return (hash >>> 0).toString(16);
     }
   }
 
