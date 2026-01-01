@@ -51,4 +51,10 @@
     if (data.wardrobeSearch == null) data.wardrobeSearch = '';
     data.version = '1.0.4';
   });
+
+  migration.add('1.0.4', '1.0.5', (data, utils) => {
+    utils.remove(data, 'wardrobeSearch');
+    utils.remove(data, 'audio');
+    utils.remove(data, 'combat')
+  })
 })();

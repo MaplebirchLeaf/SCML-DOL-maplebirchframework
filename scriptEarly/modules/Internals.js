@@ -437,23 +437,23 @@
       const key = name;
       if (!key) return;
       if (T.currentOverlay === key) {
-        if (typeof closeOverlay === 'function') closeOverlay();
+        if (typeof closeOverlay === 'function') closeOverlay(); $.wiki('<<exit>>')
         return;
       }
       T.buttons.toggle();
       if (typeof updateOptions === 'function') updateOptions();
       T.currentOverlay = key;
       const $overlay = $('#customOverlay');
-      if ($overlay.length) $overlay.removeClass('hidden').parent().removeClass('hidden').attr('data-overlay', key);
+      if ($overlay.length) $overlay.removeClass('hidden').parent().removeClass('hidden').attr('data-overlay', T.currentOverlay);
       switch (type) {
-        case 'customize': return `<<${key}>>`;
+        case 'customize': return $.wiki(`<<${key}>><<exit>>`);
         case 'title':
           const titleKey = 'title' + maplebirch.tool.convert(key, 'pascal');
-          if (titleKey && maplebirch.tool.widget.Macro.has(titleKey)) $('#customOverlayTitle').wiki(`<<${titleKey}>>`);
+          if (titleKey && maplebirch.tool.widget.Macro.has(titleKey)) $.wiki(`<<replace #customOverlayTitle>><<${titleKey}>><</replace>>`);
           break;
         default: break;
       }
-      $('#customOverlayContent').wiki(`<<${key}>>`);
+      $.wiki(`<<replace #customOverlayContent>><<${key}>><</replace>>`);
     }
 
     _fixDynamicTask(fn, name) {
@@ -535,24 +535,22 @@
     }
 
     compatibleModI18N() {
-      if (this.core.modUtils.getMod('ModI18N')) {
-        const originalName = setup.NPC_CN_NAME;
-        setup.NPC_CN_NAME = (args) => {
-          if (!args || typeof args !== 'string') return args;
-          const originalResult = originalName(args);
-          if (originalResult !== args) return originalResult;
-          if (this.core.lang.translations.has(args)) return this.core.autoTranslate(args);
-          return args;
-        };
-        const originalTitle = setup.NPC_CN_TITLE;
-        setup.NPC_CN_TITLE = (str) => {
-          if (!str || typeof str !== 'string') return str;
-          const originalResult = originalTitle(str);
-          if (originalResult !== str) return originalResult;
-          if (this.core.lang.translations.has(str)) return this.core.autoTranslate(str);
-          return str;
-        };
-      }
+      const originalName = setup.NPC_CN_NAME;
+      setup.NPC_CN_NAME = (args) => {
+        if (!args || typeof args !== 'string') return args;
+        const originalResult = originalName(args);
+        if (originalResult !== args) return originalResult;
+        if (this.core.lang.translations.has(args)) return this.core.autoTranslate(args);
+        return args;
+      };
+      const originalTitle = setup.NPC_CN_TITLE;
+      setup.NPC_CN_TITLE = (str) => {
+        if (!str || typeof str !== 'string') return str;
+        const originalResult = originalTitle(str);
+        if (originalResult !== str) return originalResult;
+        if (this.core.lang.translations.has(str)) return this.core.autoTranslate(str);
+        return str;
+      };
     }
 
     preInit() {
@@ -572,8 +570,6 @@
           return { push, get play() { return content.map(item => `${item}`).join(''); } };
         })();
       });
-      this.core.tool.framework.addTo('HintMobile', 'maplebirchModHintMobile');
-      this.core.tool.framework.addTo('MenuBig', 'maplebirchModHintDesktop');
       
       this.core.tool.other.configureLocation('lake_ruin', {
         condition: () => Weather.bloodMoon && !Weather.isSnow
@@ -594,14 +590,6 @@
         this.core.tool.widget.defineMacro('maplebirchTextOutput', this.core.tool.text.makeMacroHandler());
         this.core.tool.widget.defineMacroS('maplebirchFrameworkVersions', this._showModVersions);
         this.core.tool.widget.defineMacroS('maplebirchFrameworkInfo', () => this._showFrameworkInfo());
-      });
-
-      this.core.on(':passagestart', () => {
-        if (!V.options) return;
-        const c = V.options.maplebirch?.debug, d = V.debug
-        this.debug ??= typeof c === 'boolean' ? c : (d === 0 || d === 1 ? d === 1 : false)
-        typeof c === 'boolean' && c !== this.debug ? (this.debug = c, V.debug = c ? 1 : 0) : (d === 0 || d === 1) && (d === 1) !== this.debug ? (this.debug = d === 1, V.options.maplebirch.debug = this.debug) : 0
-        V.options.maplebirch.debug = this.debug, V.debug = this.debug ? 1 : 0
       });
 
       this.core.on(':loadSaveData', () => maplebirch.Language = V?.maplebirch?.language);
@@ -629,28 +617,11 @@
         }, 100);
         } catch { console.log('点击事件处理错误:', error); }
       });
-
-      $(document).on('change', 'input[name="radiobutton--maplebirchbodywritingcolor"]', function () {
-        if (!maplebirch.modules.initPhase.preInitCompleted) return;
-        if (T.maplebirchBodywriting.color === 'custom') {
-          $.wiki('<<replace "#maplebirchBodyWriting">><br><<lanSwitch "Custom Color" "自定义颜色">>: <<textbox "_maplebirchBodywriting.custom" "#FFFFFF">><span id="colorPreviewBox" style="display: inline-block;width: 20px;height: 20px;border:1px solid #ccc;margin-left:5px;background-color: #FFFFFF;"></span><</replace>>');
-        } else {
-          $.wiki('<<replace "#maplebirchBodyWriting">><</replace>>');
-        }
-      });
-
-      $(document).on('input', 'input[name="textbox--maplebirchbodywritingcustom"]', function () {
-        if (!maplebirch.modules.initPhase.preInitCompleted) return;
-        let color = this.value;
-        if (!color.startsWith('#')) color = '#' + color;
-        let preview = document.getElementById('colorPreviewBox');
-        if (preview && /^#[0-9A-F]{3,6}$/i.test(color)) preview.style.backgroundColor = color;
-      });
     }
 
     Init() {
       Dynamic.task = (fn, name) => this._fixDynamicTask(fn, name);
-      if (this.core.gameVersion >= '0.5.6.10') this.compatibleModI18N();
+      if (this.core.modUtils.getMod('ModI18N')) this.compatibleModI18N();
       getRobinLocation = Schedules('Robin', getRobinLocation);
       sydneySchedule = Schedules('Sydney', sydneySchedule);
     }

@@ -9,14 +9,13 @@
       this.log = (/** @type {any} */message, level = 'DEBUG', /** @type {any} */...objects) => { core.logger.log(`[state] ${message}`, level, ...objects); };
       core.trigger(':state-init', this);
       const constructor = 
-      /** @type {typeof TimeStateManager & {TimeManager: new (manager: TimeStateManager) => any; StateManager: new (manager: TimeStateManager) => any; solarEclipse: new (manager: TimeStateManager, data: any) => any;}} */
+      /** @type {typeof TimeStateManager & {TimeManager: new (manager: TimeStateManager) => any; StateManager: new (manager: TimeStateManager) => any;}} */
       (this.constructor);
       this.TimeManager = new constructor.TimeManager(this);
       this.StateManager = new constructor.StateManager(this);
 
       this.passage = null;
       core.on(':passageinit', (/** @type {{ passage: any; }} */ev) => { this.passage = ev.passage; if (this.#shouldCollectPassage(this.passage)) this.log(`处理段落: ${this.passage.title}`, 'INFO'); });
-      core.once(':tool-init', (/** @type {any} */data) => this.solarEclipse = new constructor.solarEclipse(this, data));
     }
 
     /** @param {{ tags: string|string[]; }} passage */

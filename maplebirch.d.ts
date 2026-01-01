@@ -117,7 +117,7 @@ declare global {
     readonly state: TimeStateManager;
     readonly tool: tools;
     readonly audio: AudioManager;
-    readonly var: variablesModule;
+    readonly var: variables;
     readonly char: CharacterManager;
     readonly npc: NPCManager;
     readonly combat: CombatManager;
@@ -132,7 +132,7 @@ declare global {
     off(evt: string, identifier: string | Function): boolean;
     once(evt: string, handler: Function, desc?: string): boolean;
     trigger(evt: string, ...args: any[]): Promise<void>;
-    register(name: string, module: any, dependencies?: string[]): Promise<boolean>;
+    register(name: string, module: any, dependencies?: string[], isExtension?: boolean|undefined): Promise<boolean>;
     preInit(): Promise<void>;
     init(): Promise<void>;
     loadInit(): Promise<void>;
@@ -152,6 +152,7 @@ declare global {
     get gameVersion(): string;
     #Ready(): void;
     static meta: { version: string; name: string; author: string; modifiedby: string; UpdateDate: string; availableLanguages: string[]; coreModules: string[]; earlyMount: string[] };
+    readonly Expansion: Expansion;
   }
 
   class Logger {
@@ -204,7 +205,7 @@ declare global {
     static streamConfig: { batchSize: number; yieldInterval: number };
     constructor(core: MaplebirchCore);
     initPhase: { preInitCompleted: boolean; mainInitCompleted: boolean; loadInitExecuted: boolean; postInitExecuted: boolean; expectedModuleCount: number; registeredModuleCount: number; allModuleRegisteredTriggered: boolean };
-    register(name: string, module: any, dependencies?: string[]): Promise<boolean>;
+    register(name: string, module: any, dependencies?: string[], isExtension?: boolean|undefined): Promise<boolean>;
     setExpectedModuleCount(count: number): void;
     getDependencyGraph(): Record<string, { dependencies: string[]; dependents: string[]; state: string; allDependencies: string[] }>;
     preInit(): Promise<void>;
@@ -263,7 +264,6 @@ declare global {
     TimeManager: TimeManager;
     StateManager: StateManager;
     passage: any;
-    solarEclipse: any;
     constructor();
     get Passage(): any;
     get modifyWeather(): any;
@@ -701,8 +701,8 @@ declare global {
 
   interface CheatEntry { name: string; code: string; type: 'javascript' | 'twine' }
 
-  class variablesModule {
-    check(): void;
+  class variables {
+    optionsCheck(): void;
     version: string;
     tool: tools;
     log: (message: string, level?: string, ...objects: any[]) => void;
@@ -979,6 +979,10 @@ declare global {
     #passageInit(passageData: Map<string, any>): Promise<Map<string, any>>;
     beforePatchModToGame(): Promise<void>;
     preInit(): void;
+  }
+
+  class Expansion {
+    
   }
 
   const yaml: {

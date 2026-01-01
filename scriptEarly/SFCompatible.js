@@ -40,7 +40,6 @@
     addNPC:        'npc.add',                     // 添加NPC
     addStats:      'npc.addStats',                // 添加状态
     addNPCClothes: 'npc.addClothes',              // 添加服装
-    modifyWeather: 'addonPlugin.modifyWeather',   // 气象修改
     addTransform:  'char.transformation.add',     // 添加转化
   };
 

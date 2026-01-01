@@ -2,15 +2,16 @@
 /// <reference path='../maplebirch.d.ts' />
 var maplebirch = (() => {
   'use strict';
-  const frameworkVersion = '2.7.1';
-  const lastUpdate = '2025.12.21';
+  const frameworkVersion = modUtils.getMod('maplebirch').version;
+  const lastUpdate = '2026.01.02';
   const lastModifiedBy = '楓樺葉';
-  const DEBUGMODE = true;
+  const DEBUGMODE = false;
 
   const ModuleState = {
-    PENDING: 0,
-    MOUNTED: 1,
-    ERROR: 2
+    PENDING:   0,
+    MOUNTED:   1,
+    ERROR:     2,
+    EXTENSION: 3
   };
 
   const jsyaml = (function() {
@@ -95,7 +96,7 @@ var maplebirch = (() => {
       this.events = {
         ':IndexedDB':           [], // IDB数据库
         ':import':              [], // 数据导入
-        ':allModuleRegistered': [], // 所有模块注册完成时机
+        ':allModule':           [], // 所有模块注册完成时机
         ':dataInit':            [], // 框架提供的模组V变量注册接口
         ':onSave':              [], // 存档
         ':loadSaveData':        [], // 加载存档数据
@@ -377,7 +378,7 @@ var maplebirch = (() => {
             Object.assign(allTranslations, data);
             loadedAny = true;
             this.core.logger.log(`成功加载翻译内容: ${filePath}`, 'DEBUG');
-          } catch (/** @type {any} */err) {
+          } catch (/**@type {any}*/err) {
             this.core.logger.log(`加载失败: ${filePath} - ${err?.message || err}`, 'ERROR');
           }
         }
@@ -416,14 +417,14 @@ var maplebirch = (() => {
         if (filePath.endsWith('.json')) {
           try {
             data = JSON.parse(content);
-          } catch (/** @type {any} */jsonErr) {
+          } catch (/**@type {any}*/jsonErr) {
             this.core.logger.log(`JSON 解析失败: ${filePath} - ${jsonErr.message}`, 'ERROR');
             return false;
           }
         } else if (filePath.endsWith('.yml') || filePath.endsWith('.yaml')) {
           try {
             data = jsyaml.load(content);
-          } catch (/** @type {any} */yamlErr) {
+          } catch (/**@type {any}*/yamlErr) {
             this.core.logger.log(`YAML 解析失败: ${filePath} - ${yamlErr.message}`, 'ERROR');
             return false;
           }
@@ -432,7 +433,7 @@ var maplebirch = (() => {
           return false;
         }
         return await this.#processTranslations(modName, languageCode, data);
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`加载失败: ${modName}/${filePath} - ${err?.message || err}`, 'ERROR');
         return false;
       }
@@ -483,7 +484,7 @@ var maplebirch = (() => {
           this.isPreloaded = true;
           this.core.logger.log(`预加载完成: ${count} 条翻译`, 'INFO');
         });
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`预加载失败: ${err?.message || err}`, 'ERROR');
       }
     }
@@ -498,7 +499,7 @@ var maplebirch = (() => {
         this.cache.clear();
         this.fileHashes.clear();
         this.core.logger.log('翻译数据库已清空', 'DEBUG');
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`数据库清空失败: ${err?.message || err}`, 'ERROR');
       }
     }
@@ -519,7 +520,7 @@ var maplebirch = (() => {
           }
           this.core.logger.log('清理旧版本翻译数据完成', 'DEBUG');
         });
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`清理旧版本失败: ${err?.message || err}`, 'ERROR');
       }
     }
@@ -567,7 +568,7 @@ var maplebirch = (() => {
         await this.#storeFileHash(modName, lang, fileHash);
         this.core.logger.log(`加载翻译: ${lang} (${keys.length} 项)`, 'DEBUG');
         return true;
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`处理翻译失败: ${modName}/${lang} - ${err?.message || err}`, 'ERROR');
         return false;
       }
@@ -585,7 +586,7 @@ var maplebirch = (() => {
           const store = tx.objectStore('metadata');
           return (await store.get(`${modName}_${lang}`))?.hash || null;
         });
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`获取文件哈希失败: ${modName}_${lang} - ${err?.message || err}`, 'DEBUG');
         return null;
       }
@@ -605,7 +606,7 @@ var maplebirch = (() => {
           await store.put({ key: `${modName}_${lang}`, hash, timestamp: Date.now() });
           this.fileHashes.set(`${modName}_${lang}`, hash);
         });
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`存储文件哈希失败: ${err?.message || err}`, 'ERROR');
       }
     }
@@ -653,11 +654,11 @@ var maplebirch = (() => {
           }
         });
         this.core.logger.log(`批量存储完成: ${keys.length} 条`, 'DEBUG');
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`批量存储失败: ${err?.message || err}`, 'ERROR');
         try {
           await this.#retryStoreInSmallerChunks(entries);
-        } catch (/** @type {any} */e) {
+        } catch (/**@type {any}*/e) {
           this.core.logger.log(`重试也失败: ${e?.message || e}`, 'ERROR');
         }
       }
@@ -703,7 +704,7 @@ var maplebirch = (() => {
           const records = await index.getAll(modName);
           return new Set(records.map((/** @type {{key: string}} */r) => r.key));
         });
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`获取现有键失败: ${modName} - ${err?.message || err}`, 'DEBUG');
         return new Set();
       }
@@ -736,7 +737,7 @@ var maplebirch = (() => {
           }
         });
         this.core.logger.log(`清理过时键: ${obsoleteKeys.size} 个`, 'DEBUG');
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`清理过时键失败: ${err?.message || err}`, 'ERROR');
       }
     }
@@ -750,7 +751,7 @@ var maplebirch = (() => {
           if (record) {this.translations.set(key, record.translations || {});return true;}
           return false;
         });
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`加载翻译失败: ${key} - ${err?.message || err}`, 'DEBUG');
         return false;
       }
@@ -770,7 +771,7 @@ var maplebirch = (() => {
           }
           return null;
         });
-      } catch (/** @type {any} */err) {
+      } catch (/**@type {any}*/err) {
         this.core.logger.log(`查找翻译键失败: ${text} - ${err?.message || err}`, 'DEBUG');
         return null;
       }
@@ -823,23 +824,33 @@ var maplebirch = (() => {
      * @param {string} name 模块名称
      * @param {any} module 模块对象
      * @param {string[]} [dependencies] 依赖列表
+     * @param {boolean} [isExtension=false] 是否为扩展模块
      * @returns {Promise<boolean>} 是否注册成功
      */
-    async register(name, module, dependencies = []) {
+    async register(name, module, dependencies = [], isExtension = false) {
       const reg = this.registry;
+      if (isExtension) {
+        // @ts-ignore
+        if (this.core[name] != null) { this.core.logger.log(`扩展模块 ${name} 挂载失败: 名称冲突`, 'WARN'); return false; }
+        this.core.logger.log(`挂载扩展模块: ${name}`, 'DEBUG');
+        /**@type {any}*/(this.core)[name] = module;
+        reg.modules.set(name, module);
+        reg.states.set(name, ModuleState.EXTENSION);
+        return true;
+      }
       if (reg.modules.has(name)) {
         this.core.logger.log(`模块 ${name} 已注册`, 'WARN');
         return false;
       }
       const moduleDependencies = [...(module.dependencies || []), ...dependencies];
       if (this.core.meta.earlyMount?.includes(name)) {
-        const unmetEarlyDeps = moduleDependencies.filter(dep => this.core.meta.earlyMount?.includes(dep) && !(/** @type {any} */(this.core)[dep]));
+        const unmetEarlyDeps = moduleDependencies.filter(dep => this.core.meta.earlyMount?.includes(dep) && !(/**@type {any}*/(this.core)[dep]));
         if (unmetEarlyDeps.length > 0) {
           this.core.logger.log(`[${name}] 模块等待依赖挂载: [${unmetEarlyDeps.join(', ')}]`, 'DEBUG');
           const checkDeps = () => {
-            const stillUnmet = unmetEarlyDeps.filter(dep => !(/** @type {any} */(this.core)[dep]));
+            const stillUnmet = unmetEarlyDeps.filter(dep => !(/**@type {any}*/(this.core)[dep]));
             if (stillUnmet.length === 0) {
-              /** @type {any} */(this.core)[name] = module;
+              /**@type {any}*/(this.core)[name] = module;
               this.core.logger.log(`[${name}] 模块已在依赖满足后挂载 (earlyMount)`, 'DEBUG');
             } else {
               setTimeout(checkDeps, 10);
@@ -847,7 +858,7 @@ var maplebirch = (() => {
           };
           setTimeout(checkDeps, 0);
         } else {
-          /** @type {any} */(this.core)[name] = module;
+          /**@type {any}*/(this.core)[name] = module;
           this.core.logger.log(`[${name}] 模块已在注册时挂载 (earlyMount)`, 'DEBUG');
         }
       }
@@ -912,18 +923,13 @@ var maplebirch = (() => {
       const reg = this.registry;
       /** @type {Object<string, {dependencies: string[], dependents: string[], state: string, allDependencies: string[]}>} */
       const graph = {};
-      /** @type {Object<number, string>} */
-      const StateName = {
-        0: 'PENDING',
-        1: 'MOUNTED',
-        2: 'ERROR'
-      };
       reg.modules.forEach((_, name) => {
         const stateValue = reg.states.get(name);
+        const stateName = this.#getStateName(stateValue);
         graph[name] = {
           dependencies: Array.from(reg.dependencies.get(name) || []),
           dependents: Array.from(reg.dependents.get(name) || []),
-          state: StateName[stateValue] || `UNKNOWN(${stateValue})`,
+          state: stateName,
           allDependencies: Array.from(reg.allDependencies.get(name) || [])
         };
       });
@@ -957,7 +963,7 @@ var maplebirch = (() => {
           try {
             const result = module.loadInit();
             if (result instanceof Promise) await result;
-          } catch (/** @type {any} */error) {
+          } catch (/**@type {any}*/error) {
             this.core.logger.log(`${name} 读档初始化失败: ${error.message}`, 'ERROR');
           }
         }
@@ -978,7 +984,7 @@ var maplebirch = (() => {
           try {
             const result = module.postInit();
             if (result instanceof Promise) await result;
-          } catch (/** @type {any} */error) {
+          } catch (/**@type {any}*/error) {
             this.core.logger.log(`[${name}] 后初始化失败: ${error.message}`, 'ERROR');
           }
         }
@@ -987,23 +993,36 @@ var maplebirch = (() => {
       this.core.logger.log(`后初始化完成`, 'INFO');
     }
 
-    #waitingResolvers;
-    #depthMemo;
+    #waitingResolvers = new Map();
+    #depthMemo = new Map();
 
     #checkModuleRegistration() {
       if (this.initPhase.allModuleRegisteredTriggered) return;
       const { expectedModuleCount, registeredModuleCount } = this.initPhase;
       if (registeredModuleCount >= expectedModuleCount) {
         this.core.logger.log(`模块注册完成 (${registeredModuleCount}/${expectedModuleCount})`, 'DEBUG');
-        this.core.events.trigger(':allModuleRegistered');
+        this.core.events.trigger(':allModule');
         this.initPhase.allModuleRegisteredTriggered = true;
+      }
+    }
+
+    /** 获取状态名称 @param {number} stateValue 状态值 @returns {string} 状态名称 */
+    #getStateName(stateValue) {
+      switch (stateValue) {
+        case ModuleState.PENDING: return 'PENDING';
+        case ModuleState.MOUNTED: return 'MOUNTED';
+        case ModuleState.ERROR: return 'ERROR';
+        case ModuleState.EXTENSION: return 'EXTENSION';
+        default: return `UNKNOWN(${stateValue})`;
       }
     }
 
     /** 等待模块初始化完成 @param {string} moduleName 模块名称 @returns {Promise<void>} */
     #waitForModule(moduleName) {
       const reg = this.registry;
-      if (this.preInitialized.has(moduleName) || reg.states.get(moduleName) === ModuleState.MOUNTED || reg.states.get(moduleName) === ModuleState.ERROR) return Promise.resolve();
+      const state = reg.states.get(moduleName);
+      if (state === ModuleState.EXTENSION) return Promise.resolve();
+      if (this.preInitialized.has(moduleName) || state === ModuleState.MOUNTED || state === ModuleState.ERROR) return Promise.resolve();
       return new Promise((resolve) => {
         if (!this.#waitingResolvers.has(moduleName)) this.#waitingResolvers.set(moduleName, []);
         this.#waitingResolvers.get(moduleName).push(resolve);
@@ -1033,14 +1052,15 @@ var maplebirch = (() => {
           reg.waitingQueue.get(dep).add(moduleName);
           return false;
         }
+        const depState = reg.states.get(dep);
+        if (depState === ModuleState.EXTENSION) continue;
         if (isPreInit) {
           if (!this.preInitialized.has(dep)) await this.#waitForModule(dep);
         } else {
-          const depState = reg.states.get(dep);
           if (depState !== ModuleState.MOUNTED && depState !== ModuleState.ERROR) {
             await this.#waitForModule(dep);
             if (reg.states.get(dep) === ModuleState.ERROR) return false;
-          } else if (depState === ModuleState.ERROR) return false;
+          } else if (depState === ModuleState.ERROR) { return false; }
         }
       }
       return true;
@@ -1062,6 +1082,7 @@ var maplebirch = (() => {
       const module = reg.modules.get(moduleName);
       if (!module) return false;
       const state = reg.states.get(moduleName);
+      if (state === ModuleState.EXTENSION) return true;
       if ([ModuleState.MOUNTED, ModuleState.ERROR].includes(state)) return false;
       reg.states.set(moduleName, ModuleState.PENDING);
       const ready = await this.#checkDependencies(moduleName, isPreInit);
@@ -1072,12 +1093,12 @@ var maplebirch = (() => {
           try {
             const result = module[initType]();
             if (result instanceof Promise) await result;
-          } catch (/** @type {any} */ error) {
+          } catch (/**@type {any}*/ error) {
             this.core.logger.log(`[${moduleName}] ${initType} 执行失败: ${error.message}`, 'ERROR');
           }
         }
         if (isPreInit) {
-          if (this.core.meta.coreModules?.includes(moduleName) && !this.core.meta.earlyMount?.includes(moduleName)) /** @type {any} */(this.core)[moduleName] = module;
+          if (this.core.meta.coreModules?.includes(moduleName) && !this.core.meta.earlyMount?.includes(moduleName)) /**@type {any}*/(this.core)[moduleName] = module;
           this.preInitialized.add(moduleName);
         } else {
           reg.states.set(moduleName, ModuleState.MOUNTED);
@@ -1099,7 +1120,11 @@ var maplebirch = (() => {
       const queue = [];
       const result = [];
       reg.modules.forEach((_, name) => {
-        const deg = reg.dependencies.get(name)?.size || 0;
+        const deps = reg.dependencies.get(name) || new Set();
+        const deg = Array.from(deps).filter(dep => {
+          const depState = reg.states.get(dep);
+          return depState !== ModuleState.EXTENSION;
+        }).length;
         inDegree.set(name, deg);
         if (deg === 0) queue.push(name);
       });
@@ -1127,7 +1152,10 @@ var maplebirch = (() => {
       const visited = new Set();
       const onStack = new Set();
       const graph = new Map();
-      reg.modules.forEach((_, nm) => graph.set(nm, Array.from(reg.dependencies.get(nm) || [])));
+      reg.modules.forEach((_, nm) => {
+        const deps = reg.dependencies.get(nm) || new Set();
+        graph.set(nm, Array.from(deps));
+      });
       if (!graph.has(startName)) graph.set(startName, dependencies || []);
       /** 深度优先搜索函数 @param {string} node 当前节点 @returns {boolean} 是否检测到循环依赖 */
       const dfs = node => {
@@ -1151,7 +1179,8 @@ var maplebirch = (() => {
     #getModuleDepth(moduleName) {
       if (this.#depthMemo.has(moduleName)) return this.#depthMemo.get(moduleName);
       const deps = this.registry.dependencies.get(moduleName) || new Set();
-      const depth = deps.size === 0 ? 0 : Math.max(...[...deps].map(d => this.#getModuleDepth(d) + 1));
+      const filteredDeps = Array.from(deps).filter(dep => this.registry.states.get(dep) !== ModuleState.EXTENSION);
+      const depth = filteredDeps.length === 0 ? 0 : Math.max(...filteredDeps.map(d => this.#getModuleDepth(d) + 1));
       this.#depthMemo.set(moduleName, depth);
       return depth;
     }
@@ -1203,9 +1232,9 @@ var maplebirch = (() => {
     async trigger(evt, ...args) {
       await this.events.trigger(evt, ...args);
     }
-    /** @param {string} name @param {any} module @param {string[]} [dependencies] */
-    async register(name, module, dependencies = []) {
-      return this.modules.register(name, module, dependencies);
+    /** @param {string} name @param {any} module @param {string[]} [dependencies] @param {boolean|undefined} [isExtension] */
+    async register(name, module, dependencies = [], isExtension) {
+      return this.modules.register(name, module, dependencies, isExtension);
     }
 
     async preInit() {
@@ -1290,7 +1319,7 @@ var maplebirch = (() => {
       this.log(`核心系统创建完成 (v${MaplebirchCore.meta.version})\n开始设置初始化流程`, 'INFO');
       this.log('初始化内置监听', 'DEBUG');
       $(document).on(':oncloseoverlay', () => this.trigger(':oncloseoverlay'));
-      $(document).on(':passageinit', (/** @type {any} */ev) => this.trigger(':passageinit' , ev));
+      $(document).on(':passageinit', (/**@type {any}*/ev) => this.trigger(':passageinit' , ev));
       $(document).on(':passagestart', () => this.trigger(':passagestart'));
       $(document).on(':passagerender', () => this.trigger(':passagerender'));
       $(document).on(':passagedisplay', () => this.trigger(':passagedisplay'));
@@ -1306,7 +1335,7 @@ var maplebirch = (() => {
         await this.lang.importAllLanguages('maplebirch');
       })
 
-      this.once(':allModuleRegistered', async () => {
+      this.once(':allModule', async () => {
         this.log('所有模块注册完成，开始预初始化', 'INFO');
         try { await this.trigger(':IndexedDB'); } catch { this.log(':IndexedDB注册错误', 'ERROR'); };
         try { await this.idb.init(); } catch { this.log('IndexedDB初始化错误', 'ERROR'); };

@@ -259,7 +259,7 @@
     }
 
     /** @param {FrameworkAddon} addon @param {string} modName @param {any} modZip @param {string} filePath */
-    static async #loadScriptFile(addon, modName, modZip, filePath) {  // 从 loadJSFile 更名为 loadScriptFile
+    static async #loadScriptFile(addon, modName, modZip, filePath) {
       try {
         const file = modZip.zip.file(filePath);
         if (!file) { addon.core.log(`Script文件未找到: ${filePath}`, 'WARN'); return; }
@@ -284,7 +284,7 @@
       this.logger = gModUtils.getLogger();
       this.gModUtils.getAddonPluginManager().registerAddonPlugin('maplebirch', 'maplebirchAddon', this);
       this.gSC2DataManager.getModLoadController().addLifeTimeCircleHook('maplebirchFramework', this);
-      this.supportedConfigs = ['script', 'language', 'audio', 'framework', 'npc', 'shop', 'npcSidebar'];  // 从 js 改为 script
+      this.supportedConfigs = ['script', 'language', 'audio', 'framework', 'npc', 'shop', 'npcSidebar'];
       /** @type {Object<any, {modName: string, mod: any, modZip: any}>} */
       this.queue = {};
       /** @type {Object<string, boolean>} */
@@ -332,7 +332,7 @@
       try { await this.#simpleFrameworkCheck() } catch {};
     }
 
-    async PatchModToGame_end() {
+    async PatchModToGame_start() {
       try { await this.#JSInject() } catch {};
     }
 
@@ -379,7 +379,7 @@
     }
 
     async #processInit() {
-      try { await Process.Script(this); } catch (/**@type {any}*/e) { this.core.log(`Script文件处理过程失败: ${e.message}`, 'ERROR'); }  // 从 Process.JS 改为 Process.Script
+      try { await Process.Script(this); } catch (/**@type {any}*/e) { this.core.log(`Script文件处理过程失败: ${e.message}`, 'ERROR'); }
       try { await Process.Language(this); } catch (/**@type {any}*/e) { this.core.log(`语言处理过程失败: ${e.message}`, 'ERROR'); }
       try { await Process.Audio(this); } catch (/**@type {any}*/e) { this.core.log(`音频处理过程失败: ${e.message}`, 'ERROR'); }
       try { await Process.Framework(this); } catch (/**@type {any}*/e) { this.core.log(`框架处理过程失败: ${e.message}`, 'ERROR'); }
