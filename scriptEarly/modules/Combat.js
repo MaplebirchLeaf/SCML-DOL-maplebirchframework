@@ -19,6 +19,7 @@
       Triggers: { herm: [], crossdress: [] },
       HermNameList: ['Sydney', 'Kylar', 'Gwylan'],
       CDNameList: ['Sydney', 'Kylar', 'Gwylan'],
+      /** @param {'herm'|'crossdress'} type - 反应类型 @param {string} npc - NPC名称 @param {Function} cond - 条件函数 @param {Function} action - 动作函数 */
       reg: function (/**@type {'herm'|'crossdress'}*/type, /**@type {string}*/npc, /**@type {any}*/cond, /**@type {any}*/action) {
         this.Triggers[type].push({ npc, cond, action });
         const list = type === 'herm' ? this.HermNameList : this.CDNameList;
@@ -40,6 +41,7 @@
           }
         );
       },
+      /** @param {'herm'|'crossdress'} type - 反应类型 @returns {string} 反应文本 */
       check: function (/**@type {'herm'|'crossdress'} */type) {
         const npcList = type === 'herm' ? this.HermNameList : this.CDNameList;
         /** @type {any[]} */
@@ -111,7 +113,7 @@
 
     CombatAction = {
       actions: new Map(),
-
+      /** @param {...Object} actionConfigs - 动作配置数组 @returns {Object} this */
       reg: function (/**@type {any[]}*/...actionConfigs) {
         actionConfigs.forEach(config => {
           const { id, actionType, cond, display, value, color = 'white', difficulty = '', combatType = 'Default', order = -4 } = config;
@@ -127,7 +129,7 @@
         }
         return fnOrValue;
       },
-
+      /** @param {{ [x: string]: any; }} optionsTable - 原始选项表 @param {string} actionType - 动作类型 @param {string} combatType - 战斗类型 @returns {{ [x: string]: any; }} 处理后的选项表 */
       action: function (/**@type {{ [x: string]: any; }}*/optionsTable, /**@type {any}*/actionType, /**@type {any}*/combatType) {
         const ctx = { actionType, combatType: combatType || 'Default', originalCount: Object.keys(optionsTable).length };
         const currentCombatType = ctx.combatType;
@@ -162,7 +164,7 @@
         resultArray.forEach(([display, value]) => optionsTable[display] = value);
         return optionsTable;
       },
-
+      /** @param {string} action - 动作值 @param {string} encounterType - 遭遇类型 @returns {string|null} 颜色名称 */
       color: function (/**@type {any}*/action, /**@type {any}*/encounterType) {
         const ctx = { action, encounterType: encounterType ?? 'Default' };
         for (const [id, entry] of this.actions) {
@@ -175,7 +177,7 @@
         }
         return null;
       },
-
+      /** @param {string} action - 动作值 @param {string} combatType - 战斗类型 @returns {string|null} 难度提示文本 */
       difficulty: function (/**@type {any}*/action, /**@type {any}*/combatType) {
         const ctx = { action, combatType: combatType ?? 'Default' };
         for (const [id, entry] of this.actions) {
@@ -186,6 +188,30 @@
           }
         }
         return null;
+      }
+    }
+
+    Speech = {
+      speechs: new Map(),
+      /** @param {string} npc - NPC名称 @param {Function} cond - 条件函数 @param {string} speech - 对话文本 @param {number} cd - 冷却值 */
+      reg: function(/**@type {string}*/npc, /**@type {Function}*/cond, /**@type {string}*/speech, /**@type {number}*/cd) {
+        if (!this.speechs.has(npc)) this.speechs.set(npc, []);
+        this.speechs.get(npc).push({ cond, speech, cd, current: 0 });
+      },
+      /** @param {string} npc - NPC名称 @returns {string} 对话文本 */
+      output: function(/**@type {string}*/npc) {
+        if (!this.speechs.has(npc)) return '';
+        const speechs = this.speechs.get(npc);
+        for (const speech of speechs) {
+          if (speech.current > 0) { speech.current--; continue; }
+          try {
+            if (speech.cond()) { speech.current = speech.cd; return speech.speech; }
+          } catch (/**@type {any} */e) {}
+        }
+        return '';
+      },
+      init: function() {
+        for (const speechs of this.speechs.values()) for (const speech of speechs) speech.current = 0;
       }
     }
 

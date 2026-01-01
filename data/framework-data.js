@@ -206,28 +206,6 @@
     <</widget>>`
   ]
 
-  const overlay = [
-    `<<widget 'maplebirchReplace'>>
-      <<set _key to _args[0]>>
-      <<if !_key>><<exit>><</if>>
-      <<if _currentOverlay is _key>>
-        <<run closeOverlay()>>
-        <<exit>>
-      <</if>>
-      <<script>>
-        T.buttons.toggle();
-        updateOptions();
-        T.currentOverlay = T.key;
-        $('#customOverlay').removeClass('hidden').parent().removeClass('hidden');
-        $('#customOverlay').attr('data-overlay', T.currentOverlay);
-      <</script>>
-      <<if _args[1] is 'customize'>><<= '<<'+_key+'>>'>><<exit>><</if>>
-      <<if _args[1] is 'title'>><<set _titleKey to 'title' + maplebirch.tool.convert(_key,'pascal')>><</if>>
-      <<if maplebirch.tool.widget.Macro.has(_titleKey)>><<replace #customOverlayTitle>><<= '<<'+_titleKey+'>>'>><</replace>><</if>>
-      <<replace #customOverlayContent>><<= '<<'+_key+'>>'>><</replace>>
-    <</widget>>`,
-  ];
-
   const audio = [
     `<<widget 'maplebirch-playback'>>
       <details class='maplebirch-playback'>
@@ -395,10 +373,10 @@
       <<if _modTransforms.length>>
         <<for _modName range _modTransforms>>
           <<capture _modName>>
-            <<set _config to maplebirch.char.transformation.config[_modName]>>
+            <<set _config to maplebirch.char.transformation.config.get(_modName)>>
             <div class='settingsToggleItemWide'>
               <<if _config.icon>><<icon _config.icon>><</if>>
-              <span class='gold bold'><<lanSwitch 'Mods: ' '模组：'>>+maplebirch.t(_modName)>></span>
+              <span class='gold bold'><<lanSwitch 'Mods: ' '模组：'>><<= maplebirch.t(_modName)>></span>
               <<if $transformationParts[_modName]>><<for _partName, $_partValue range $transformationParts[_modName]>><<capture _partName, $_partValue>>
                 <<if $_partValue isnot 'disabled'>>
                   <<set _varPath to '$transformationParts.'+_modName+'.'+_partName>>
@@ -495,16 +473,21 @@
     <</widget>>`,
     `<<widget 'maplebirchPanel'>>
       <div class='maplebirch-inventory-panel'>
-        <!-- 状态区域（现在在左侧） -->
-        <div class='maplebirch-status-section'>
-          <h2>角色状态</h2>
-          <div class='maplebirch-status-content'>
-            <!-- 角色容器（包含角色图片和覆盖层） -->
-            <div id='maplebirch-character-container'>
-              <div id='maplebirch-character'></div>
-              <div id='maplebirch-character-overlay'></div>
-            </div>
+        <!-- 角色状态区域 -->
+        <div class='maplebirch-character-section'>
+          <!-- 角色画布容器 -->
+          <div id='maplebirch-character-container'>
+            <div id='maplebirch-character'></div>
+            <div id='maplebirch-character-overlay'></div>
           </div>
+          <!-- 角色身体携带信息区域 -->
+          <div class='maplebirch-body-carries'>
+            <!-- 这里可以放置身体携带信息的格子或列表 -->
+          </div>
+        </div>
+        <!-- 物品栏区域 -->
+        <div class='maplebirch-inventory-section'>
+          <!-- 这里可以放置物品栏网格 -->
         </div>
       </div>
     <</widget>>`,
@@ -513,7 +496,6 @@
 
   const specialWidget = [
     ...bodywriting,
-    ...overlay,
     ...audio,
     ...character,
     ...modHint,
@@ -604,16 +586,11 @@
           <span class='gold'><<lanSwitch 'Transformation Type' '转化种类'>></span><br>
           <<for _modName range Object.keys(V.maplebirch?.transformation)>>
             <<capture _modName>>
-            <<set _config = maplebirch.char.transformation.config[_modName]>>
-              <<if _config.icon>><<icon _config.icon>><</if>>
+              <<set $_config to maplebirch.char.transformation.config.get(_modName)>>
+              <<if $_config.icon>><<icon $_config.icon>><</if>>
               <<= maplebirch.t(_modName)>>：
-              <<lanLink 'set' 'capitalize'>>
-                <<clearDivineTransformations>><<clearAnimalTransformations>>
-                <<= \`<<\${_modName}Transform>>\`>><<updatesidebarimg>>
-              <</lanLink>> | <<lanLink 'clear' 'capitalize'>>
-                <<clearDivineTransformations>><<clearAnimalTransformations>>
-                <<= \`<<\${_modName}Transform 99>>\`>><<updatesidebarimg>>
-              <</lanLink>>
+              <<lanLink 'set' 'capitalize'>><<run maplebirch.char.transformation.setTransform(_modName)>><<updatesidebarimg>><</lanLink>> | 
+              <<lanLink 'clear' 'capitalize'>><<run maplebirch.char.transformation.setTransform(_modName, 0)>><<updatesidebarimg>><</lanLink>>
             <</capture>>
             <br>
           <</for>>
@@ -622,11 +599,15 @@
           <span class='gold'><<lanSwitch 'Transformation Points' '转化点数'>></span><br>
           <<for _modName range Object.keys(V.maplebirch?.transformation || {})>>
             <<capture _modName>>
-              <<set _config to maplebirch.char.transformation.config[_modName]>>
-              <<set _title to _config.icon ? \`<<icon _config.icon>> \${maplebirch.t(_modName)}\` : \`\${maplebirch.t(_modName)}\`>>
-              <<set _value = V.maplebirch.transformation[_modName].build || 0>>
+              <<set _config to maplebirch.char.transformation.config.get(_modName)>>
+              <<set _title to _config.icon ? \`<<icon _config.icon>> \${maplebirch.t(_modName)}\` : maplebirch.t(_modName)>>
+              <<set _value to $maplebirch.transformation[_modName].build ?? 0>>
               <<numberStepper _title _value {
-                callback: (value) => { V.maplebirch.transformation[_modName].build = value; Wikifier.wikifyEval('<<transformationAlteration>><<updatesidebarimg>>'); },
+                callback: (value) => { 
+                  V.maplebirch.transformation[_modName].build = value; 
+                  maplebirch.char.transformation._updateTransform(_modName);
+                  Wikifier.wikifyEval('<<updatesidebarimg>>'); 
+                },
                 max: _config.build || 100, 
                 percentage: false, 
                 colorArr: ['--teal', '--purple']
@@ -689,7 +670,7 @@
       { src: '<</widget>>\n\n<<widget "npcrelationship">>', applybefore: '\t<<maplebirchNPCspawn _nam _npcno>>\n\t' },
     ],
     'Widgets Settings': [
-      { srcmatch: /_npcList\[(?:setup\.NPC_CN_NAME\()?_sortedNPCList\[\$_\w+\](?:\))?\]/, to: '_npcList[maplebirch.autoTranslate(clone(_sortedNPCList[_i]))]' },
+      { srcmatch: /_npcList\[(?:setup\.NPC_CN_NAME\()?_sortedNPCList\[\$_\w+\](?:\))?\]/, to: '_npcList[maplebirch.autoTranslate(_sortedNPCList[$_i])]' },
       { srcmatch: /<<run delete _npcList\["(?:象牙怨灵|Ivory Wraith)"\]>>/, to: '<<run delete _npcList[maplebirch.autoTranslate("Ivory Wraith")]>>' },
       { srcmatch: /(?:<<NPC_CN_NAME \$NPCName\[_npcId\]\.nam>>——<span style="text-transform: capitalize;"><<print[\s\S]*?>><\/span>|\$NPCName\[_npcId\]\.nam the <span style="text-transform: capitalize;">\$NPCName\[_npcId\]\.title<\/span>|<<NPC_CN_NAME \$NPCName\[_npcId\]\.nam>>——<span style="text-transform: capitalize;"><<print setup\.NPC_CN_TITLE\(\$NPCName\[_npcId\]\.title\)>><\/span>)/, to: '<<= maplebirch.autoTranslate($NPCName[_npcId].nam) + (maplebirch.Language is "CN" ? "——" : " the ")>><span style="text-transform: capitalize;"><<= maplebirch.autoTranslate($NPCName[_npcId].title)>></span>' },
       { srcmatchgroup: /<<if _npcList\[(?:\$NPCName\[_npcId\]\.nam(?:\.replace\([^)]+\))*|setup\.NPC_CN_NAME\(\$NPCName\[_npcId\]\.nam\))\] is undefined>>/g, to: '<<if _npcList[maplebirch.lang.t($NPCName[_npcId].nam)] is undefined>>' },
@@ -708,12 +689,12 @@
       { srcmatch: /<<print\s*("It is "\s*\+\s*getFormattedDate\(Time\.date\)\s*\+\s*",\s*"\s*\+\s*Time\.year\s*\+\s*"\."|"今天是"\s*\+\s*Time\.year\s*\+\s*"年"\s*\+\s*getFormattedDate\(Time\.date\)\s*\+\s*"。"|ordinalSuffixOf\(Time\.monthDay\)\s*\+\s*"\s*"\s*\+\s*Time\.monthName\.slice\(0,3\)|Time\.month\s*\+\s*"月"\s*\+\s*ordinalSuffixOf\(Time\.monthDay\)\s*\+\s*"日")\s*>>/, to: '<<= maplebirch.state.TimeManager.updateTimeLanguage("JournalTime")>>' },
       { src: '<br>\n<</widget>>', applybefore: '<br><hr>\n\t<<maplebirchJournal>>\n' },
     ],
-    'Transformation Widgets': [
-      { src: '<</widget>>\n\n<<widget "transform">>', applybefore: '\t<<run maplebirch.char.transformation.vanillaTransformation()>>\n' },
+    'Widgets Img': [
+      { src: '<div id="img">', applybefore: '<<maplebirch-npc-model>>\n\t' },
     ],
     'Widgets Mirror': [
       { src: '<</if>>\n\t\t<<if ![', to: '<</if>>\n\t\t<<maplebirchTransformationMirror>>\n\t\t<<if ![' },
-      { src: '<<else>><<tficon "angel">>', to: '<<else>><<= maplebirch.char.transformation.icon>>' },
+      { src: '<<tficon $_icon>>', to: '<<= maplebirch.char.transformation.icon>>' },
       { src: '</div>\n\t\t</div>\n\t\t<div class="settingsToggleItemWide">', to: '</div>\n\t\t</div>\n\t\t<<maplebirchBodyWriting>>\n\t\t<div class="settingsToggleItemWide">' },
     ],
     'Widgets Ejaculation': [
@@ -727,6 +708,9 @@
     'Widgets Wardrobe': [
       { src: ')<</if>>\n\t\t<br>', applyafter: '\n\t\t<<lanSwitch "Search: " "搜索：">><<textbox "$maplebirch.wardrobeSearch" $maplebirch.wardrobeSearch>><div class="outfitContainer no-numberify" style="display: inline-block;"><<lanButton "confirm" "capitalize">><<run Dynamic.render()>><</lanButton>></div><br>' },
       { src: '<</if>>\n\t\t\t<div class="wardrobeItem wardrobe-action no-numberify">', to: '<</if>>\n\t\t\t<<if $maplebirch.wardrobeSearch isnot "">><<run $maplebirch.wardrobeSearch.toLowerCase()>><<language>><<option "CN">><<if !_itemData.cn_name_cap.toLowerCase().includes($maplebirch.wardrobeSearch)>><<continue>><</if>><<option "EN">><<if !_itemData.name_cap.toLowerCase().includes($maplebirch.wardrobeSearch)>><<continue>><</if>><</language>><</if>>\n\t\t\t<div class="wardrobeItem wardrobe-action no-numberify">'}
+    ],
+    'Widgets Speech': [
+      { src: '<</if>>\n\t<</switch>>', to: '<</if>>\n\t\t<<default>><<set $_text_output to maplebirch.combat.Speech.output(_args[0])>>\n\t<</switch>>' },
     ]
   };
 

@@ -433,6 +433,29 @@
       container.appendTo(this.output);
     }
 
+    _overlayReplace(name, type) {
+      const key = name;
+      if (!key) return;
+      if (T.currentOverlay === key) {
+        if (typeof closeOverlay === 'function') closeOverlay();
+        return;
+      }
+      T.buttons.toggle();
+      if (typeof updateOptions === 'function') updateOptions();
+      T.currentOverlay = key;
+      const $overlay = $('#customOverlay');
+      if ($overlay.length) $overlay.removeClass('hidden').parent().removeClass('hidden').attr('data-overlay', key);
+      switch (type) {
+        case 'customize': return `<<${key}>>`;
+        case 'title':
+          const titleKey = 'title' + maplebirch.tool.convert(key, 'pascal');
+          if (titleKey && maplebirch.tool.widget.Macro.has(titleKey)) $('#customOverlayTitle').wiki(`<<${titleKey}>>`);
+          break;
+        default: break;
+      }
+      $('#customOverlayContent').wiki(`<<${key}>>`);
+    }
+
     _fixDynamicTask(fn, name) {
       const taskFn = (...args) => {
         try {
@@ -479,16 +502,17 @@
     }
 
     _showModVersions() {
-      const html = `<div id='modversions'>Maplebirch Framework v${maplebirch.constructor.meta.version}|${maplebirch.modList.length}</div>`;
+      const html = `<div id='modversions'>Maplebirch Framework v${maplebirch.meta.version}|${maplebirch.modList.length}</div>`;
       return html;
     }
 
     _showFrameworkInfo() {
-      let html_1 = `<div class='p-2 text-align-center'>
-          <h3>[[<<lanSwitch 'Maplebirch Framework' '秋枫白桦框架'>>|'https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchframework']]</h3>
-          <div class='m-2'><span class='gold'><<lanSwitch 'Version: ' '版本：'>></span>${this.core.constructor.meta.version}<br></div>
-          <div class='m-2'><span class='gold'><<lanSwitch 'Author: ' '作者：'>></span>${this.core.autoTranslate(this.core.constructor.meta.author)}<br></div>
-          <div class='m-2'><span class='gold'><<lanSwitch 'Last Modified By: ' '最后修改者：'>></span>${this.core.autoTranslate(this.core.constructor.meta.modifiedby)}<br></div>
+      let html_1 = `
+      <div class='p-2 text-align-center'>
+        <h3>[[<<lanSwitch 'Maplebirch Framework' '秋枫白桦框架'>>|'https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchframework']]</h3>
+        <div class='m-2'><span class='gold'><<lanSwitch 'Version: ' '版本：'>></span>${this.core.meta.version}<br></div>
+        <div class='m-2'><span class='gold'><<lanSwitch 'Author: ' '作者：'>></span>${this.core.autoTranslate(this.core.meta.author)}<br></div>
+        <div class='m-2'><span class='gold'><<lanSwitch 'Last Modified By: ' '最后修改者：'>></span>${this.core.autoTranslate(this.core.meta.modifiedby)}<br></div>
       </div>`;
 
       this.#getModDependenceInfo();
@@ -566,6 +590,7 @@
         this.core.tool.widget.defineMacro('lanLink', this._languageLink, null, false, true);
         this.core.tool.widget.defineMacro('lanListbox', this._lanListbox, ['option', 'optionsfrom'], ['optionsfrom'], true);
         this.core.tool.widget.defineMacro('radiobuttonsfrom', this._radiobuttonsfrom);
+        this.core.tool.widget.defineMacro('maplebirchReplace', (name, type) => this._overlayReplace(name, type));
         this.core.tool.widget.defineMacro('maplebirchTextOutput', this.core.tool.text.makeMacroHandler());
         this.core.tool.widget.defineMacroS('maplebirchFrameworkVersions', this._showModVersions);
         this.core.tool.widget.defineMacroS('maplebirchFrameworkInfo', () => this._showFrameworkInfo());

@@ -86,7 +86,7 @@
 
     Init() {
       try {
-        if (this.tool.core.state.passage.title === 'Start2') {
+        if (this.tool.core.state.Passage?.title === 'Start2') {
           V.maplebirch = this.tool.clone({
             ...variablesModule.defaultVar,
             version: this.version

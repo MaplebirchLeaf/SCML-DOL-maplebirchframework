@@ -190,6 +190,8 @@
   
   #ConsoleCheat button {
     flex: 0 0 auto;
+    width: auto;
+    min-width: 100px;
   }
 }
 

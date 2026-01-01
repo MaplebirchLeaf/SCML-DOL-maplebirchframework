@@ -1,11 +1,11 @@
 {
   "name": "maplebirch",
   "nickName": {
-    "en": "Maplebirch",
-    "cn": "秋枫白桦"
+    "en": "maplebirchFramework",
+    "cn": "秋枫白桦框架"
   },
   "alias": ["Simple Frameworks"], 
-  "version": "2.6.5",
+  "version": "2.7.1",
   "imgFileList": [
     "img/misc/sky/solar-eclipse-0.png",
     "img/misc/sky/solar-eclipse-1.png",

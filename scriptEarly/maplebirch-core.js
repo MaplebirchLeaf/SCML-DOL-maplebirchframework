@@ -2,7 +2,7 @@
 /// <reference path='../maplebirch.d.ts' />
 var maplebirch = (() => {
   'use strict';
-  const frameworkVersion = '2.6.5';
+  const frameworkVersion = '2.7.1';
   const lastUpdate = '2025.12.21';
   const lastModifiedBy = '楓樺葉';
   const DEBUGMODE = true;
@@ -88,15 +88,9 @@ var maplebirch = (() => {
   }
 
   class EventEmitter {
-    static streamConfig = {
-      batchSize: 15,     // 每批处理监听器数量
-      yieldInterval: 1   // 批处理间让步(ms)
-    }
     /** @param {MaplebirchCore} core */
     constructor(core) {
       this.core = core;
-      this.executionQueue = new Map();
-      this.isProcessing = new Map();
       /** @type {Object<string, Array<{callback: Function, description: string, internalId: string}>>} 事件监听器集合，使用字符串索引签名 */
       this.events = {
         ':IndexedDB':           [], // IDB数据库
@@ -129,8 +123,6 @@ var maplebirch = (() => {
     on(eventName, callback, description = '') {
       if (!this.events[eventName]) {
         this.events[eventName] = [];
-        this.executionQueue.set(eventName, []);
-        this.isProcessing.set(eventName, false);
         this.core.logger.log(`创建新事件类型: ${eventName}`, 'DEBUG');
       }
       const internalId = description || `evt_${Math.random().toString(36).slice(2,10)}_${Date.now()}`;
@@ -181,64 +173,28 @@ var maplebirch = (() => {
      * @returns {boolean} 是否注册成功
      */
     once(eventName, callback, description = '') {
-      const onceWrapper = (/** @type {...any} */ ...args) => {
-        try { callback(...args); } finally { this.off(eventName, onceWrapper); }
-      };
+      const onceWrapper = (/** @type {...any} */ ...args) => { try { callback(...args); } finally { this.off(eventName, onceWrapper); } };
       return this.on(eventName, onceWrapper, description);
     }
 
     /** 触发事件 @param {string} eventName 事件名称 @param {...any} args 事件参数 */
     async trigger(eventName, ...args) {
       if (!this.events[eventName] || this.events[eventName].length === 0) return;
-      const queue = this.executionQueue.get(eventName) || [];
-      queue.push({ args });
-      this.executionQueue.set(eventName, queue);
-      if (!this.isProcessing.get(eventName)) await this.#processQueue(eventName);
-    }
-
-    /** 处理事件队列 @param {string} eventName 事件名称 @returns {Promise<void>} */
-    async #processQueue(eventName) {
-      this.isProcessing.set(eventName, true);
-      const queue = this.executionQueue.get(eventName);
-      while (queue.length > 0) {
-        const eventData = queue.shift();
-        const listeners = [...this.events[eventName]];
-        for (let i = 0; i < listeners.length; i += EventEmitter.streamConfig.batchSize) {
-          const batch = listeners.slice(i, i + EventEmitter.streamConfig.batchSize);
-          await Promise.all(batch.map(listener => {
-            return /** @type {Promise<void>} */(new Promise(resolve => {
-              try {
-                const result = listener.callback(...eventData.args);
-                if (result instanceof Promise) {
-                  result.then(resolve).catch(error => {
-                    this.core.logger.log(`${eventName}事件处理错误: ${error.message}`, 'ERROR');
-                    resolve();
-                  });
-                } else {
-                  resolve();
-                }
-              } catch (/** @type {any} */error) {
-                this.core.logger.log(`${eventName}事件处理错误: ${error.message}`, 'ERROR');
-                resolve();
-              }
-            }));
-          }));
-          if (EventEmitter.streamConfig.yieldInterval > 0) await new Promise(r => setTimeout(r, EventEmitter.streamConfig.yieldInterval));
+      const listeners = [...this.events[eventName]];
+      for (const listener of listeners) {
+        try {
+          const result = listener.callback(...args);
+          if (result instanceof Promise) await result;
+        } catch (/**@type {any}*/error) {
+          this.core.logger.log(`${eventName}事件处理错误: ${error.message}`, 'ERROR');
         }
       }
-      this.isProcessing.set(eventName, false);
     }
   }
 
   class IndexedDBService {
     static DATABASE_NAME = 'maplebirch';
-    static DATABASE_VERSION = (() => {
-    const versionParts = frameworkVersion.split('.');
-      const major = parseInt(versionParts[0] || '0') * 100;
-      const minor = parseInt(versionParts[1] || '0') * 10;
-      const patch = parseInt(versionParts[2] || '0');
-      return major + minor + patch;
-    })()
+    static DATABASE_VERSION = parseInt(frameworkVersion.split('.')[0], 10);
 
     /** @param {MaplebirchCore} core */
     constructor(core) {
@@ -275,8 +231,7 @@ var maplebirch = (() => {
         this.ready = true;
         this.core.logger.log('IDB数据库初始化完成', 'INFO');
       } catch (/**@type {any}*/error) {
-        this.core.logger.log(`IDB数据库初始化失败: ${error?.message || error}`, 'ERROR');
-        throw error;
+        await this.resetDatabase();
       }
     }
 
@@ -285,7 +240,7 @@ var maplebirch = (() => {
       for (const storeDef of this.stores.values()) {
         if (!db.objectStoreNames.contains(storeDef.name)) {
           const store = db.createObjectStore(storeDef.name, storeDef.options);
-          storeDef.indexes.forEach((/**@type {{ name: string; keyPath: string | Iterable<string>; options: any; }}*/ indexDef) => {
+          storeDef.indexes.forEach((/**@type {{ name: string; keyPath: string; options: any; }}*/ indexDef) => {
             try { store.createIndex(indexDef.name, indexDef.keyPath, indexDef.options || {}); }
             catch (err) {}
           });
@@ -320,13 +275,39 @@ var maplebirch = (() => {
         await store.clear();
       });
     }
+
+    /** @returns {Promise<boolean>} */
+    async deleteDatabase() {
+      try {
+        if (this.db) { this.db.close(); this.db = null; };
+        const idbRef = this.core.modUtils.getIdbRef();
+        await idbRef.idb_deleteDB(IndexedDBService.DATABASE_NAME);
+        this.ready = false;
+        return true;
+      } catch (/**@type {any}*/error) {
+        this.core.logger.log(`删除数据库失败: ${error?.message || error}`, 'ERROR');
+        return false;
+      }
+    }
+
+    /** @returns {Promise<boolean>} */
+    async resetDatabase() {
+      try {
+        const deleted = await this.deleteDatabase();
+        if (!deleted) throw new Error('删除数据库失败');
+        await this.init();
+        location.reload();
+        return true;
+      } catch (/**@type {any}*/error) {
+        this.core.logger.log(`数据库重置失败: ${error?.message || error}`, 'ERROR');
+        return false;
+      }
+    }
   }
 
   class LanguageManager {
     static DEFAULT_LANGS = ['EN', 'CN'];
-    static DEFAULT_IMPORT_CONCURRENCY = 2;    // 默认并发导入数
     static DEFAULT_BATCH_SIZE = 500;          // 默认批处理大小
-    static DEFAULT_PRELOAD_YIELD = 500;       // 默认预加载让步间隔
     /** @param {MaplebirchCore} core */
     constructor(core) {
       this.core = core;
@@ -336,7 +317,6 @@ var maplebirch = (() => {
       this.isPreloaded = false;                // 预加载状态标志
       this.fileHashes = new Map();             // 文件哈希缓存
     }
-
 
     detectLanguage() {
       const lang = navigator.language || 'en';
@@ -373,50 +353,47 @@ var maplebirch = (() => {
      */
     async importAllLanguages(modName, languages = LanguageManager.DEFAULT_LANGS) {
       if (!this.core.modLoader) { this.core.logger.log('Mod 加载器未设置，无法导入翻译', 'ERROR'); return false; }
-      const concurrency = LanguageManager.DEFAULT_IMPORT_CONCURRENCY;
-      const tasks = [];
-      for (const lang of languages) {
-        tasks.push(async () => {
-          const formats = ['json', 'yml', 'yaml'];
-          let foundAny = false;
-          let loadedAny = false;
-          /** @type {Object<string, string>} */
-          const allTranslations = {};
-          for (const format of formats) {
-            const filePath = `translations/${lang.toLowerCase()}.${format}`;
-            const modZip = this.core.modLoader.getModZip(modName);
-            if (!modZip || !modZip.zip.file(filePath)) continue;
-            foundAny = true;
-            this.core.logger.log(`找到 ${lang} 语言翻译文件: ${filePath}`, 'DEBUG');
-            try {
-              const file = modZip.zip.file(filePath);
-              const content = await file.async('text');
-              let data;
-              if (filePath.endsWith('.json')) {
-                data = JSON.parse(content);
-              } else if (filePath.endsWith('.yml') || filePath.endsWith('.yaml')) {
-                data = jsyaml.load(content);
-              }
-              Object.assign(allTranslations, data);
-              loadedAny = true;
-              this.core.logger.log(`成功加载翻译内容: ${filePath}`, 'DEBUG');
-            } catch (/** @type {any} */err) {
-              this.core.logger.log(`加载失败: ${filePath} - ${err?.message || err}`, 'ERROR');
+      const tasks = languages.map(async (lang) => {
+        const formats = ['json', 'yml', 'yaml'];
+        let foundAny = false;
+        let loadedAny = false;
+        /** @type {Object<string, string>} */
+        const allTranslations = {};
+        for (const format of formats) {
+          const filePath = `translations/${lang.toLowerCase()}.${format}`;
+          const modZip = this.core.modLoader.getModZip(modName);
+          if (!modZip || !modZip.zip.file(filePath)) continue;
+          foundAny = true;
+          this.core.logger.log(`找到 ${lang} 语言翻译文件: ${filePath}`, 'DEBUG');
+          try {
+            const file = modZip.zip.file(filePath);
+            const content = await file.async('text');
+            let data;
+            if (filePath.endsWith('.json')) {
+              data = JSON.parse(content);
+            } else if (filePath.endsWith('.yml') || filePath.endsWith('.yaml')) {
+              data = jsyaml.load(content);
             }
+            Object.assign(allTranslations, data);
+            loadedAny = true;
+            this.core.logger.log(`成功加载翻译内容: ${filePath}`, 'DEBUG');
+          } catch (/** @type {any} */err) {
+            this.core.logger.log(`加载失败: ${filePath} - ${err?.message || err}`, 'ERROR');
           }
-          if (!foundAny) { this.core.logger.log(`找不到 ${lang} 语言的翻译文件`, 'WARN'); return false; }
-          if (!loadedAny) { this.core.logger.log(`找到 ${lang} 语言的翻译文件但全部加载失败`, 'WARN'); return false; }
-          const result = await this.#processTranslations(modName, lang, allTranslations);
-          if (result) this.core.logger.log(`成功处理 ${lang} 语言翻译 (${Object.keys(allTranslations).length} 项)`, 'DEBUG');
-          return result;
-        });
-      }
-      const results = [];
-      for (let i = 0; i < tasks.length; i += concurrency) {
-        const batch = tasks.slice(i, i + concurrency).map(fn => fn());
-        const batchResults = await Promise.all(batch);
-        results.push(...batchResults);
-      }
+        }
+        if (!foundAny) { 
+          this.core.logger.log(`找不到 ${lang} 语言的翻译文件`, 'WARN'); 
+          return false; 
+        }
+        if (!loadedAny) { 
+          this.core.logger.log(`找到 ${lang} 语言的翻译文件但全部加载失败`, 'WARN'); 
+          return false; 
+        }
+        const result = await this.#processTranslations(modName, lang, allTranslations);
+        if (result) this.core.logger.log(`成功处理 ${lang} 语言翻译 (${Object.keys(allTranslations).length} 项)`, 'DEBUG');
+        return result;
+      });
+      const results = await Promise.all(tasks);
       return results.every(Boolean);
     }
 
@@ -501,7 +478,6 @@ var maplebirch = (() => {
             const rec = cursor.value;
             this.translations.set(rec.key, rec.translations || {});
             count++;
-            if (count % LanguageManager.DEFAULT_PRELOAD_YIELD === 0) await new Promise(r => setTimeout(r, 0));
             cursor = await cursor.continue();
           }
           this.isPreloaded = true;
@@ -541,7 +517,7 @@ var maplebirch = (() => {
             const base = rec.key.split('_')[0];
             if (latest.get(base).key !== rec.key) await store.delete(rec.key);
           }
-          this.core.logger.log('清理旧版本翻译数据完成', 'INFO');
+          this.core.logger.log('清理旧版本翻译数据完成', 'DEBUG');
         });
       } catch (/** @type {any} */err) {
         this.core.logger.log(`清理旧版本失败: ${err?.message || err}`, 'ERROR');
@@ -815,10 +791,6 @@ var maplebirch = (() => {
   }
 
   class ModuleSystem {
-    static streamConfig = {
-      batchSize: 7,     // 批处理大小
-      yieldInterval: 1  // 批处理间让步时间(ms)
-    }
     /** @param {MaplebirchCore} core */
     constructor(core) {
       this.core = core;
@@ -836,7 +808,7 @@ var maplebirch = (() => {
         mainInitCompleted: false,           // 主初始化完成
         loadInitExecuted: false,            // 读存档初始化
         postInitExecuted: false,            // 后初始化完成
-        expectedModuleCount: 99,            // 预期模块数量
+        expectedModuleCount: 0,             // 预期模块数量
         registeredModuleCount: 0,           // 已注册模块数
         allModuleRegisteredTriggered: false // 所有模块注册事件触发标志
       };
@@ -978,24 +950,20 @@ var maplebirch = (() => {
       if (!this.initPhase.mainInitCompleted) return;
       const reg = this.registry;
       const initOrder = this.#getTopologicalOrder();
-      for (let i = 0; i < initOrder.length; i += ModuleSystem.streamConfig.batchSize) {
-        const batch = initOrder.slice(i, i + ModuleSystem.streamConfig.batchSize);
-        await Promise.all(batch.map(async name => {
-          const module = reg.modules.get(name);
-          if (reg.states.get(name) !== ModuleState.MOUNTED) return;
-          if (typeof module.loadInit === 'function') {
-            try {
-              const result = module.loadInit();
-              if (result instanceof Promise) await result;
-            } catch (/** @type {any} */error) {
-              this.core.logger.log(`${name} 读档初始化失败: ${error.message}`, 'ERROR');
-            }
+      for (const name of initOrder) {
+        const module = reg.modules.get(name);
+        if (reg.states.get(name) !== ModuleState.MOUNTED) continue;
+        if (typeof module.loadInit === 'function') {
+          try {
+            const result = module.loadInit();
+            if (result instanceof Promise) await result;
+          } catch (/** @type {any} */error) {
+            this.core.logger.log(`${name} 读档初始化失败: ${error.message}`, 'ERROR');
           }
-        }));
-        await new Promise(resolve => setTimeout(resolve, ModuleSystem.streamConfig.yieldInterval));
+        }
       }
       this.initPhase.loadInitExecuted = true;
-      this.core.logger.log(`loadInit完成`, 'INFO');
+      this.core.logger.log(`存档初始化完成`, 'INFO');
     }
 
     async postInit() {
@@ -1003,21 +971,17 @@ var maplebirch = (() => {
       if (!this.initPhase.mainInitCompleted) return;
       const reg = this.registry;
       const initOrder = this.#getTopologicalOrder();
-      for (let i = 0; i < initOrder.length; i += ModuleSystem.streamConfig.batchSize) {
-        const batch = initOrder.slice(i, i + ModuleSystem.streamConfig.batchSize);
-        await Promise.all(batch.map(async name => {
-          const module = reg.modules.get(name);
-          if (reg.states.get(name) !== ModuleState.MOUNTED) return;
-          if (typeof module.postInit === 'function') {
-            try {
-              const result = module.postInit();
-              if (result instanceof Promise) await result;
-            } catch (/** @type {any} */error) {
-              this.core.logger.log(`[${name}] 后初始化失败: ${error.message}`, 'ERROR');
-            }
+      for (const name of initOrder) {
+        const module = reg.modules.get(name);
+        if (reg.states.get(name) !== ModuleState.MOUNTED) continue;
+        if (typeof module.postInit === 'function') {
+          try {
+            const result = module.postInit();
+            if (result instanceof Promise) await result;
+          } catch (/** @type {any} */error) {
+            this.core.logger.log(`[${name}] 后初始化失败: ${error.message}`, 'ERROR');
           }
-        }));
-        await new Promise(resolve => setTimeout(resolve, ModuleSystem.streamConfig.yieldInterval));
+        }
       }
       this.initPhase.postInitExecuted = true;
       this.core.logger.log(`后初始化完成`, 'INFO');
@@ -1084,12 +1048,7 @@ var maplebirch = (() => {
 
     async #initAllModules(isPreInit = false) {
       const initOrder = this.#getTopologicalOrder();
-      const batchSize = ModuleSystem.streamConfig.batchSize;
-      for (let i = 0; i < initOrder.length; i += batchSize) {
-        const batch = initOrder.slice(i, i + batchSize);
-        await Promise.all(batch.map(name => this.#initModule(name, isPreInit)));
-        await new Promise(resolve => setTimeout(resolve, ModuleSystem.streamConfig.yieldInterval));
-      }
+      for (const name of initOrder) await this.#initModule(name, isPreInit);
     }
 
     /**
@@ -1206,15 +1165,14 @@ var maplebirch = (() => {
       modifiedby: lastModifiedBy,
       UpdateDate: lastUpdate,
       availableLanguages: LanguageManager.DEFAULT_LANGS,
+      coreModules: ['addonPlugin', 'state', 'tool', 'audio', 'var', 'char', 'npc', 'combat', 'shop'],
+      earlyMount: ['addonPlugin', 'state', 'tool'],
     }
 
     constructor() {
-      this.meta = {
-        state: ModuleState.PENDING,
-        coreModules: ['addonPlugin', 'state', 'tool', 'audio', 'var', 'char', 'npc', 'combat', 'shop'],
-        earlyMount: ['addonPlugin', 'state', 'tool'],
-        initializedAt: new Date().toLocaleString(),
-      };
+      this.meta = MaplebirchCore.meta;
+      // @ts-ignore
+      for (const moduleName of this.meta.coreModules) this[moduleName] = null;
       /** @type {string[]} */
       this.modList = [];
       this.logger = new Logger(this);
@@ -1223,7 +1181,7 @@ var maplebirch = (() => {
       this.lang = new LanguageManager(this);
       this.modules = new ModuleSystem(this);
       this.onLoad = false;
-      this.#Ready();
+      this.#init();
     }
     /** @param {string} msg @param {any[]} objs */
     log(msg, level = 'INFO', ...objs) {
@@ -1328,8 +1286,8 @@ var maplebirch = (() => {
       return StartConfig.version;
     }
 
-    #Ready() {
-      this.log(`核心系统创建完成 (v${MaplebirchCore.meta.version})\n初始化时间: ${this.meta.initializedAt}\n开始设置初始化流程`, 'INFO');
+    #init() {
+      this.log(`核心系统创建完成 (v${MaplebirchCore.meta.version})\n开始设置初始化流程`, 'INFO');
       this.log('初始化内置监听', 'DEBUG');
       $(document).on(':oncloseoverlay', () => this.trigger(':oncloseoverlay'));
       $(document).on(':passageinit', (/** @type {any} */ev) => this.trigger(':passageinit' , ev));

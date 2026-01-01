@@ -85,10 +85,7 @@
       }
     }
 
-    /**
-     * 清空所有音频
-     * @returns {Promise<boolean>} 是否成功
-     */
+    /** 清空所有音频 */
     async clear() {
       try {
         await this.core.idb.withTransaction(['audioBuffers'], 'readwrite', async (tx) => {
