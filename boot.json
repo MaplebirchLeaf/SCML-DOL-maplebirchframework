@@ -7,10 +7,7 @@
   "alias": ["Simple Frameworks"], 
   "version": "2.7.1",
   "imgFileList": [],
-  "styleFileList": [
-    "styles/maplebirch-styles.css",
-    "styles/maplebirchPanel​.css"
-  ],
+  "styleFileList": ["styles/maplebirch-styles.css"],
   "scriptFileList": [
     "data/defineSugarCube.js",
     "data/vanillaNPCSchedule.js"

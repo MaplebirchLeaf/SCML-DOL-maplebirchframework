@@ -489,7 +489,6 @@ declare global {
     framework: frameworks;
     linkzone: typeof applyLinkZone;
     other: others;
-    modhint: modhint;
     console: consoleTools;
     cheat: cheat;
     clone: typeof clone;
@@ -982,7 +981,7 @@ declare global {
   }
 
   class Expansion {
-    
+    modhint: modhint;
   }
 
   const yaml: {
