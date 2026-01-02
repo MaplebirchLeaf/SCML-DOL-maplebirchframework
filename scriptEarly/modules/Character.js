@@ -73,23 +73,23 @@
       if (V.settings.condomLevel >= 1 && V.condoms != null) {
         const condomContainer = document.createElement('div');
         condomContainer.className = 'maplebirch-condom-display';
-        condomContainer.setAttribute('tooltip', `<span class='meek'>避孕套总数：${V.condoms}</span>`);
+        condomContainer.setAttribute('tooltip', `<span class='meek'><<lanSwitch 'Total condoms: ' '避孕套总数：'>>${V.condoms}</span>`);
+        const condomText = document.createElement('span');
+        condomText.className = 'maplebirch-condom-count';
+        condomText.textContent = `${V.condoms}x`;
         const condomImg = document.createElement('img');
         condomImg.draggable = false;
         condomImg.src = 'img/ui/condom.png';
         condomImg.className = 'maplebirch-condom-icon';
-        const condomText = document.createElement('span');
-        condomText.className = 'maplebirch-condom-count';
-        condomText.textContent = `×${V.condoms}`;
-        condomContainer.appendChild(condomImg);
         condomContainer.appendChild(condomText);
+        condomContainer.appendChild(condomImg);
         leftContainer.appendChild(condomContainer);
       }
       // 渲染防狼喷雾
       if (V.spray != null) {
         const pepperContainer = document.createElement('div');
         pepperContainer.className = 'maplebirch-pepper-display';
-        pepperContainer.setAttribute('tooltip', `<span class='def'>防狼喷雾：${V.spray} / ${V.spraymax}</span>`);
+        pepperContainer.setAttribute('tooltip', `<span class='def'><<lanSwitch 'Pepper sprays: ' '防狼喷雾：'>>${V.spray} / ${V.spraymax}</span>`);
         const showMultipleSprays = (V.options.pepperSprayDisplay === 'sprays' && V.spraymax <= 7) || (V.options.pepperSprayDisplay === 'both' && V.spraymax <= 5);
         if (showMultipleSprays) {
           const multipleContainer = document.createElement('div');
@@ -105,15 +105,15 @@
         } else {
           const singleContainer = document.createElement('div');
           singleContainer.className = 'maplebirch-pepper-single';
+          const pepperText = document.createElement('span');
+          pepperText.className = 'maplebirch-pepper-count';
+          pepperText.textContent = `${V.spray}×`;
           const pepperImg = document.createElement('img');
           pepperImg.draggable = false;
           pepperImg.src = 'img/ui/pepperspray.png';
           pepperImg.className = 'maplebirch-pepper-icon';
-          const pepperText = document.createElement('span');
-          pepperText.className = 'maplebirch-pepper-count';
-          pepperText.textContent = `×${V.spray}`;
-          singleContainer.appendChild(pepperImg);
           singleContainer.appendChild(pepperText);
+          singleContainer.appendChild(pepperImg);
           pepperContainer.appendChild(singleContainer);
         }
         rightContainer.appendChild(pepperContainer);

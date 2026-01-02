@@ -779,7 +779,7 @@
       };
       core.trigger(':npc-init', this);
       core.once(':passagestart',() => {
-        if (['Start', 'Downgrade Waiting Room'].includes(core.state.passage.title)) return;
+        if (['Start', 'Downgrade Waiting Room'].includes(core.state.Passage?.title)) return;
         this.injectModNPCs();
       });
     }
@@ -952,7 +952,7 @@
 
     /** @param {number[]} args */
     NPCSpawn(...args) {
-      
+      try { this.core.combat.Speech.init(); } catch {};
     }
 
     Init() {

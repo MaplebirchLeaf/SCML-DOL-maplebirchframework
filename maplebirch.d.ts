@@ -1,7 +1,5 @@
-// maplebirch.d.ts
 declare global {
   interface Window {
-    maplebirch: MaplebirchCore;
     StartConfig: typeof StartConfig;
     jQuery: typeof jQuery;
     $: typeof $;
@@ -12,32 +10,21 @@ declare global {
     between: typeof between;
   }
 
+  interface Math {
+    clamp(value: number, min: number, max: number): number;
+  }
+
   interface SugarCube {
     Macro: MacroModule;
     Wikifier: typeof Wikifier;
-    Engine: {
-      go(): any;
-      show(): void;
-      play(title: string, noHistory?: boolean): void;
-    };
+    Engine: { go(): any; show(): void; play(title: string, noHistory?: boolean): void };
     Save: SaveModule;
-    setup: any;
-    State: any;
-    Story: {
-      title: string;
-      get(title: string): any;
-      has(title: string): boolean;
-    };
-    Config: any;
-    Scripting: {
-      evalJavaScript(code: any, output: any, data: any): any;
-      evalTwineScript(code: any, output: any, data: any): any;
-      parse(rawCodeString: any): any;
-    };
-  }
-
-  interface Math {
-    clamp(value: number, min: number, max: number): number;
+    setup: typeof setup;
+    State: typeof State;
+    Story: typeof Story;
+    Config: typeof Config;
+    Scripting: typeof Scripting;
+    Util: typeof Util;
   }
 
   interface MacroModule {
@@ -47,130 +34,36 @@ declare global {
     has(name: string): boolean;
     get(name: string): any;
     init(handler?: string): void;
-    hooks: {
-      on(event: string, fn: Function): void;
-      off(event: string, fn?: Function): void;
-      emit(event: string, payload: any): void;
-    };
-    tags: {
-      register(parent: string, bodyTags?: string[]): void;
-      unregister(parent: string): void;
-      has(name: string): boolean;
-      get(name: string): string[] | null;
-    };
+    hooks: { on(event: string, fn: Function): void; off(event: string, fn?: Function): void; emit(event: string, payload: any): void };
+    tags: { register(parent: string, bodyTags?: string[]): void; unregister(parent: string): void; has(name: string): boolean; get(name: string): string[] | null };
     evalStatements(...args: any[]): any;
   }
 
   interface SaveModule {
     init: () => boolean;
-    get: () => {
-      autosave: SaveData | null;
-      slots: (SaveData | null)[];
-    };
+    get: () => { autosave: SaveData | null; slots: (SaveData | null)[] };
     clear: () => boolean;
     ok: () => boolean;
-    autosave: {
-      ok: () => boolean;
-      has: () => boolean;
-      get: () => SaveData | null;
-      load: () => boolean;
-      save: (title?: string, metadata?: Record<string, any>) => boolean;
-      delete: () => boolean;
-    };
-    slots: {
-      ok: () => boolean;
-      readonly length: number;
-      isEmpty: () => boolean;
-      count: () => number;
-      has: (slot: number) => boolean;
-      get: (slot: number) => SaveData | null;
-      load: (slot: number) => boolean;
-      save: (slot: number, title?: string, metadata?: Record<string, any>) => boolean;
-      delete: (slot: number) => boolean;
-    };
+    autosave: { ok: () => boolean; has: () => boolean; get: () => SaveData | null; load: () => boolean; save: (title?: string, metadata?: Record<string, any>) => boolean; delete: () => boolean };
+    slots: { ok: () => boolean; readonly length: number; isEmpty: () => boolean; count: () => number; has: (slot: number) => boolean; get: (slot: number) => SaveData | null; load: (slot: number) => boolean; save: (slot: number, title?: string, metadata?: Record<string, any>) => boolean; delete: (slot: number) => boolean };
     export: (filename?: string, metadata?: Record<string, any>) => void;
     import: (event: Event) => void;
     serialize: (metadata?: Record<string, any>) => string | null;
     deserialize: (base64Str: string) => Record<string, any> | null;
-    onLoad: {
-      add: (handler: SaveEventHandler) => void;
-      clear: () => void;
-      delete: (handler: SaveEventHandler) => boolean;
-      readonly size: number;
-      readonly handlers: Set<SaveEventHandler>;
-    };
-    onSave: {
-      add: (handler: SaveEventHandler) => void;
-      clear: () => void;
-      delete: (handler: SaveEventHandler) => boolean;
-      readonly size: number;
-      readonly handlers: Set<SaveEventHandler>;
-    };
+    onLoad: { add: (handler: SaveEventHandler) => void; clear: () => void; delete: (handler: SaveEventHandler) => boolean; readonly size: number; readonly handlers: Set<SaveEventHandler> };
+    onSave: { add: (handler: SaveEventHandler) => void; clear: () => void; delete: (handler: SaveEventHandler) => boolean; readonly size: number; readonly handlers: Set<SaveEventHandler> };
     readonly meta: Record<string, any>;
   }
 
-  type SaveEventHandler = (saveObj: SaveData,details: { type: 'autosave' | 'disk' | 'serialize' | 'slot' }) => void;
-
-  interface SaveData {
-    id: string;
-    state: {
-      delta?: any;
-      history?: any;
-      idx: string;
-    };
-    idx: number | string;
-    version?: string;
-    title?: string;
-    date?: number;
-    metadata?: Record<string, any>;
-    [key: string]: any;
-  }
+  type SaveEventHandler = (saveObj: SaveData, details: { type: 'autosave' | 'disk' | 'serialize' | 'slot' }) => void;
+  interface SaveData { id: string; state: { delta?: any; history?: any; idx: string }; idx: number | string; version?: string; title?: string; date?: number; metadata?: Record<string, any>; [key: string]: any }
 
   class Wikifier {
-    constructor(
-      destination: HTMLElement | DocumentFragment | JQuery | null,
-      source: string,
-      options?: object,
-      passageObj?: { title: string },
-      passageTitle?: string
-    );
-
-    source: string;
-    options: object;
-    output: HTMLElement | DocumentFragment | null;
-
-    static Option: {
-      readonly length: number;
-      readonly options: object;
-      clear(): void;
-      get(index: number): object | undefined;
-      pop(): object | undefined;
-      push(options: object): number;
-    };
-
-    static Parser: {
-      parsers: Array<{ name: string; match: string; handler: Function }>;
-      add(parser: { name: string; match: string; handler: Function }): void;
-      delete(name: string): void;
-      has(name: string): boolean;
-      get(name: string): { name: string; match: string; handler: Function } | null;
-      Profile: {
-        compile(): { all: any; core: any };
-        isEmpty(): boolean;
-        has(profile: string): boolean;
-        get(profile: string): any;
-      };
-    };
-
-    static helpers: {
-      inlineCss: Function;
-      evalText: (text: string) => string | number;
-      evalPassageId: (passage: string) => string;
-      hasBlockContext: (nodes: Node[]) => boolean;
-      createShadowSetterCallback: (code: string) => () => any;
-      parseSquareBracketedMarkup: (w: any) => any;
-    };
-
+    constructor(destination: HTMLElement | DocumentFragment | JQuery | null, source: string, options?: object, passageObj?: { title: string }, passageTitle?: string);
+    source: string; options: object; output: HTMLElement | DocumentFragment | null;
+    static Option: { readonly length: number; readonly options: object; clear(): void; get(index: number): object | undefined; pop(): object | undefined; push(options: object): number };
+    static Parser: { parsers: Array<{ name: string; match: string; handler: Function }>; add(parser: { name: string; match: string; handler: Function }): void; delete(name: string): void; has(name: string): boolean; get(name: string): { name: string; match: string; handler: Function } | null; Profile: { compile(): { all: any; core: any }; isEmpty(): boolean; has(profile: string): boolean; get(profile: string): any } };
+    static helpers: { inlineCss: Function; evalText: (text: string) => string | number; evalPassageId: (passage: string) => string; hasBlockContext: (nodes: Node[]) => boolean; createShadowSetterCallback: (code: string) => () => any; parseSquareBracketedMarkup: (w: any) => any };
     static stopWikify: boolean;
     static wikifyEval(text: string, passageObj?: { title: string }, passageTitle?: string): DocumentFragment;
     static createInternalLink(destination: any, passage: string | null, text: string, callback?: Function): HTMLElement;
@@ -180,46 +73,66 @@ declare global {
     static getPassageObjLast(): { title: string } | undefined;
   }
 
-  var maplebirch: MaplebirchCore;
+  const SugarCube: SugarCube;
+  const setup: any;
+  const Macro: { add(name: string, definition: any): void; delete(name: string): void; get(name: string): any; has(name: string): boolean; [key: string]: any };
+  const Engine: { States: object; go(): any; show(): void; play(title: string, noHistory: boolean): void };
+  const Story: { title: string; get(title: string): any; has(title: string): boolean };
+  const Save: SaveModule;
+  const State: { variables: any; temporary: any; active: any; passage: any; title: string; [key: string]: any };
+  const Config: {
+    api: { save: { autosave: boolean; autosaveSlots: number; id: string; onSave: () => void; onLoad: () => void }; ui: { stowBarInitially: boolean; updateStoryElements: boolean } };
+    debug: boolean;
+    macros: Record<string, any>;
+    passages: { descriptions: boolean; displayTitles: boolean; start: string };
+    saves: { autosave: boolean; autoload: boolean; slots: number };
+    addVisitedLinkClass: boolean;
+    history: { controls: boolean; maxStates: number };
+    navigation: { override: (passage: string) => string };
+  };
+  const Scripting: { evalJavaScript(code: any, output: any, data: any): any; evalTwineScript(code: any, output: any, data: any): any; parse(rawCodeString: any): any };
+  const Util: {
+    escape: (str: string) => string;
+    unescape: (str: string) => string;
+    parse: (text: string) => DocumentFragment;
+    wiki: (text: string) => DocumentFragment;
+    entity: { encode: (str: string) => string; decode: (str: string) => string };
+    random: { chance: (probability: number) => boolean; integer: (min: number, max: number) => number; float: (min: number, max: number) => number; pick: <T>(array: T[]) => T; shuffle: <T>(array: T[]) => T[] };
+    time: { format: (date: Date, format: string) => string; parse: (str: string) => Date };
+  };
+  const V: any;
+  const T: any;
+  const C: any;
 
+  readonly var maplebirch: MaplebirchCore;
   class MaplebirchCore {
-    meta: {
-      state: number;
-      coreModules: string[];
-      earlyMount: string[];
-      initializedAt: string;
-    };
+    meta: typeof MaplebirchCore.meta;
     modList: string[];
     onLoad: boolean;
-
-    logger: Logger;
-    events: EventEmitter;
-    idb: IndexedDBService;
-    lang: LanguageManager;
-    modules: ModuleSystem;
-    
-    state: TimeStateManager;
-    tool: tools;
-    audio: AudioManager;
-    var: variablesModule;
-    char: CharacterManager;
-    npc: NPCManager;
-    combat: CombatManager;
-    shop: ShopManager;
-    
-    modLoader: any;
-    modUtils: any;
-    SugarCube: SugarCube;
-    addonPlugin: MaplebirchFrameworkAddon;
-
+    readonly logger: Logger;
+    readonly events: EventEmitter;
+    readonly idb: IndexedDBService;
+    readonly lang: LanguageManager;
+    readonly modules: ModuleSystem;
+    readonly state: TimeStateManager;
+    readonly tool: tools;
+    readonly audio: AudioManager;
+    readonly var: variables;
+    readonly char: CharacterManager;
+    readonly npc: NPCManager;
+    readonly combat: CombatManager;
+    readonly shop: ShopManager;
+    readonly modLoader: any;
+    readonly modUtils: any;
+    readonly SugarCube: SugarCube;
+    readonly addonPlugin: FrameworkAddon;
     constructor();
-
     log(msg: string, level?: string, ...objs: any[]): void;
     on(evt: string, handler: Function, desc?: string): boolean;
     off(evt: string, identifier: string | Function): boolean;
     once(evt: string, handler: Function, desc?: string): boolean;
     trigger(evt: string, ...args: any[]): Promise<void>;
-    register(name: string, module: any, dependencies?: string[]): Promise<boolean>;
+    register(name: string, module: any, dependencies?: string[], isExtension?: boolean|undefined): Promise<boolean>;
     preInit(): Promise<void>;
     init(): Promise<void>;
     loadInit(): Promise<void>;
@@ -229,7 +142,6 @@ declare global {
     set Language(lang: string);
     set LogLevel(level: string);
     set ExModCount(count: number);
-
     getModule(name: string): any;
     get Language(): 'CN' | 'EN';
     get LogLevel(): string;
@@ -237,46 +149,28 @@ declare global {
     get registeredModuleCount(): number;
     get dependencyGraph(): any;
     get yaml(): typeof yaml;
-    get modLoader(): any;
-    get modUtils(): any;
     get gameVersion(): string;
-
     #Ready(): void;
-
-    static meta: {
-      version: string;
-      name: string;
-      author: string;
-      modifiedby: string;
-      UpdateDate: string;
-      availableLanguages: string[];
-    };
+    static meta: { version: string; name: string; author: string; modifiedby: string; UpdateDate: string; availableLanguages: string[]; coreModules: string[]; earlyMount: string[] };
+    readonly Expansion: Expansion;
   }
 
   class Logger {
     constructor(core: MaplebirchCore);
-
     log(message: string, levelName?: string | number, ...objects: any[]): void;
-
     set LevelName(levelName: string);
     get LevelName(): string;
-
     static LogConfig: Record<string, {level: number, tag: string, style: string}>;
     static LogLevel: Record<string | number, string | number>;
   }
 
   class EventEmitter {
     constructor(core: MaplebirchCore);
-
     on(eventName: string, callback: Function, description?: string): boolean;
     off(eventName: string, identifier: Function | string): boolean;
     once(eventName: string, callback: Function, description?: string): boolean;
     trigger(eventName: string, ...args: any[]): void;
-
-    static streamConfig: {
-      batchSize: number;
-      yieldInterval: number;
-    };
+    static streamConfig: { batchSize: number; yieldInterval: number };
   }
 
   class IndexedDBService {
@@ -294,7 +188,6 @@ declare global {
     static DEFAULT_IMPORT_CONCURRENCY: number;
     static DEFAULT_BATCH_SIZE: number;
     static DEFAULT_PRELOAD_YIELD: number;
-    
     constructor(core: MaplebirchCore);
     translations: Map<string, string>;
     setLanguage(lang: string): void;
@@ -309,93 +202,60 @@ declare global {
   }
 
   class ModuleSystem {
-    static streamConfig: {
-      batchSize: number;
-      yieldInterval: number;
-    };
+    static streamConfig: { batchSize: number; yieldInterval: number };
     constructor(core: MaplebirchCore);
-    initPhase: {
-      preInitCompleted: boolean;
-      mainInitCompleted: boolean;
-      loadInitExecuted: boolean;
-      postInitExecuted: boolean;
-      expectedModuleCount: number;
-      registeredModuleCount: number;
-      allModuleRegisteredTriggered: boolean;
-    };
-    register(name: string, module: any, dependencies?: string[]): Promise<boolean>;
+    initPhase: { preInitCompleted: boolean; mainInitCompleted: boolean; loadInitExecuted: boolean; postInitExecuted: boolean; expectedModuleCount: number; registeredModuleCount: number; allModuleRegisteredTriggered: boolean };
+    register(name: string, module: any, dependencies?: string[], isExtension?: boolean|undefined): Promise<boolean>;
     setExpectedModuleCount(count: number): void;
-    getDependencyGraph(): Record<string, {
-      dependencies: string[];
-      dependents: string[];
-      state: string;
-      allDependencies: string[];
-    }>;
+    getDependencyGraph(): Record<string, { dependencies: string[]; dependents: string[]; state: string; allDependencies: string[] }>;
     preInit(): Promise<void>;
     init(): Promise<void>;
     loadInit(): Promise<void>;
     postInit(): Promise<void>;
   }
 
-  class MaplebirchFrameworkAddon {
-    constructor(core: MaplebirchCore, gSC2DataManager: any, gModUtils: any);
-    
+  class FrameworkAddon {
+    constructor(core: MaplebirchCore, gSC2DataManager: typeof modSC2DataManager, gModUtils: typeof modUtils);
     core: MaplebirchCore;
     gSC2DataManager: any;
     gModUtils: any;
     addonTweeReplacer: any;
     addonReplacePatcher: any;
-    modifyWeather: {
-      modifyWeatherJavaScript: () => any;
-    };
-    info: Map<string, {
-      addonName: string;
-      mod: any;
-      modZip: any;
-    }>;
-    logger: {
-      log: (message: string) => void;
-      error: (message: string) => void;
-    };
+    modifyWeather: { modifyWeatherJavaScript: () => any };
+    info: Map<string, { addonName: string; mod: any; modZip: any }>;
+    logger: { log: (message: string) => void; error: (message: string) => void };
     supportedConfigs: string[];
-    queue: Record<string, Array<{
-      modName: string;
-      modZip: any;
-      config: any;
-    }>>;
+    /** @type {Object<any, {modName: string, modZip: any, config: any}>} */
+    queue: Record<string, Array<{ modName: string; modZip: any; config: any }>>;
+    /** @type {Object<string, boolean>} */
     processed: Record<string, boolean>;
+    /** @type {Array<{modName: string, filePath: string, content: string}>} */
+    jsFiles: Array<{ modName: string; filePath: string; content: string }>;
     nowModName: string;
-    
     #vanillaDataReplace(): Promise<void>;
     #getModConfig(modInfo: { bootJson: { addonPlugin?: any[] } }): any;
     #simpleFrameworkCheck(): Promise<boolean>;
+    #JSInject(): Promise<void>;
     #processInit(): Promise<void>;
-    #processLanguage(): Promise<void>;
-    #processAudio(): Promise<void>;
-    #processFramework(): Promise<void>;
-    #addWidgetWithConditions(modName: string, zone: string, widget: string | {
-      widget: string;
-      exclude?: string[];
-      match?: RegExp;
-      passage?: string[];
-    }): void;
-    #handleTraits(modName: string, traitsConfig: any[]): void;
-    #addTrait(traitConfig: {
-      title: string | Function;
-      name: string | Function;
-      colour?: string | Function;
-      has?: boolean | string | Function;
-      text?: string | Function;
-    }): void;
-    #processNpc(): Promise<void>;
-    #processShop(): Promise<void>;
-    #processNpcSidebar(): Promise<void>;
-    #injectBSAImages(modName: string, modZip: any, imgPaths: string[]): Promise<void>;
-    
     registerMod(addonName: string, mod: { name: string; bootJson: { addonPlugin?: any[] } }, modZip: any): Promise<void>;
     InjectEarlyLoad_start(): Promise<void>;
+    PatchModToGame_end(): Promise<void>;
     afterPatchModToGame(): Promise<void>;
     beforePatchModToGame(): Promise<void>;
+  }
+
+  class Process {
+    static async Language(addon: FrameworkAddon): Promise<void>;
+    static async Audio(addon: FrameworkAddon): Promise<void>;
+    static async Framework(addon: FrameworkAddon): Promise<void>;
+    static async NPC(addon: FrameworkAddon): Promise<void>;
+    static async NPCSidebar(addon: FrameworkAddon): Promise<void>;
+    static async Shop(addon: FrameworkAddon): Promise<void>;
+    static async Script(addon: FrameworkAddon): Promise<void>;
+    static #addTrait(addon: FrameworkAddon, traitConfig: { title: string | Function; name: string | Function; colour?: string | Function; has?: boolean | Function; text?: string | Function }): void;
+    static #addWidget(addon: FrameworkAddon, modName: string, zone: string, widget: string | { widget: string; exclude?: string[]; match?: RegExp; passage?: string[] }): void;
+    static async #injectBSAImages(addon: FrameworkAddon, modName: string, modZip: any, imgPaths: string[]): Promise<void>;
+    static async #loadScriptFile(addon: FrameworkAddon, modName: string, modZip: any, filePath: string): Promise<void>;
   }
 
   class TimeStateManager {
@@ -404,10 +264,7 @@ declare global {
     TimeManager: TimeManager;
     StateManager: StateManager;
     passage: any;
-    solarEclipse: any;
-
     constructor();
-
     get Passage(): any;
     get modifyWeather(): any;
     regTimeEvent(type: string, eventId: string, options: any): void;
@@ -419,7 +276,6 @@ declare global {
     get StateEvents(): any;
     preInit(): Promise<void>;
     Init(): void;
-
     #shouldCollectPassage(passage: any): boolean;
   }
 
@@ -433,9 +289,7 @@ declare global {
     once: boolean;
     forceExit: boolean;
     extra: any;
-
     constructor(id: string, type: string, options?: any);
-
     tryRun(): [boolean, boolean, boolean] | null;
     #checkPassage(passageName: string): boolean;
     #check(): boolean;
@@ -443,14 +297,11 @@ declare global {
 
   class StateManager {
     static StateEvent: typeof StateEvent;
-
     manager: TimeStateManager;
     log: (message: string, level?: string, ...objects: any[]) => void;
     eventTypes: string[];
     stateEvents: { [key: string]: Map<string, StateEvent> };
-
     constructor(manager: TimeStateManager);
-
     trigger(type: string): string;
     #processInterruptEvents(passageName: string): string;
     #processOverlayEvents(passageName: string): string;
@@ -471,9 +322,7 @@ declare global {
     exact: boolean;
     accumulator: number;
     target: number;
-
     constructor(id: string, type: string, options?: any);
-
     tryRun(enhancedTimeData: any): boolean;
     #handleExactEvent(timeData: any): boolean;
     #handleAccumulateEvent(timeData: any): boolean;
@@ -487,7 +336,6 @@ declare global {
     static moonPhases: any;
     static monthNames: any;
     static daysOfWeek: any;
-
     log: (message: string, level?: string, ...objects: any[]) => void;
     eventTypes: string[];
     timeEvents: { [key: string]: Map<string, TimeEvent> };
@@ -496,9 +344,7 @@ declare global {
     originalTimePass: Function;
     cumulativeTime: any;
     lastReportedCumulative: any;
-
     constructor(manager: TimeStateManager);
-
     #trigger(type: string, timeData: any): void;
     #updateCumulativeTime(passedSeconds: number): void;
     #triggerTimeEventsWithCumulative(timeData: any): void;
@@ -513,19 +359,9 @@ declare global {
   }
 
   class DateTime {
-    constructor(
-      year?: number,
-      month?: number,
-      day?: number,
-      hour?: number,
-      minute?: number,
-      second?: number
-    );
-
+    constructor(year?: number, month?: number, day?: number, hour?: number, minute?: number, second?: number);
     constructor(timestamp: number);
-
     constructor(dateTime: DateTime);
-
     readonly year: number;
     readonly month: number;
     readonly day: number;
@@ -545,14 +381,7 @@ declare global {
     readonly simplifiedDayFactor: number;
     readonly fractionOfYear: number;
     readonly seasonFactor: number;
-    compareWith(otherDateTime: DateTime,getSeconds?: boolean): {
-      years: number;
-      months: number;
-      days: number;
-      hours: number;
-      minutes: number;
-      seconds: number;
-    }|number;
+    compareWith(otherDateTime: DateTime, getSeconds?: boolean): { years: number; months: number; days: number; hours: number; minutes: number; seconds: number } | number;
     dayDifference(otherDateTime: DateTime): number;
     getFirstWeekdayOfMonth(weekDay: number): DateTime;
     getNextWeekdayDate(weekDay: number): DateTime;
@@ -574,16 +403,13 @@ declare global {
 
   class AudioManager {
     static ModAudioPlayer: typeof ModAudioPlayer;
-    
     constructor(core: MaplebirchCore);
-    
     log: (message: string, level?: string, ...objects: any[]) => void;
     audioContext: AudioContext | null;
     idbManager: AudioIDBManager;
     modPlayers: Map<string, ModAudioPlayer>;
     allAudioKeysCache: string[];
     volume: number;
-    
     initAudioContext(): void;
     decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer>;
     loadAudio(key: string, arrayBuffer: ArrayBuffer, modName?: string): Promise<boolean>;
@@ -593,13 +419,10 @@ declare global {
     getModAudioKeys(modName: string): Promise<string[]>;
     refreshCache(modName?: string): Promise<void>;
     refreshAllCache(): Promise<void>;
-    
     set Volume(volume: number);
     get Volume(): number;
     get allAudioKeys(): string[];
-    
     preInit(): Promise<void>;
-    
     #refreshAllAudioKeys(): Promise<void>;
     #playWithBuffer(audioBuffer: AudioBuffer, key: string, options: any): any;
   }
@@ -607,16 +430,13 @@ declare global {
   class AudioIDBManager {
     static DATABASE_NAME: string;
     static DATABASE_VERSION: number;
-    
     constructor(core: MaplebirchCore);
-    
     init(): Promise<void>;
     store(key: string, arrayBuffer: ArrayBuffer, modName: string): Promise<boolean>;
     get(key: string): Promise<ArrayBuffer | null>;
     getModKeys(modName: string): Promise<string[]>;
     clearStore(storeName?: string): Promise<void>;
     withTransaction(storeNames: string|string[], mode: IDBTransactionMode, callback: (tx: any) => Promise<any>): Promise<any>;
-    
     #initIndexedDB(): void;
   }
 
@@ -631,9 +451,7 @@ declare global {
     defaultLoopCount: number;
     bufferCache: Map<string, AudioBuffer>;
     audioKeysCache: string[];
-
     constructor(audioManager: AudioManager, modName: string);
-
     initGainNode(): void;
     getAudioBuffer(key: string): Promise<AudioBuffer>;
     play(key: string, options?: AudioPlayOptions): Promise<any | null>;
@@ -671,11 +489,8 @@ declare global {
     framework: frameworks;
     linkzone: typeof applyLinkZone;
     other: others;
-
-    modhint: modhint;
     console: consoleTools;
     cheat: cheat;
-
     clone: typeof clone;
     merge: typeof merge;
     equal: typeof equal;
@@ -685,10 +500,8 @@ declare global {
     either: typeof either;
     loadImage: typeof loadImage;
     convert: typeof convert;
-
     constructor();
     core: MaplebirchCore;
-
     createLog(prefix: string): (message: string, level?: string, ...objects: any[]) => void;
     preInit(): Promise<void>;
     Init(): void;
@@ -722,11 +535,7 @@ declare global {
     static init(createLog: (logname: string) => (message: string, level?: string, ...objects: any[]) => void): void;
     constructor();
     log: (message: string, level?: string, ...objects: any[]) => void;
-    state: {
-      seed: number | null;
-      history: number[];
-      pointer: number;
-    };
+    state: { seed: number | null; history: number[]; pointer: number };
     Seed: number | null;
     get(max: number): number;
     readonly rng: number;
@@ -737,7 +546,6 @@ declare global {
 
   class defineWidget {
     constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-
     _getMacro(data: any): boolean;
     defineMacro(macroName: string, macroFunction: Function, tags?: any[], skipArgs?: boolean, isAsync?: boolean): void;
     defineMacroS(macroName: string, macroFunction: Function, tags?: any, skipArgs?: boolean, maintainContext?: boolean): void;
@@ -748,7 +556,6 @@ declare global {
 
   class htmlTools {
     constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-
     _getWikifier(wikifier: any): boolean;
     reg(key: string, handler: Function, id?: string): string | false;
     unreg(key: string, idOrHandler?: string | Function): boolean;
@@ -760,7 +567,6 @@ declare global {
 
   class frameworks {
     constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-
     data: FrameworkData;
     initFunction: any[];
     specialWidget: any[];
@@ -769,7 +575,6 @@ declare global {
     patchedPassage: Set<string>;
     locationPassage: any;
     widgetPassage: any;
-
     onInit(...widgets: any[]): void;
     addTo(zone: string, ...widgets: any[]): void;
     storyInit(): void;
@@ -817,19 +622,11 @@ declare global {
     NPCspawn: any[];
   }
 
-  const applyLinkZone: typeof LinkZoneManager & {
-    apply(userConfig?: Partial<LinkZoneConfig>): boolean;
-    add(config: LinkZoneConfig): void;
-    removeZones(): void;
-    readonly defaultConfig: LinkZoneConfig;
-  };
-
+  const applyLinkZone: typeof LinkZoneManager & { apply(userConfig?: Partial<LinkZoneConfig>): boolean; add(config: LinkZoneConfig): void; removeZones(): void; readonly defaultConfig: LinkZoneConfig };
   class LinkZoneManager {
     constructor(containerId?: string, linkSelector?: string, logger?: (message: string, level?: string, ...objects: any[]) => void);
-
     detectLinks(): LinkDetectionResult | null;
     applyZones(config: LinkZoneConfig): boolean;
-
     #resetState(): void;
     #detectLineBreakBeforeFirstLink(): void;
     #isLineBreakNode(node: Node): boolean;
@@ -840,13 +637,7 @@ declare global {
     #applyAfterLinkZone(config: LinkZoneConfig): void;
   }
 
-  interface LinkDetectionResult {
-    firstLink: Element;
-    lastLink: Element;
-    totalLinks: number;
-    lineBreakBeforeFirstLink: Node | null;
-  }
-
+  interface LinkDetectionResult { firstLink: Element; lastLink: Element; totalLinks: number; lineBreakBeforeFirstLink: Node | null }
   interface LinkZoneConfig {
     containerId?: string;
     linkSelector?: string;
@@ -861,14 +652,11 @@ declare global {
 
   class others {
     constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-
     static traitCategories: { [key: string]: string };
     static getTraitCategory(englishName: string): string;
-
     traitsTitle: string[];
     traitsData: any[];
     locationUpdates: any;
-
     addTraits(...data: any[]): void;
     initTraits(data: any): boolean;
     configureLocation(locationId: string, config: any, options?: { overwrite?: boolean; layer?: string; element?: string }): boolean;
@@ -880,7 +668,6 @@ declare global {
 
   class modhint {
     constructor(logger: (message: string, level?: string, ...objects: any[]) => void);
-
     hintClicked(): void;
     searchButtonClicked(): void;
     clearButtonClicked(): void;
@@ -893,9 +680,7 @@ declare global {
 
   class cheat {
     constructor();
-    
     cache: CheatEntry[];
-    
     initDB(): Promise<void>;
     refreshCache(): Promise<void>;
     add(name: string, code: string): Promise<boolean>;
@@ -913,14 +698,10 @@ declare global {
     HTML(cheats?: CheatEntry[]): string;
   }
 
-  interface CheatEntry {
-    name: string;
-    code: string;
-    type: 'javascript' | 'twine';
-  }
+  interface CheatEntry { name: string; code: string; type: 'javascript' | 'twine' }
 
-  class variablesModule {
-    check(): void;
+  class variables {
+    optionsCheck(): void;
     version: string;
     tool: tools;
     log: (message: string, level?: string, ...objects: any[]) => void;
@@ -935,7 +716,7 @@ declare global {
   class CharacterManager {
     tool: tools;
     log: (message: string, level?: string, ...objects: any[]) => void;
-    transformation: { inject: () => void; };
+    transformation: { inject: () => void };
     constructor();
     #renderCharacter(): Promise<void>;
     #renderOverlay(): Promise<void>;
@@ -953,22 +734,13 @@ declare global {
     data: Map<string, { Data: NamedNPC; Config: NPCConfig }>;
     NamedNPC: typeof NamedNPC;
     Schedules: typeof NPCSchedules;
-    pregnancy: {
-      infertile: string[];
-      typesEnabled: string[];
-      canBePregnant: string[];
-    };
-    type: {
-      loveInterestNpcs: string[];
-      importantNPCs: string[];
-      specialNPCs: string[];
-    };
-    romanceConditions: { [x: string]: (() => any)[]; };
+    pregnancy: { infertile: string[]; typesEnabled: string[]; canBePregnant: string[] };
+    type: { loveInterestNpcs: string[]; importantNPCs: string[]; specialNPCs: string[] };
+    romanceConditions: { [x: string]: (() => any)[] };
     NPCNameList: string[];
     customStats: Record<string, NPCStatConfig>;
     Sidebar: NPCSidebar;
     Clothes: typeof NPCClothes;
-
     constructor(manager: any);
     add(npcData: NPCData, config?: NPCConfig, translationsData?: Record<string, any>): boolean;
     addStats(statsObject: Record<string, NPCStatConfig>): void;
@@ -981,7 +753,6 @@ declare global {
     Init(): void;
     loadInit(): void;
     postInit(): void;
-    
     addSchedule(npcName: string, scheduleConfig: ScheduleConfig, location: string | ((date: EnhancedDate) => string), options?: ScheduleOptions): Schedule;
     getSchedule(npcName: string): Schedule;
     updateSchedule(npcName: string, specialId: number, updates: Partial<ScheduleSpecial>): Schedule;
@@ -1010,42 +781,17 @@ declare global {
     specials: ScheduleSpecial[];
     location: string;
     sortedSpecials: ScheduleSpecial[] | null;
-    
-    add(
-      scheduleConfig: ScheduleConfig, 
-      location: string | Schedule | ((date: EnhancedDate) => string | Schedule), 
-      options?: ScheduleOptions
-    ): Schedule;
-    
-    set(
-      scheduleConfig: ScheduleConfig, 
-      location: string | Schedule | ((date: EnhancedDate) => string | Schedule), 
-      options?: ScheduleOptions
-    ): Schedule;
-    
-    if(
-      condition: (date: EnhancedDate) => boolean, 
-      location: string | Schedule | ((date: EnhancedDate) => string | Schedule), 
-      options?: ScheduleOptions
-    ): Schedule;
-    
+    add(scheduleConfig: ScheduleConfig, location: string | Schedule | ((date: EnhancedDate) => string | Schedule), options?: ScheduleOptions): Schedule;
+    set(scheduleConfig: ScheduleConfig, location: string | Schedule | ((date: EnhancedDate) => string | Schedule), options?: ScheduleOptions): Schedule;
+    if(condition: (date: EnhancedDate) => boolean, location: string | Schedule | ((date: EnhancedDate) => string | Schedule), options?: ScheduleOptions): Schedule;
     update(specialId: number, updates: Partial<ScheduleSpecial>): Schedule;
     remove(specialId: number): Schedule;
-    resolveLocation(
-      loc: string | Schedule | ((date: EnhancedDate) => string | Schedule), 
-      date: EnhancedDate
-    ): string;
+    resolveLocation(loc: string | Schedule | ((date: EnhancedDate) => string | Schedule), date: EnhancedDate): string;
     createEnhancedDate(date: DateTime): EnhancedDate;
     buildEnhancedDateProto(): EnhancedDateProto;
   }
 
-  interface ScheduleSpecial {
-    id: number;
-    condition: (date: EnhancedDate) => boolean;
-    location: string | Schedule | ((date: EnhancedDate) => string | Schedule);
-    priority: number;
-  }
-
+  interface ScheduleSpecial { id: number; condition: (date: EnhancedDate) => boolean; location: string | Schedule | ((date: EnhancedDate) => string | Schedule); priority: number }
   interface EnhancedDate extends DateTime {
     readonly schedule: Schedule;
     isAt(time: [number, number] | number): boolean;
@@ -1064,7 +810,6 @@ declare global {
     readonly dusk: boolean;
     readonly night: boolean;
     readonly weekEnd: boolean;
-    
     [key: string]: any;
   }
 
@@ -1088,51 +833,23 @@ declare global {
     readonly weekEnd: boolean;
   }
 
-  type ScheduleConfig = [number, number]|number|((date: EnhancedDate) => boolean)|{ condition: (date: EnhancedDate) => boolean };
-
-  interface ScheduleOptions {
-    id?: string | number;
-    priority?: number;
-    [key: string]: any;
-  }
-
-  interface ScheduleSpecial {
-    id: number;
-    condition: (date: EnhancedDate) => boolean;
-    location: string|Schedule|((date: EnhancedDate) => string|Schedule);
-    priority: number;
-  }
+  type ScheduleConfig = [number, number] | number | ((date: EnhancedDate) => boolean) | { condition: (date: EnhancedDate) => boolean };
+  interface ScheduleOptions { id?: string | number; priority?: number; [key: string]: any }
+  interface ScheduleSpecial { id: number; condition: (date: EnhancedDate) => boolean; location: string | Schedule | ((date: EnhancedDate) => string | Schedule); priority: number }
 
   class NPCClothes {
     static log: (msg: string, level?: string) => void;
     manager: NPCManager;
     clothes: Map<string, NPCClothingItem>;
     outfits: string[];
-
     constructor(manager?: NPCManager);
-
     static add(...configs: NPCClothesConfig[]): void;
     static init(manager: { log: (msg: string, level?: string) => void }): void;
     importNPCClothesData(modName: string, filePath: string): Promise<boolean>;
     #processClothesData(data: any): boolean;
   }
 
-  interface NPCClothingItem {
-    over_upper?: any;
-    over_lower?: any;
-    upper?: any;
-    lower?: any;
-    under_upper?: any;
-    under_lower?: any;
-    over_head?: any;
-    head?: any;
-    face?: any;
-    neck?: any;
-    legs?: any;
-    feet?: any;
-    genital?: any;
-    [key: string]: any;
-  }
+  interface NPCClothingItem { over_upper?: any; over_lower?: any; upper?: any; lower?: any; under_upper?: any; under_lower?: any; over_head?: any; head?: any; face?: any; neck?: any; legs?: any; feet?: any; genital?: any; [key: string]: any }
 
   interface NPCData {
     nam: string;
@@ -1162,39 +879,16 @@ declare global {
     [key: string]: any;
   }
 
-  interface NPCConfig {
-    love?: { maxValue: number };
-    loveAlias?: [string, string] | (() => string);
-    important?: boolean | (() => boolean);
-    special?: boolean | (() => boolean);
-    loveInterest?: boolean | (() => boolean);
-    [key: string]: any;
-  }
-
-  interface NPCStatConfig {
-    position?: number | 'first' | 'last' | 'secondLast' | false;
-    [key: string]: any;
-  }
+  interface NPCConfig { love?: { maxValue: number }; loveAlias?: [string, string] | (() => string); important?: boolean | (() => boolean); special?: boolean | (() => boolean); loveInterest?: boolean | (() => boolean); [key: string]: any }
+  interface NPCStatConfig { position?: number | 'first' | 'last' | 'secondLast' | false; [key: string]: any }
 
   interface NPCClothesConfig {
     name: string;
     type?: string;
     gender?: 'm' | 'f' | 'n';
     outfit?: number;
-    upper: string | {
-      name: string;
-      integrity_max?: number;
-      word?: 'a' | 'n';
-      action?: string;
-      desc?: string;
-    };
-    lower: string | {
-      name: string;
-      integrity_max?: number;
-      word?: 'a' | 'n';
-      action?: string;
-      desc?: string;
-    };
+    upper: string | { name: string; integrity_max?: number; word?: 'a' | 'n'; action?: string; desc?: string };
+    lower: string | { name: string; integrity_max?: number; word?: 'a' | 'n'; action?: string; desc?: string };
     desc?: string;
   }
 
@@ -1224,7 +918,6 @@ declare global {
     init: number;
     intro: number;
     pronouns: Record<string, string>;
-
     static add: (manager: any, npcData: NPCData, config?: NPCConfig, translationsData?: Record<string, any>) => boolean;
     static get: (manager: any) => NPCData[];
     static clear: (manager: any) => boolean;
@@ -1232,32 +925,51 @@ declare global {
     static setup: (manager: any) => void;
   }
 
-  class NPCSidebar {
-    init(force?: boolean): void;
-    static get ZIndices(): any;
-    display: object;
+  class NPCSidebar { init(force?: boolean): void; static get ZIndices(): any; display: object }
+
+  class CombatManager {
+    constructor(core: MaplebirchCore);
+    log: (msg: string, level?: string, ...objs: any[]) => void;
+    Reaction: {
+      Triggers: { herm: Array<{ npc: string; cond: Function; action: Function }>; crossdress: Array<{ npc: string; cond: Function; action: Function }> };
+      HermNameList: string[];
+      CDNameList: string[];
+      reg: (type: 'herm'|'crossdress', npc: string, cond: Function, action: Function) => void;
+      regReaction: (type:'herm'|'crossdress', npc: string, config: any) => void;
+      check: (type: 'herm'|'crossdress') => string;
+      init: () => void;
+    };
+    CombatAction: {
+      actions: Map<string, { actionType: string; cond: any; display: any; value: any; color?: string; difficulty?: string; combatType?: string; order?: number }>;
+      reg: (...actionConfigs: Array<{ id: string; actionType: string; cond: any; display: any; value: any; color?: string; difficulty?: string; combatType?: string; order?: number }>) => any;
+      _eval: (fnOrValue: Function | any, ctx: any) => any;
+      action: (optionsTable: { [key: string]: any }, actionType: string, combatType: string) => { [key: string]: any };
+      color: (action: string, encounterType: string) => string | null;
+      difficulty: (action: string, combatType: string) => string | null;
+    };
+    Speech: {
+      speechs: Map<string, Array<{ cond: Function; speech: string; cd: number; current: number }>>;
+      reg: (npc: string, cond: Function, speech: string, cd: number) => void;
+      output: (npc: string) => string;
+      init: () => void;
+    };
+    _generateCombatAction: () => Function;
+    _combatListColor: (name: any, value: any, type: string) => string;
+    _combatButtonAdjustments: (name: string, extra: any) => string;
+    ejaculation: (index: number, ...args: string[]) => string;
+    Init: () => void;
   }
 
   class ShopManager {
-    static categoryMap: {
-      [key: string]: {
-        icon: string;
-        text: string;
-        widget: string;
-      };
-    };
-
+    static categoryMap: { [key: string]: { icon: string; text: string; widget: string } };
     tool: any;
     log: (message: string, level?: string, ...objects: any[]) => void;
     widgets: string[];
     passages: Array<{ name: string; content: string }>;
     shopText: Record<string, string[]>;
-
     constructor();
-
     loadShopFromJson(modName: string, path: string): Promise<boolean>;
     regShop(shopName: string, clothesType: string[], type?: string[], content?: Record<string, any>, options?: Record<string, any>): void;
-
     #Text(shopName: string, type?: string[], content?: Record<string, any>): void;
     #processContentItem(item: any, output: any): void;
     #shopPassageCreate(shopName: string): string;
@@ -1266,6 +978,10 @@ declare global {
     #passageInit(passageData: Map<string, any>): Promise<Map<string, any>>;
     beforePatchModToGame(): Promise<void>;
     preInit(): void;
+  }
+
+  class Expansion {
+    modhint: modhint;
   }
 
   const yaml: {
@@ -1281,39 +997,6 @@ declare global {
     CORE_SCHEMA: any;
   };
 
-  const SugarCube: SugarCube;
-
-  const setup: any;
-  const Macro: {
-    add(name: string, definition: any): void;
-    delete(name: string): void;
-    get(name: string): any;
-    has(name: string): boolean;
-    [key: string]: any;
-  };
-  const Engine: {
-    States: object;
-    go(): any;
-    show(): void;
-    play(title: string, noHistory: boolean): void;
-  };
-  const Story: {
-    title: string;
-    get(title: string): any;
-    has(title: string): boolean;
-  }
-  const State: {
-    variables: any;
-    temporary: any;
-    active: any;
-    passage: any;
-    title: string;
-    [key: string]: any;
-  };
-  const Config: any;
-  const V: any;
-  const T: any;
-  const C: any;
   const Time: {
     readonly date: DateTime;
     readonly holidayMonths: number[];
@@ -1364,32 +1047,12 @@ declare global {
     isWeekEnd(): boolean;
     readonly monthNames: string[];
   };
-  const Weather: {
-    rain: boolean;
-    thunder: boolean;
-    snow: boolean;
-    cloud: boolean;
-    windy: boolean;
-    fog: boolean;
-    [key: string]: any;
-  };
-
-  const Dynamic: {
-    [key: string]: any;
-  };
-
-  const TimeConstants: {
-    standardYearMonths: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    leapYearMonths: [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    secondsPerDay: 86400;
-    secondsPerHour: 3600;
-    secondsPerMinute: 60;
-    synodicMonth: 29.530588;
-  };
+  const Weather: { rain: boolean; thunder: boolean; snow: boolean; cloud: boolean; windy: boolean; fog: boolean; [key: string]: any };
+  const Dynamic: { [key: string]: any };
+  const TimeConstants: { standardYearMonths: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; leapYearMonths: [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; secondsPerDay: 86400; secondsPerHour: 3600; secondsPerMinute: 60; synodicMonth: 29.530588 };
 
   const $: JQueryStatic;
   const jQuery: JQueryStatic;
-
   interface JQueryStatic {
     (selector: string, context?: Element | Document | JQuery): JQuery;
     (element: Element | Document | Window): JQuery;
@@ -1420,26 +1083,10 @@ declare global {
     css(propertyName: string): string;
     css(propertyName: string, value: string | number): this;
     css(properties: Record<string, string | number>): this;
-    on(
-      events: string,
-      handler: (event: JQueryEventObject, ...args: any[]) => void
-    ): this;
-    on(
-      events: string,
-      selector: string,
-      handler: (event: JQueryEventObject, ...args: any[]) => void
-    ): this;
-    on(
-      events: string,
-      data: any,
-      handler: (event: JQueryEventObject, ...args: any[]) => void
-    ): this;
-    on(
-      events: string,
-      selector: string,
-      data: any,
-      handler: (event: JQueryEventObject, ...args: any[]) => void
-    ): this;
+    on(events: string, handler: (event: JQueryEventObject, ...args: any[]) => void): this;
+    on(events: string, selector: string, handler: (event: JQueryEventObject, ...args: any[]) => void): this;
+    on(events: string, data: any, handler: (event: JQueryEventObject, ...args: any[]) => void): this;
+    on(events: string, selector: string, data: any, handler: (event: JQueryEventObject, ...args: any[]) => void): this;
     off(events?: string, selector?: string, handler?: Function): this;
     click(handler?: (event: JQueryEventObject) => void): this;
     trigger(eventType: string, extraParameters?: any[] | object): this;
@@ -1506,39 +1153,24 @@ declare global {
   function ordinalSuffixOf(i: number): number;
   function wikifier(widget: any, ...args: any[]): any;
   function drawCondition(): boolean;
-
   const ColourUtils: any;
-
-  function clone<T>(source: T, opt?: { deep?: boolean; proto?: boolean; }, map?: WeakMap<any, any>): T;
-
+  function clone<T>(source: T, opt?: { deep?: boolean; proto?: boolean }, map?: WeakMap<any, any>): T;
   function merge(target: any, ...sources: any[]): any;
-
   function equal(a: any, b: any): boolean;
-
   function contains<T>(arr: T[], value: T, mode?: 'all' | 'any' | 'none', opt?: ContainsOptions<T>): boolean;
   function contains<T>(arr: T[], value: T[], mode?: 'all' | 'any' | 'none', opt?: ContainsOptions<T>): boolean;
-
   function random(): number;
   function random(max: number): number;
   function random(min: number, max: number, float?: boolean): number;
   function random(opt: { min?: number; max?: number; float?: boolean }): number;
-
   function either(items: any[], opt?: { weights?: number[]; null?: boolean }): any;
   function either(...args: any[]): any;
-
   function loadImage(src: string): Promise<string>;
-
   function convert(str: string, mode?: 'upper' | 'lower' | 'capitalize' | 'title' | 'camel' | 'pascal' | 'snake' | 'kebab' | 'constant', opt?: { delimiter?: string; acronym?: boolean }): string;
-
-  interface ContainsOptions<T> {
-    case?: boolean;
-    compare?: (item: T, value: T) => boolean;
-    deep?: boolean;
-  }
+  interface ContainsOptions<T> { case?: boolean; compare?: (item: T, value: T) => boolean; deep?: boolean }
 
   class SelectCase {
     constructor();
-
     case(condition: any, result: any): SelectCase;
     casePredicate(fn: (input: any, meta: any) => boolean, result: any): SelectCase;
     caseRange(min: number, max: number, result: any): SelectCase;
@@ -1550,30 +1182,13 @@ declare global {
     match(input: any, meta?: any): any;
   }
 
-  const Renderer: {
-    CanvasModels: {
-      main: any;
-    };
-    [key: string]: any;
-  };
-
-  const StartConfig: {
-    debug: boolean;
-    enableImages: boolean;
-    enableLinkNumberify: boolean;
-    version: string;
-    versionName: string;
-    sneaky: boolean;
-    socialMediaEnabled: boolean;
-    sourceLinkEnabled: boolean;
-  };
-
+  const Renderer: { CanvasModels: { main: any }; [key: string]: any };
+  const StartConfig: { debug: boolean; enableImages: boolean; enableLinkNumberify: boolean; version: string; versionName: string; sneaky: boolean; socialMediaEnabled: boolean; sourceLinkEnabled: boolean };
   const modSC2DataManager: any;
   const modUtils: any;
   const addonBeautySelectorAddon: any;
   const addonTweeReplacer: any;
   const addonReplacePatcher: any;
-
   function lanSwitch(text: any): string;
   function lanSwitch(english: string, chinese: string, ...args: any[]): string;
   function lanSwitch(options: { EN: string; CN: string; [key: string]: string }): string;
@@ -1582,11 +1197,11 @@ declare global {
   function getRobinLocation(): string;
   function sydneySchedule(): void;
   const combatActionColours: CombatActionColours;
-  interface CombatActionColours { [category: string]: { [attitude: string]: string[]; }; }
-  let combatListColor: (name:any, value:any, type?:any) => any;
-  function hasSexStat(input:string,required:number,modifiers?:boolean):boolean;
-  let isPossibleLoveInterest: (name:string) => boolean;
-  const ZIndices: {[key: string]: number};
+  interface CombatActionColours { [category: string]: { [attitude: string]: string[] } }
+  let combatListColor: (name: any, value: any, type?: any) => any;
+  function hasSexStat(input: string, required: number, modifiers?: boolean): boolean;
+  let isPossibleLoveInterest: (name: string) => boolean;
+  const ZIndices: { [key: string]: number };
 }
 
 export {};

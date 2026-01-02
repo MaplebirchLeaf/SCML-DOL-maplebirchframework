@@ -1,20 +1,13 @@
 {
   "name": "maplebirch",
   "nickName": {
-    "en": "Maplebirch",
-    "cn": "秋枫白桦"
+    "en": "maplebirchFramework",
+    "cn": "秋枫白桦框架"
   },
   "alias": ["Simple Frameworks"], 
-  "version": "2.6.5",
-  "imgFileList": [
-    "img/misc/sky/solar-eclipse-0.png",
-    "img/misc/sky/solar-eclipse-1.png",
-    "img/misc/sky/solar-eclipse-2.png"
-  ],
-  "styleFileList": [
-    "styles/maplebirch-styles.css",
-    "styles/maplebirchPanel​.css"
-  ],
+  "version": "2.7.1",
+  "imgFileList": [],
+  "styleFileList": ["styles/maplebirch-styles.css"],
   "scriptFileList": [
     "data/defineSugarCube.js",
     "data/vanillaNPCSchedule.js"
@@ -63,5 +56,56 @@
     "translations/cn.yaml",
     "data/npcClothesData.yaml"
   ],
-  "addonPlugin": []
+  "addonPlugin": [
+    {
+      "modName": "ModdedClothesAddon",
+      "addonName": "ModdedClothesAddon",
+      "modVersion": "^1.1.0",
+      "params": {
+
+      }
+    },
+    {
+      "modName": "TweeReplacer",
+      "addonName": "TweeReplacerAddon",
+      "modVersion": "1.0.0",
+      "params": [
+      ]
+    },
+    {
+      "modName": "ModLoader DoL ImageLoaderHook",
+      "addonName": "ImageLoaderAddon",
+      "modVersion": "^2.3.0",
+      "params": []
+    },
+    {
+      "modName": "ReplacePatcher",
+      "addonName": "ReplacePatcherAddon",
+      "modVersion": "1.0.0",
+      "params": {
+        "js": [
+          
+        ]
+      }
+    },
+    {
+      "modName": "ModdedFeatsAddon",
+      "addonName": "ModdedFeatsAddon",
+      "modVersion": "^1.0.0",
+      "params": {
+        "feats": [
+
+        ]
+      }
+    },
+    {
+      "modName": "BeautySelectorAddon",
+      "addonName": "BeautySelectorAddon",
+      "modVersion": "^2.0.0",
+      "params": {
+       "types": [
+        ]
+      }
+    }
+  ]
 }

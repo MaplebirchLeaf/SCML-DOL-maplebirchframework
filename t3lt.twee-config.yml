@@ -1,0 +1,19 @@
+sugarcube-2:
+  macros:
+    clearDivineTransformations:
+      name: clearDivineTransformations
+    lanLink:
+      name: lanLink
+      container: true
+    lanSwitch:
+      name: lanSwitch
+    icon:
+      name: icon
+    clearAnimalTransformations:
+      name: clearAnimalTransformations
+    updatesidebarimg:
+      name: updatesidebarimg
+    transformationAlteration:
+      name: transformationAlteration
+    numberStepper:
+      name: numberStepper

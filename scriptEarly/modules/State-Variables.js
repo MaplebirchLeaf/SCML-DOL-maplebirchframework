@@ -1,20 +1,12 @@
-// @ts-check
+// @ts-optionsCheck
 /// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
 
-  const currentVersion = '1.0.4';
+  const currentVersion = '1.0.5';
 
-  class variablesModule {
+  class variables {
     static options = {
-      modHint: 'disable',
-      debug: false,
-      sandbox: {
-        V: true,
-        T: true,
-        maplebirch: false,
-        window: false
-      },
       npcsidebar: {
         show: false,
         model: false,
@@ -22,24 +14,7 @@
         display: {}
       },
       relationcount: 4,
-      solarEclipse: true,
-      bodywriting: false,
       npcschedules: false
-    }
-
-    static audio = {
-      playlist: null,
-      currentTrack: null,
-      currentIndex: -1,
-      loopMode: 'none',
-      currentAudio: null,
-      storage: {}
-    }
-
-    static combat = {
-      npcList: [],
-      enemy:   {},
-      sex: {},
     }
 
     static player = {
@@ -47,12 +22,9 @@
     }
 
     static defaultVar = {
-      audio:      variablesModule.audio,
-      combat:     variablesModule.combat,
-      player:     variablesModule.player,
+      player:     variables.player,
       npc:            {},
       transformation: {},
-      wardrobeSearch: '',
     };
     
     /** @param {MaplebirchCore} core */
@@ -61,8 +33,7 @@
       this.tool = core.tool;
       this.log = this.tool.createLog('var');
       this.migration = new this.tool.migration();
-      core.once(':passageinit', () => this.check());
-      core.once(':finally', () => this.check());
+      core.once(':passageend', () => this.optionsCheck());
     }
 
     #mapProcessing() {
@@ -72,31 +43,24 @@
       });
     }
 
-    check() {
-      if (typeof V.maplebirch !== 'object' || V.maplebirch === null) V.maplebirch = {};
+    optionsCheck() {
+      if (typeof V.maplebirch !== 'object' || V.maplebirch == null) V.maplebirch = {};
       if (typeof V.maplebirch.language !== 'string') V.maplebirch.language = maplebirch.Language;
-      if (!V.options) return;
       if (typeof V.options?.maplebirch !== 'object' || V.options?.maplebirch === null) {
-        V.options.maplebirch = this.tool.clone(variablesModule.options);
+        V.options.maplebirch = this.tool.clone(variables.options);
       } else {
-        /**@type {any}*/const defaultOptions = variablesModule.options;
-        for (const key in defaultOptions) if (!(key in V.options.maplebirch)) V.options.maplebirch[key] = this.tool.clone(defaultOptions[key]);
+        for (const key in variables.options) if (!(key in V.options.maplebirch)) V.options.maplebirch[key] = this.tool.clone(variables.options[key]);
       }
     }
 
     Init() {
       try {
-        if (this.tool.core.state.passage.title === 'Start2') {
-          V.maplebirch = this.tool.clone({
-            ...variablesModule.defaultVar,
-            version: this.version
-          });
-          this.log(`新游戏数据初始化完成 (v${this.version})`, 'DEBUG');
+        if (this.tool.core.state.Passage?.title === 'Start2') {
+          V.maplebirch = this.tool.clone({ ...variables.defaultVar, version: this.version });
           return;
         }
         this.migration.run(V.maplebirch, this.version);
         $.wiki('<<maplebirchDataInit>>');
-        this.log(`存档数据迁移完成 (→ v${this.version})`, 'DEBUG');
       } catch (/**@type {any}*/e) {
         this.log(`出现错误：${e?.message || e}`, 'ERROR');
       }
@@ -104,14 +68,12 @@
 
     loadInit() {
       try {
-        this.check();
+        this.optionsCheck();
         this.migration.run(V.maplebirch, this.version);
         $.wiki('<<maplebirchDataInit>>');
-        this.log(`读档迁移/修正完成 (→ v${this.version})`, 'DEBUG');
       } catch (/**@type {any}*/e) {
         this.log(`读档迁移出错: ${e?.message || e}`, 'ERROR');
       }
-      
     }
 
     postInit() {
@@ -127,5 +89,5 @@
     }
   }
 
-  await maplebirch.register('var', new variablesModule(maplebirch), ['tool']);
+  await maplebirch.register('var', new variables(maplebirch), ['tool']);
 })();
