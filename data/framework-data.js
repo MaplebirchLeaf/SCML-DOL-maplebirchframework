@@ -108,17 +108,17 @@
       <div class='settingsGrid'><<run maplebirch.trigger('update')>>
         <div id='ConsoleCheat' class='settingsToggleItemWide'>
           <details class='JSCheatConsole'>
-            <summary class='JSCheatConsole'>JavaScript <<lanSwitch 'Code Cheater' '作弊器'>></summary>
+            <summary class='JSCheatConsole'><span class='light-blue'>JavaScript <<lanSwitch 'Code Cheater' '作弊器'>></span></summary>
             <div class='searchButtons'>
               <div class='input-row'><<textbox '_maplebirchJSCheatConsole' ''>><<lanButton 'execute' 'capitalize'>><<run maplebirch.tool.console.execute('javascript')>><</lanButton>></div>
-              <span id='js-cheat-console-status' class='cheat-console-status'></span>
+              <span id='js-cheat-console-status'></span>
             </div>
           </details>
           <details class='TwineCheatConsole'>
-            <summary class='TwineCheatConsole'>Twine <<lanSwitch 'Code Cheater' '作弊器'>></summary>
+            <summary class='TwineCheatConsole'><span class='brightpurple'>Twine <<lanSwitch 'Code Cheater' '作弊器'>></span></summary>
             <div class='searchButtons'>
               <div class='input-row'><<textbox '_maplebirchTwineCheatConsole' ''>><<lanButton 'execute' 'capitalize'>><<run maplebirch.tool.console.execute('twine')>><</lanButton>></div>
-              <span id='twine-cheat-console-status' class='cheat-console-status'></span>
+              <span id='twine-cheat-console-status'></span>
             </div>
           </details>
         </div>
@@ -148,7 +148,7 @@
               <<numberStepper _title _value {
                 callback: (value) => { 
                   V.maplebirch.transformation[_modName].build = value; 
-                  maplebirch.char.transformation._updateTransform(_modName);
+                  maplebirch.char.transformation.updateTransform(_modName);
                   Wikifier.wikifyEval('<<updatesidebarimg>>'); 
                 },
                 max: _config.build || 100, 
@@ -238,7 +238,6 @@
     'Widgets Mirror': [
       { src: '<</if>>\n\t\t<<if ![', to: '<</if>>\n\t\t<<maplebirchTransformationMirror>>\n\t\t<<if ![' },
       { src: '<<tficon $_icon>>', to: '<<= maplebirch.char.transformation.icon>>' },
-      { src: '</div>\n\t\t</div>\n\t\t<div class="settingsToggleItemWide">', to: '</div>\n\t\t</div>\n\t\t<<maplebirchBodyWriting>>\n\t\t<div class="settingsToggleItemWide">' },
     ],
     'Widgets Ejaculation': [
       { srcmatch: /<<if \$npc\[\$npcrow\.indexOf\(_nn\)\] is "Eden"\s*>>[\s\S]*?<<ejaculation-wraith _args\[0\]>>\s*/, to: '<<if !!maplebirch.combat.ejaculation(_nn, _args[0])>>\n\t\t\t\t<<= maplebirch.combat.ejaculation(_nn, _args[0])>>' },

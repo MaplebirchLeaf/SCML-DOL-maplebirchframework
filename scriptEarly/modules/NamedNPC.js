@@ -497,7 +497,7 @@
             if (special.condition(enhancedDate)) return this.resolveLocation(special.location, date);
           }
         }
-        return this.daily[Time.date.hour] || '';
+        return this.daily[Time.date.hour] ?? '';
       }
       
       // @ts-ignore

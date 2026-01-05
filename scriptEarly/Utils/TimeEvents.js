@@ -672,5 +672,5 @@
     }
   }
 
-  maplebirch.once(':state-init', (data) => Object.assign(data.constructor, { TimeManager: Object.freeze(TimeManager) }));
+  maplebirch.once(':state-init', (data) => Object.assign(data, { TimeManager: new TimeManager(data) }));
 })();

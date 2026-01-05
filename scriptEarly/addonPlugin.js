@@ -46,7 +46,7 @@
       if (addon.processed.language || addon.queue.language.length === 0) return;
       try {
         for (const task of addon.queue.language) {
-          const { modName, modZip, config } = task;
+          const { modName, config } = task;
           if (config === true) {
             await addon.core.lang.importAllLanguages(modName);
           } else if (Array.isArray(config)) {
@@ -74,7 +74,7 @@
       if (addon.processed.audio || addon.queue.audio.length === 0) return;
       try {
         for (const task of addon.queue.audio) {
-          const { modName, modZip, config } = task;
+          const { modName, config } = task;
           if (config === true) {
             addon.core.log(`为${modName}导入音频（默认路径）`, 'DEBUG');
             await addon.core.audio.importAllAudio(modName);
@@ -232,7 +232,7 @@
       if (addon.processed.shop || addon.queue.shop.length === 0) return;
       try {
         for (const task of addon.queue.shop) {
-          const { modName, modZip, config } = task;
+          const { modName, config } = task;
           if (Array.isArray(config)) {
             for (const filePath of config) {
               addon.core.log(`为${modName}加载商店配置: ${filePath}`, 'DEBUG');
@@ -242,30 +242,6 @@
         }
         addon.processed.shop = true;
       } catch (/**@type {any}*/e) { addon.core.log(`商店配置处理失败: ${e.message}`, 'ERROR'); }
-    }
-
-    /** @param {FrameworkAddon} addon */
-    static async Script(addon) {
-      if (addon.processed.script || addon.queue.script.length === 0) return;
-      try {
-        for (const task of addon.queue.script) {
-          const { modName, modZip, config } = task;
-          if (!Array.isArray(config)) { addon.core.log(`Script 配置必须为数组格式，跳过处理: ${modName}`, 'WARN'); continue; }
-          for (const filePath of config) await Process.#loadScriptFile(addon, modName, modZip, filePath);
-        }
-        addon.processed.script = true;
-        addon.core.log(`Script文件加载完成`, 'DEBUG');
-      } catch (/**@type {any}*/e) { addon.core.log(`Script文件配置处理失败: ${e.message}`, 'ERROR'); }
-    }
-
-    /** @param {FrameworkAddon} addon @param {string} modName @param {any} modZip @param {string} filePath */
-    static async #loadScriptFile(addon, modName, modZip, filePath) {
-      try {
-        const file = modZip.zip.file(filePath);
-        if (!file) { addon.core.log(`Script文件未找到: ${filePath}`, 'WARN'); return; }
-        const content = await file.async('text');
-        addon.jsFiles.push({ modName, filePath, content });
-      } catch (/**@type {any}*/e) { addon.core.log(`加载 Script 文件失败: ${filePath}`, 'ERROR'); }
     }
   }
 
@@ -277,9 +253,7 @@
       this.gModUtils = gModUtils;
       this.addonTweeReplacer = addonTweeReplacer;
       this.addonReplacePatcher = addonReplacePatcher;
-      /** @type {{ modifyWeatherJavaScript: () => any; }} */
-      this.modifyWeather;
-      maplebirch.trigger(':beforePatch', this);
+      this.core.trigger(':beforePatch', this);
       this.info = new Map();
       this.logger = gModUtils.getLogger();
       this.gModUtils.getAddonPluginManager().registerAddonPlugin('maplebirch', 'maplebirchAddon', this);
@@ -291,49 +265,51 @@
       this.processed = {};
       /** @type {Array<{modName: string, filePath: string, content: string}>} */
       this.jsFiles = [];
+      /** @type {Array<{modName: string, filePath: string, content: string}>} */
+      this.moduleFiles = [];
       this.supportedConfigs.forEach(type => {
         this.queue[type] = [];
         this.processed[type] = false;
       });
       const theName = this.gModUtils.getNowRunningModName();
-      if (!theName) { this.logger.error('[MaplebirchAddonPlugin] 初始化失败: 无法获取当前Mod名称'); return;}
+      if (!theName) { this.logger.error('[MaplebirchAddonPlugin] 初始化失败: 无法获取当前Mod名称'); return; }
       this.nowModName = theName;
-      const mod = this.gModUtils.getMod(theName);
-      if (!mod) { this.logger.error(`[MaplebirchAddonPlugin] 初始化失败: 无法获取当前Mod对象 [${theName}]`); return;}
-      mod.modRef = this;
-      this.core.log(`[MaplebirchAddonPlugin] 初始化完成, 当前Mod: ${theName}`, 'DEBUG');
-      this.logger.log(`[MaplebirchAddonPlugin] 初始化完成, 当前Mod: ${theName}`);
+      const modInfo = this.gModUtils.getMod(theName);
+      if (!modInfo) { this.logger.error(`[MaplebirchAddonPlugin] 初始化失败: 无法获取当前Mod对象 [${theName}]`); return; }
+      modInfo.modRef = this;
+      this.logger.log(`[MaplebirchAddonPlugin] 初始化完成: 当前Mod对象 [${theName}]`);
     }
 
     async #vanillaDataReplace() {
-      this.core.log('开始执行正则替换', 'DEBUG');
       try { await modifyEffect(); } catch (e) { this.core.log('modifyEffect 出错', 'ERROR'); }
       try { await modifyOptionsDateFormat(); } catch (e) { this.core.log('modifyOptionsDateFormat 出错', 'ERROR'); }
-      try { await this.modifyWeather.modifyWeatherJavaScript(); } catch (e) { this.core.log('modifyWeatherJavaScript 出错', 'ERROR'); }
+      try { await this.core.state.modifyWeather.modifyWeatherJavaScript(); } catch (e) { this.core.log('modifyWeatherJavaScript 出错', 'ERROR'); }
     }
 
-    /** @param {{ bootJson: { addonPlugin: any[]; }; }} modInfo */
-    #getModConfig(modInfo) {
-      const pluginConfig = modInfo.bootJson.addonPlugin?.find(p => p.modName === 'maplebirch' && p.addonName === 'maplebirchAddon');
-      return pluginConfig || {};
+    /** @param {string} addonName @param {{ name: string; bootJson: { addonPlugin: any[]; }; }} modInfo @param {any} modZip */
+    async registerMod(addonName, modInfo, modZip) {
+      this.info.set(modInfo.name, { addonName: addonName, mod: modInfo, modZip: modZip });
+      const config = modInfo.bootJson?.addonPlugin?.find(p => p.modName === 'maplebirch' && p.addonName === 'maplebirchAddon');
+      if (config?.params) {
+        if (Object.keys(config.params).length > 0 && !this.core.modList.includes(modInfo.name)) this.core.modList.push(modInfo.name);
+        this.supportedConfigs.filter(type => type !== 'script').forEach(type => { if (config.params[type]) this.queue[type].push({modName: modInfo.name, modZip: modZip, config: config.params[type]}); });
+      }
     }
 
-    /** @param {string} addonName @param {{ name: string; bootJson: { addonPlugin: any[]; }; }} mod @param {any} modZip */
-    async registerMod(addonName, mod, modZip) {
-      this.info.set(mod.name, { addonName: addonName, mod: mod, modZip: modZip });
-      const config = this.#getModConfig(mod);
-      if (Object.keys(config.params || {}).length > 0) if (!this.core.modList.includes(mod.name)) this.core.modList.push(mod.name);
-      this.supportedConfigs.forEach(type => { if (config.params?.[type]) this.queue[type].push({modName: mod.name,modZip: modZip,config: config.params[type]}); });
-      this.core.log(`[MaplebirchAddonPlugin] 注册Mod: ${mod.name}`, 'DEBUG');
-      this.logger.log(`[MaplebirchAddonPlugin] 注册Mod: ${mod.name}`);
+    async afterInjectEarlyLoad() {
+      await this.scriptFiles();
+      await this.#executeScripts(this.moduleFiles, 'Module'); 
+      if (this.core.modules.initPhase.allModuleRegisteredTriggered) await this.core.trigger(':allModule');
     }
 
-    async InjectEarlyLoad_start() {
-      try { await this.#simpleFrameworkCheck() } catch {};
+    /** @param {string} modName @param {string} fileName */
+    async InjectEarlyLoad_start(modName, fileName) {
+      try { await this.#simpleFrameworkCheck(); } catch {};
     }
 
-    async PatchModToGame_start() {
-      try { await this.#JSInject() } catch {};
+    async afterRegisterMod2Addon() {
+      await this.#executeScripts(this.jsFiles, 'Script');
+      this.processed.script = true;
     }
 
     async afterPatchModToGame() {
@@ -345,6 +321,53 @@
       await this.#vanillaDataReplace();
       await this.#processInit();
       try { await this.core.shop.beforePatchModToGame(); } catch (/**@type {any}*/e) { this.core.log(`商店数据注入失败: ${e.message}`, 'ERROR'); }
+    }
+
+    /** @param {string} modName @param {any} modZip @param {string[]} files @param {boolean} isModule */
+    async #loadFilesArray(modName, modZip, files, isModule) {
+      for (const filePath of files) {
+        const file = modZip.zip.file(filePath);
+        if (!file) continue;
+        const content = await file.async('string');
+        if (isModule) { this.moduleFiles.push({ modName, filePath, content }); }
+        else { this.jsFiles.push({ modName, filePath, content }); }
+      }
+    }
+
+    async scriptFiles() {
+      const modNames = this.gModUtils.getModListNameNoAlias();
+      if (!Array.isArray(modNames) || modNames.length === 0) return;
+      for (const modName of modNames) {
+        try {
+          const mod = this.gModUtils.getMod(modName);
+          if (!mod || !mod.bootJson) continue;
+          const bootJson = mod.bootJson;
+          const modZip = this.gModUtils.getModZip(modName);
+          if (!modZip) continue;
+          const config = bootJson.addonPlugin?.find((/**@type {{ modName: string; addonName: string; }}*/p) => p.modName === 'maplebirch' && p.addonName === 'maplebirchAddon');
+          if (!config?.params) continue;
+          if (Array.isArray(config.params?.module)) await this.#loadFilesArray(modName, modZip, config.params.module, true);
+          if (Array.isArray(config.params?.script)) await this.#loadFilesArray(modName, modZip, config.params.script, false);
+        } catch (/**@type {any}*/e) {
+          this.core.log(`[MaplebirchAddonPlugin] 加载模组脚本失败: ${modName} - ${e.message}`, 'ERROR');
+        }
+      }
+    }
+
+    /** @param {Array<{modName?: string, filePath?: string, content: string}>} files @param {string} type */
+    async #executeScripts(files, type = 'Script') {
+      if (files.length === 0) return;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        try {
+          const func = new Function(file.content);
+          const result = func();
+          if (result && typeof result.then === 'function') await result;
+        } catch (/**@type {any}*/e) {
+          this.core.log(`执行 ${type} 文件失败: ${file.filePath} (来自 ${file.modName}): ${e.message}`, 'ERROR');
+        }
+      }
+      files.length = 0;
     }
 
     async #simpleFrameworkCheck() {
@@ -364,22 +387,7 @@
       location.reload();
     }
 
-    async #JSInject() {
-      if (this.jsFiles.length === 0) return;
-      this.core.log(`开始执行 ${this.jsFiles.length} 个 Script 文件`, 'DEBUG');
-      for (const jsFile of this.jsFiles) {
-        try {
-          const { modName, filePath, content } = jsFile;
-          const func = new Function(content);
-          const result = func();
-          if (result && typeof result.then === 'function') await result;
-        } catch (/** @type {any} */e) { this.core.log(`执行 Script 文件失败: ${e.message}`, 'ERROR'); }
-      }
-      this.jsFiles = [];
-    }
-
     async #processInit() {
-      try { await Process.Script(this); } catch (/**@type {any}*/e) { this.core.log(`Script文件处理过程失败: ${e.message}`, 'ERROR'); }
       try { await Process.Language(this); } catch (/**@type {any}*/e) { this.core.log(`语言处理过程失败: ${e.message}`, 'ERROR'); }
       try { await Process.Audio(this); } catch (/**@type {any}*/e) { this.core.log(`音频处理过程失败: ${e.message}`, 'ERROR'); }
       try { await Process.Framework(this); } catch (/**@type {any}*/e) { this.core.log(`框架处理过程失败: ${e.message}`, 'ERROR'); }

@@ -21,19 +21,19 @@
             upper: {
               name: upperConfig.name,
               integrity_max: upperConfig.integrity_max !== undefined ? upperConfig.integrity_max : 100,
-              word: upperConfig.word || 'a',
-              action: upperConfig.action || 'lift',
-              desc: upperConfig.desc || upperConfig.name
+              word: upperConfig.word ?? 'a',
+              action: upperConfig.action ?? 'lift',
+              desc: upperConfig.desc ?? upperConfig.name
             },
             lower: {
               name: lowerConfig.name,
               integrity_max: lowerConfig.integrity_max !== undefined ? lowerConfig.integrity_max : 100,
-              word: lowerConfig.word || 'n',
-              action: lowerConfig.action || 'lift',
-              desc: lowerConfig.desc || lowerConfig.name
+              word: lowerConfig.word ?? 'n',
+              action: lowerConfig.action ?? 'lift',
+              desc: lowerConfig.desc ?? lowerConfig.name
             }
           },
-          desc: desc || `${upperConfig.name}和${lowerConfig.name}`
+          desc: desc ?? `${upperConfig.name}和${lowerConfig.name}`
         };
         npcClothesSets.push(newClothes);
       });

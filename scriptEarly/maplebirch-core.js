@@ -5,7 +5,7 @@ var maplebirch = (() => {
   const frameworkVersion = modUtils.getMod('maplebirch').version;
   const lastUpdate = '2026.01.02';
   const lastModifiedBy = '楓樺葉';
-  const DEBUGMODE = false;
+  const DEBUGMODE = true;
 
   const ModuleState = {
     PENDING:   0,
@@ -1001,7 +1001,6 @@ var maplebirch = (() => {
       const { expectedModuleCount, registeredModuleCount } = this.initPhase;
       if (registeredModuleCount >= expectedModuleCount) {
         this.core.logger.log(`模块注册完成 (${registeredModuleCount}/${expectedModuleCount})`, 'DEBUG');
-        this.core.events.trigger(':allModule');
         this.initPhase.allModuleRegisteredTriggered = true;
       }
     }

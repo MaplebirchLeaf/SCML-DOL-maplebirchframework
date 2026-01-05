@@ -132,5 +132,5 @@
     }
   }
 
-  maplebirch.once(':state-init', (data) => Object.assign(data.constructor, { StateManager: Object.freeze(StateManager) }));
+  maplebirch.once(':state-init', (data) => Object.assign(data, { StateManager: new StateManager(data) }));
 })();

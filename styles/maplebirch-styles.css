@@ -11,7 +11,6 @@
 /* 控制台作弊器 */
 #ConsoleCheat details.JSCheatConsole,
 #ConsoleCheat details.TwineCheatConsole {
-  border-radius: 0;
   overflow: hidden;
   border: 1px solid var(--600);
   margin-top: 0.5rem;
@@ -69,7 +68,6 @@
 
 #ConsoleCheat button {
   background: var(--blue);
-  border-radius: 0;
   color: var(--000);
   cursor: pointer;
   font-weight: bold;
@@ -89,41 +87,70 @@
   background: var(--blue-secondary);
 }
 
-#js-cheat-console-status,
-#twine-cheat-console-status {
-  display: none;
-  font-family: "Consolas";
-}
-
-#js-cheat-console-status.visible,
-#twine-cheat-console-status.visible {
-  display: block;
+/* 作弊列表状态 */
+#ConsoleCheat .cheat-status {
   padding: 0.5rem;
-  font-family: "Consolas";
+  margin: 0.5rem 0;
+  text-align: center;
+  font-family: "Consolas", monospace;
   font-size: 0.9rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 0;
-  min-height: 1.5rem;
-  width: 100%;
+  display: none;
   box-sizing: border-box;
   white-space: pre-wrap;
 }
 
-#js-cheat-console-status.success,
-#twine-cheat-console-status.success {
-  color: var(--green);
-  background: rgba(56, 178, 10, 0.1);
+#ConsoleCheat .cheat-status.visible {
+  display: block;
 }
 
-#js-cheat-console-status.error,
-#twine-cheat-console-status.error {
+#ConsoleCheat .cheat-status.success {
+  color: var(--green);
+  background: rgba(56, 178, 10, 0.1);
+  border: 1px solid var(--green);
+}
+
+#ConsoleCheat .cheat-status.error {
   color: var(--red);
   background: rgba(236, 53, 53, 0.1);
+  border: 1px solid var(--red);
+}
+
+/* JS/Twine控制台状态 */
+#ConsoleCheat #js-cheat-console-status,
+#ConsoleCheat #twine-cheat-console-status {
+  display: none;
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+  min-height: 1.5rem;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  font-family: "Consolas", monospace;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+}
+
+#ConsoleCheat #js-cheat-console-status.visible,
+#ConsoleCheat #twine-cheat-console-status.visible {
+  display: block;
+}
+
+#ConsoleCheat #js-cheat-console-status.success,
+#ConsoleCheat #twine-cheat-console-status.success {
+  color: var(--green);
+  background: rgba(56, 178, 10, 0.1);
+  border: 1px solid var(--green);
+}
+
+#ConsoleCheat #js-cheat-console-status.error,
+#ConsoleCheat #twine-cheat-console-status.error {
+  color: var(--red);
+  background: rgba(236, 53, 53, 0.1);
+  border: 1px solid var(--red);
 }
 
 /* 为作弊控制台添加可折叠区域 */
 #ConsoleCheat details.cheat-section {
-  border-radius: 0;
   overflow: hidden;
   border: 1px solid var(--600);
   margin-top: 0.5rem;
@@ -163,6 +190,37 @@
 
 #ConsoleCheat details[open] > summary.cheat-section {
   border-bottom: 1px solid var(--600);
+}
+
+/* 作弊代码显示样式 */
+#ConsoleCheat .cheat-code {
+  display: block;
+  color: #b7b7b7;
+  font-family: "Consolas", monospace;
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+  word-break: break-all;
+  line-height: 1.0;
+  background: var(--850);
+  padding: 0.5rem;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+#ConsoleCheat .cheat-code::before {
+  content: attr(data-type);
+  font-weight: bold;
+  margin-right: 0.5rem;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+#ConsoleCheat .cheat-code[data-type="JS"]::before {
+  color: var(--blue-secondary);
+}
+
+#ConsoleCheat .cheat-code[data-type="Twine"]::before {
+  color: #ab66ff;
 }
 
 @media (max-width: 480px) {

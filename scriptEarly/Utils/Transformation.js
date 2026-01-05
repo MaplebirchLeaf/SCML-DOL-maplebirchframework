@@ -11,7 +11,7 @@
       this.traits = traits;
 			this.build = options.build ?? 100;
 			this.level = options.level ?? 6;
-			this.updata = options.updata;
+			this.update = options.update;
 			this.icon = options.icon;
 			this.message = options.message;
     }
@@ -141,7 +141,7 @@
 		}
 
 		/** @param {string} name @param {number} change */
-		_suppress(name, change) {
+		#suppress(name, change) {
 			const absChange = Math.abs(change);
 			for (const [target, conditions] of Object.entries(this.suppressConditions)) {
 				if (target === name) continue;
@@ -172,18 +172,18 @@
 					if (config) V.maplebirch.transformation[name].build = Math.clamp(V.maplebirch.transformation[name].build + change, 0, config.build); 
 					break;
 				}
-			if (change > 0)  this._suppress(name, change);
+			if (change > 0)  this.#suppress(name, change);
 		}
 
 		/** @param {string} name */
-		_updateTransform(name) {
+		updateTransform(name) {
 			const entry = this.config.get(name);
 			if (!entry) return;
 			const Build = V.maplebirch?.transformation?.[name]?.build ?? 0;
 			const Level = V.maplebirch?.transformation?.[name]?.level ?? 0;
 			const maxLevel = entry.level ?? 6;
-			if (Array.isArray(entry.updata)) {
-				const thresholds = entry.updata;
+			if (Array.isArray(entry.update)) {
+				const thresholds = entry.update;
 				if (Level < maxLevel && Build >= thresholds[Level]) {
 					V.maplebirch.transformation[name].level = Level + 1;
 					this._updateParts(name, Level, Level + 1);
@@ -226,7 +226,7 @@
 				} else if (V.fallenangel >= 2) {
 					this.#wikifier('fallenButNotOut', V.fallenangel);
 				} else {
-					for (const [name, entry] of this.config) if (entry.type === 'special') this._updateTransform(name);
+					for (const [name, entry] of this.config) if (entry.type === 'special') this.updateTransform(name);
 				}
 			}
 			// 动物转化
@@ -263,14 +263,14 @@
 						const [macro, level] = vanilla[selected.name];
 						this.#wikifier(macro, level);
 					} else {
-						this._updateTransform(selected.name);
+						this.updateTransform(selected.name);
 					}
 				}
 			}
 			// 其它类型
 			for (const [name, entry] of this.config) {
 				if (entry.type === 'special' || entry.type === 'physical') continue;
-				this._updateTransform(name);
+				this.updateTransform(name);
 			}
 		}
 
@@ -280,7 +280,7 @@
 			if (V.wolfgirl >= 6) this.#wikifier('def', 5);
 			this._transformationAlteration();
 			V.physicalTransform = (V.cat > 0 || V.wolfgirl > 0 || V.cow > 0 || V.harpy > 0 || V.fox > 0 || Array.from(this.config.entries()).some(([name, entry]) => entry.type === 'physical' && (V.maplebirch?.transformation?.[name]?.level ?? 0) > 0)) ? 1 : 0;
-			if ((V.physicalTransform === 1 || V.specialTransform === 1) && !(V.hypnosis_traits?.peace && V.settings.hypnosisEnabled)) this._handleHiddenTransformParts();
+			if ((V.physicalTransform === 1 || V.specialTransform === 1) && !(V.hypnosis_traits?.peace && V.settings.hypnosisEnabled)) this.#handleHiddenTransformParts();
 			// 0.5.6 转化历史
 			for (const tf of ['angel', 'fallenangel', 'demon', 'dryad', 'wolfgirl', 'cat', 'cow', 'harpy', 'fox']) {
 				const level = V[tf];
@@ -300,7 +300,7 @@
 			}
 		}
 
-		_handleHiddenTransformParts() {
+		#handleHiddenTransformParts() {
 			let excludeWings = false;
 			if (V.harpy >= 6 && V.transformationParts.bird?.wings !== 'hidden') {
 				if (V.angel >= 6 && V.transformationParts.angel?.wings !== 'hidden') excludeWings = true;
@@ -386,7 +386,7 @@
 			else if (level <= 0) { newLevel = 0; }
 			else { newLevel = Math.min(level, maxLevel); }
 			if (newLevel === 0) { newBuild = 0; }
-			else if (Array.isArray(entry.updata) && newLevel > 0) { newBuild = entry.updata[newLevel - 1]; }
+			else if (Array.isArray(entry.update) && newLevel > 0) { newBuild = entry.update[newLevel - 1]; }
 			else { newBuild = Math.round((newLevel / maxLevel) * (entry.build ?? 100)); }
 			data.level = newLevel;
 			data.build = newBuild;

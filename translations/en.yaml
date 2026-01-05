@@ -34,6 +34,8 @@
 'cancel': cancel
 'all': all
 'create': create
+'modify': modify
+'sort': sort
 
 'Prioritise headwear over horns': Prioritise headwear over horns
 'Prioritise horns over headwear': Prioritise horns over headwear

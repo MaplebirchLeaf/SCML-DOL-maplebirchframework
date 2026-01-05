@@ -5,27 +5,23 @@
     "cn": "秋枫白桦框架"
   },
   "alias": ["Simple Frameworks"], 
-  "version": "2.7.1",
+  "version": "2.7.2",
   "imgFileList": [],
   "styleFileList": ["styles/maplebirch-styles.css"],
   "scriptFileList": [
     "data/defineSugarCube.js",
     "data/vanillaNPCSchedule.js"
   ],
-  "scriptFileList_preload":[
-    "data/state-variables-v1.js"
-  ],
-  "scriptFileList_earlyload": [
-
-  ],
+  "scriptFileList_preload":["data/state-variables-v1.js"],
+  "scriptFileList_earlyload": [],
   "scriptFileList_inject_early": [
     "scriptEarly/maplebirch-core.js",
     "scriptEarly/Utils/Utils.js",
     "data/framework-data.js",
-    "data/modifyWeather.js",
     "scriptEarly/addonPlugin.js",
     "scriptEarly/Utils/TimeEvents.js",
     "scriptEarly/Utils/StateEvents.js",
+    "scriptEarly/Utils/modifyWeather.js",
     "scriptEarly/Utils/FrameworksUtils.js",
     "scriptEarly/Utils/NPC-clothes.js",
     "scriptEarly/Utils/NPC-model.js",
@@ -106,6 +102,40 @@
        "types": [
         ]
       }
+    }
+  ],
+  "dependenceInfo": [
+    {
+      "modName": "ModLoader",
+      "version": ">=2.0.0"
+    },
+    {
+      "modName": "ModLoaderGui",
+      "version": ">=1.0.0"
+    },
+    {
+      "modName": "ModSubUiAngularJs",
+      "version": ">=1.0.0"
+    },
+    {
+      "modName": "ConflictChecker",
+      "version": ">=1.0.0"
+    },
+    {
+      "modName": "BeautySelectorAddon",
+      "version": ">=2.0.0"
+    },
+    {
+      "modName": "ReplacePatcher",
+      "version": ">=1.0.0"
+    },
+    {
+      "modName": "TweeReplacer",
+      "version": ">=1.0.0"
+    },
+    {
+      "modName": "GameVersion",
+      "version": ">=0.5.7.0"
     }
   ]
 }

@@ -1,7 +1,5 @@
 (async() => {
   'use strict';
-  if (!window.maplebirch) return;
-  const maplebirch = window.maplebirch;
 
   const zoneMap = {
     ModStatusBar:   'StatusBar',

@@ -217,45 +217,44 @@ declare global {
   class FrameworkAddon {
     constructor(core: MaplebirchCore, gSC2DataManager: typeof modSC2DataManager, gModUtils: typeof modUtils);
     core: MaplebirchCore;
-    gSC2DataManager: any;
-    gModUtils: any;
-    addonTweeReplacer: any;
-    addonReplacePatcher: any;
-    modifyWeather: { modifyWeatherJavaScript: () => any };
+    readonly gSC2DataManager: typeof modSC2DataManager;
+    readonly gModUtils: typeof modUtils;
+    readonly addonTweeReplacer: any;
+    readonly addonReplacePatcher: any;
     info: Map<string, { addonName: string; mod: any; modZip: any }>;
     logger: { log: (message: string) => void; error: (message: string) => void };
     supportedConfigs: string[];
-    /** @type {Object<any, {modName: string, modZip: any, config: any}>} */
     queue: Record<string, Array<{ modName: string; modZip: any; config: any }>>;
-    /** @type {Object<string, boolean>} */
     processed: Record<string, boolean>;
-    /** @type {Array<{modName: string, filePath: string, content: string}>} */
-    jsFiles: Array<{ modName: string; filePath: string; content: string }>;
+    jsFiles: string[];
+    moduleFiles: Array<{ modName: string; filePath: string; content: string }>;
     nowModName: string;
-    #vanillaDataReplace(): Promise<void>;
-    #getModConfig(modInfo: { bootJson: { addonPlugin?: any[] } }): any;
-    #simpleFrameworkCheck(): Promise<boolean>;
-    #JSInject(): Promise<void>;
-    #processInit(): Promise<void>;
-    registerMod(addonName: string, mod: { name: string; bootJson: { addonPlugin?: any[] } }, modZip: any): Promise<void>;
-    InjectEarlyLoad_start(): Promise<void>;
-    PatchModToGame_end(): Promise<void>;
+    registerMod(addonName: string, modInfo: { name: string; bootJson: { addonPlugin: any[] } }, modZip: any): Promise<void>;
+    canLoadThisMod(bootJson: { addonPlugin: any[]; name: string }, modZip: any): Promise<boolean>;
+    afterInjectEarlyLoad(): Promise<void>;
+    InjectEarlyLoad_start(modName: string, fileName: string): Promise<void>;
+    afterRegisterMod2Addon(): Promise<void>;
     afterPatchModToGame(): Promise<void>;
     beforePatchModToGame(): Promise<void>;
+    #vanillaDataReplace(): Promise<void>;
+    #loadFiles(modName: string, modZip: any, files: string[], isModule: boolean): Promise<void>;
+    #executeScripts(files: Array<string | {modName?: string, filePath?: string, content: string}>, type: string): Promise<void>;
+    #simpleFrameworkCheck(): Promise<boolean>;
+    #processInit(): Promise<void>;
   }
 
   class Process {
-    static async Language(addon: FrameworkAddon): Promise<void>;
-    static async Audio(addon: FrameworkAddon): Promise<void>;
-    static async Framework(addon: FrameworkAddon): Promise<void>;
-    static async NPC(addon: FrameworkAddon): Promise<void>;
-    static async NPCSidebar(addon: FrameworkAddon): Promise<void>;
-    static async Shop(addon: FrameworkAddon): Promise<void>;
-    static async Script(addon: FrameworkAddon): Promise<void>;
+    static Language(addon: FrameworkAddon): Promise<void>;
+    static Audio(addon: FrameworkAddon): Promise<void>;
+    static Framework(addon: FrameworkAddon): Promise<void>;
+    static NPC(addon: FrameworkAddon): Promise<void>;
+    static NPCSidebar(addon: FrameworkAddon): Promise<void>;
+    static Shop(addon: FrameworkAddon): Promise<void>;
+    static Script(addon: FrameworkAddon): Promise<void>;
     static #addTrait(addon: FrameworkAddon, traitConfig: { title: string | Function; name: string | Function; colour?: string | Function; has?: boolean | Function; text?: string | Function }): void;
     static #addWidget(addon: FrameworkAddon, modName: string, zone: string, widget: string | { widget: string; exclude?: string[]; match?: RegExp; passage?: string[] }): void;
-    static async #injectBSAImages(addon: FrameworkAddon, modName: string, modZip: any, imgPaths: string[]): Promise<void>;
-    static async #loadScriptFile(addon: FrameworkAddon, modName: string, modZip: any, filePath: string): Promise<void>;
+    static #injectBSAImages(addon: FrameworkAddon, modName: string, modZip: any, imgPaths: string[]): Promise<void>;
+    static #loadScriptFile(addon: FrameworkAddon, modName: string, modZip: any, filePath: string): Promise<void>;
   }
 
   class TimeStateManager {
@@ -263,10 +262,10 @@ declare global {
     log: (message: string, level?: string, ...objects: any[]) => void;
     TimeManager: TimeManager;
     StateManager: StateManager;
+    modifyWeather: modifyWeather;
     passage: any;
     constructor();
     get Passage(): any;
-    get modifyWeather(): any;
     regTimeEvent(type: string, eventId: string, options: any): void;
     delTimeEvent(type: string, eventId: string): void;
     timeTravel(options?: any): void;
@@ -356,6 +355,20 @@ declare global {
     #updateDateTime(): void;
     updateTimeLanguage(choice?: string | boolean): string | boolean | void;
     initialize(): void;
+  }
+
+  class modifyWeather {
+    constructor(core: MaplebirchCore, modSC2DataManager: any, addonReplacePatcher: any);
+    core: MaplebirchCore;
+    modSC2DataManager: any;
+    addonReplacePatcher: any;
+    layerModifications: Map<string, Array<{ patch: object; mode: string }>>;
+    effectModifications: Map<string, Array<{ patch: object; mode: string }>>;
+    weathertrigger: boolean;
+    addEffect(effectName: string, patch: object, mode?: string): this;
+    addLayer(layerName: string, patch: object, mode?: string): this;
+    trigger(params: { name: any }): { name: any };
+    modifyWeatherJavaScript(): Promise<void>;
   }
 
   class DateTime {
@@ -490,7 +503,6 @@ declare global {
     linkzone: typeof applyLinkZone;
     other: others;
     console: consoleTools;
-    cheat: cheat;
     clone: typeof clone;
     merge: typeof merge;
     equal: typeof equal;
@@ -982,6 +994,7 @@ declare global {
 
   class Expansion {
     modhint: modhint;
+    cheat: cheat;
   }
 
   const yaml: {
