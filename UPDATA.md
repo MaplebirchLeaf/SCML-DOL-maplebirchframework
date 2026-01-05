@@ -2,7 +2,7 @@
 
 + 修复 `Degrees-of-Lewdity-v0.5.7.x` 转化的损坏，临时删除转化对侧边栏画布的注册
 + 重构 **`转化管理`** 中模组转化的注册方式，不再要求需要 `widget` 宏
-+ 将**`侧边栏控件`**、**`作弊集`**、**`衣柜搜索`**、**`内置音乐盒`**、**`日蚀天气`**功能搬去了[**秋枫白桦扩展**](https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchExpansion)
++ 将 **`侧边栏控件`**、**`作弊集`**、**`衣柜搜索`**、**`内置音乐盒`**、**`日蚀天气`** 功能搬去了[**秋枫白桦扩展**](https://github.com/MaplebirchLeaf/SCML-DOL-maplebirchExpansion)
 + 为框架提供 **`boot.js`** 中专用的js注册方式
 + 优化 `角色面板` 以待后续更新
 + 删除 `调试模式` 功能
@@ -111,4 +111,5 @@
 + 优化更新了 `merge` 工具函数，不影响原来的使用
 
 + `<<langbutton>>` 与 `<<langlink>>` 宏的优化，使其完全覆盖 `<<link>>` 与 `<<button>>` 宏的功能
+
 
