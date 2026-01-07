@@ -1,6 +1,7 @@
 # SCML-DOL-maplebirchFramework
 `maplebirchFramework` 是基于 **Sugarcube2 ModLoader** 为 **Degrees-of-Lewdity** 游戏设计的模块化开发框架，旨在能够为游戏扩展模组的开发提供一些便利，让开发者能够更轻松地构建和维护模组内容。
 ***
+## **`ReadME`** 暂未更新，实际内容以代码内为准，后续版本会重置说明
 ## 目录
 - [基本介绍](#基本介绍)
 - [安装与依赖方式说明](#安装与依赖方式说明)
@@ -2031,6 +2032,7 @@ maplebirch.char.transformation.add('dragon', 'physical', {
 
 ## 未实现的功能构想
 - 人类体型战斗系统重置、完善制作全新npc架构(画布...)(遥遥无期)
+
 
 
 
