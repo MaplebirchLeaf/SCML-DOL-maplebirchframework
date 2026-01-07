@@ -17,3 +17,11 @@ sugarcube-2:
       name: transformationAlteration
     numberStepper:
       name: numberStepper
+    lanListbox:
+      name: lanListbox
+      container: true
+    radiobuttonsfrom:
+      name: radiobuttonsfrom
+      container: true
+    numberslider:
+      name: numberslider

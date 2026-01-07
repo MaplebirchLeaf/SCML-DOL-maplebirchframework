@@ -243,34 +243,6 @@
   }
 }
 
-/* NPC侧边栏 */
-#img-npc {
-	height: 192px;
-	width: 216px;
-	overflow: hidden;
-	top: 0;
-	left: 64px;
-}
-
-#img-npc > * {
-	position: absolute;
-	left: -32px;
-}
-
-#img-npc > canvas {
-  transform: translateZ(0) translateX(-48px) translateY(-8px);;
-  backface-visibility: hidden;
-  left: -32px;
-}
-
-@media screen and (min-color-index: 0) and (-webkit-min-device-pixel-ratio: 0) {
-	@media all { #img-npc { position: absolute; } }
-}
-
-@media not all and (min-resolution: 0.001dpcm) {
-	@media all { #img-npc { position: absolute; } }
-}
-
 /* 社交栏NPC状态 */
 .relation-stat-list {
   --maplebirch-relation-count: 2;

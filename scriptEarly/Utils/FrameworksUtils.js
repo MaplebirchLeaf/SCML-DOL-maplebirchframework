@@ -1599,7 +1599,7 @@
     }
   }
 
-  maplebirch.once(':tool-init', (/** @type {{ createLog: (arg0: string) => { (msg: string, level?: string, ...objs: any[]): void; }; constructor: { proto: any; }; }} */data) => {
+  maplebirch.once(':tool-init', (/**@type {tools}*/data) => {
     migration.init(data.createLog);
     randSystem.init(data.createLog);
     Object.assign(data, {

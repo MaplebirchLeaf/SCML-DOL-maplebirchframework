@@ -8,10 +8,13 @@
   class variables {
     static options = {
       npcsidebar: {
-        show: false,
-        model: false,
-        nnpc: false,
-        display: {}
+        show:     false,
+        model:    false,
+        position: 'back',
+        skin_type:'light',
+        tan:      0,
+        nnpc:     false,
+        display:  {}
       },
       relationcount: 4,
       npcschedules: false

@@ -57,13 +57,13 @@
       } else {
         return false;
       }
-      return NPCClothes.processClothesData(data);
+      return NPCClothes.clothesData(data);
     }
     
     class NPCClothes {
       static log = new Function;
       /** @param {any} data */
-      static processClothesData(data) {
+      static clothesData(data) {
         for (const item of data) {
           clothes.set(item.name, {
             over_upper:  item.over_upper,
@@ -153,7 +153,7 @@
     return NPCClothes;
   })()
 
-  maplebirch.once(':npc-init', (/** @type {NPCManager} */ data) => {
+  maplebirch.once(':npc-init', (/**@type {NPCManager}*/data) => {
     NPCClothes.log = data.log;
     Object.assign(data, { Clothes: NPCClothes, });
   });

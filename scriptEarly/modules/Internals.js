@@ -46,29 +46,29 @@
 
     #languageWidgetManager() {
       setup.maplebirch.language = {
-        managers: { language: new Map(), lanSwitch: new Map(), lanButton: new Map(), lanLink: new Map(), lanListbox: new Map(), },
+        managers: { language: new Map(), lanSwitch: new Map(), lanButton: new Map(), lanLink: new Map(), lanListbox: new Map(), radiobuttonsfrom: new Map(), },
         init() {
           if (this.initialized) return;
-          Object.keys(this.managers).forEach(macroType => {
-            maplebirch.on(':languageChange', () => {
-              this.managers[macroType].forEach((/**@type {() => void}*/updater) => {
+          maplebirch.on(':languageChange', () => {
+            for (const [macroType, manager] of Object.entries(this.managers)) {
+              manager.forEach((updater) => {
                 try { updater(); }
-                catch (e) { maplebirch.log(`Language update error for ${macroType}:`, 'ERROR', e); }
+                catch (e) { maplebirch.log(`Language update error for ${macroType}`, 'ERROR', e); }
               });
-            });
+            }
           });
           maplebirch.once(':passagestart', () => Object.values(this.managers).forEach(manager => manager.clear()));
           this.initialized = true;
         },
-        /** @param {string|number} macroType @param {any} id @param {any} updater */
-        add(macroType, id, updater) {
+        /** @param {string|number} macroType @param {any} updater */
+        add(macroType, updater) {
           if (!this.managers[macroType]) this.managers[macroType] = new Map();
-          this.managers[macroType].set(id, updater);
+          this.managers[macroType].set(updater, updater);
           this.init();
         },
-        /** @param {string|number} macroType @param {any} id */
-        remove(macroType, id) {
-          if (this.managers[macroType]) this.managers[macroType].delete(id);
+        /** @param {string|number} macroType @param {any} updater */
+        remove(macroType, updater) {
+          this.managers[macroType]?.delete(updater);
         }
       };
     }
@@ -76,7 +76,6 @@
     // <<language>>
     _language() {
       const $container = jQuery('<div style="display: contents;"></div>');
-      const uniqueId = `language-${Date.now()}-${Math.random().toString(36)}`;
       const render = () => {
         const lang = maplebirch.Language;
         const content = this.payload.find(p => p.name === 'option' && p.args[0]?.toUpperCase() === lang.toUpperCase())?.contents || '';
@@ -90,8 +89,8 @@
       };
       render();
       $(this.output).append($container);
-      setup.maplebirch.language.add('language', uniqueId, render);
-      $container.on('remove', () => setup.maplebirch.language.remove('language', uniqueId));
+      setup.maplebirch.language.add('language', render);
+      $container.on('remove', () => setup.maplebirch.language.remove('language', render));
     }
 
     // <<lanSwitch>>
@@ -116,7 +115,6 @@
       if (this?.output) {
         try {
           const $container = jQuery('<span style="display: contents;"></span>');
-          const uniqueId = `lanSwitch-${Date.now()}-${Math.random().toString(36)}`;
           const contentObj = targetObj;
           const renderContent = () => {
             $container.empty();
@@ -131,11 +129,11 @@
           };
           renderContent();
           $(this.output).append($container);
-          setup.maplebirch.language.add('lanSwitch', uniqueId, renderContent);
-          $container.on('remove', () => setup.maplebirch.language.remove('lanSwitch', uniqueId));
+          setup.maplebirch.language.add('lanSwitch', renderContent);
+          $container.on('remove', () => setup.maplebirch.language.remove('lanSwitch', renderContent));
           return $container[0];
         } catch (e) {
-          console.error('lanSwitch 宏模式错误', e);
+          maplebirch.log('lanSwitch 宏模式错误', 'ERROR', e);
           return targetObj[lancheck];
         }
       } else {
@@ -188,7 +186,6 @@
         const $button = jQuery(document.createElement('button')).addClass('macro-button link-internal').attr('data-translation-key', translationKey);
         if (customClasses) customClasses.split(/\s+/).forEach(cls => { if (cls.trim()) $button.addClass(cls.trim()); });
         if (inlineStyle) $button.attr('style', inlineStyle);
-        const uniqueId = `${Date.now()}-${Math.random().toString(36)}`;
 
         if ($image) { $button.append($image).addClass('link-image'); }
         else { $button.append(document.createTextNode(buttonText)); }
@@ -213,10 +210,10 @@
         };
 
         $button.appendTo(this.output);
-        setup.maplebirch.language.add('lanButton', uniqueId, updateButtonText);
-        $button.on('remove', () => setup.maplebirch.language.remove('lanButton', uniqueId));
+        setup.maplebirch.language.add('lanButton', updateButtonText);
+        $button.on('remove', () => setup.maplebirch.language.remove('lanButton', updateButtonText));
       } catch (e) {
-        console.error('<<lanButton>> 宏处理错误', e);
+        maplebirch.log('<<lanButton>> 宏处理错误', 'ERROR', e);
         return this.error(`<<lanButton>> 执行错误: ${e.message}`);
       }
     }
@@ -225,7 +222,6 @@
     _languageLink() {
       try {
         if (!this.args || this.args.length === 0) return this.error('<<lanLink>> 需要至少一个参数');
-        const uniqueId = `${Date.now()}-${Math.random().toString(36)}`;
         T.link = true;
         const CONVERT_MODES = ['lower','upper','capitalize','title','camel','pascal','snake','kebab','constant'];
         let translationKey = '';
@@ -295,10 +291,10 @@
         };
         $container.append($link);
         $container.appendTo(this.output);
-        setup.maplebirch.language.add('lanLink', uniqueId, updateLinkText);
-        $container.on('remove', () => setup.maplebirch.language.remove('lanLink', uniqueId));
+        setup.maplebirch.language.add('lanLink', updateLinkText);
+        $container.on('remove', () => setup.maplebirch.language.remove('lanLink', updateLinkText));
       } catch (e) {
-        console.error('<<lanLink>> 宏处理错误', e);
+        maplebirch.log('<<lanLink>> 宏处理错误', 'ERROR', e);
         return this.error(`<<lanLink>> 执行错误: ${e.message}`);
       }
     }
@@ -323,7 +319,6 @@
         }
         const options = [];
         let selectedIdx = -1;
-        const uniqueId = `${Date.now()}-${Math.random().toString(36)}`;
         for (let i = 1; i < this.payload.length; ++i) {
           const payload = this.payload[i];
 
@@ -366,7 +361,7 @@
 
         const $select = jQuery(document.createElement('select'))
           .attr({
-            id: `lanListbox-${varId}-${uniqueId}`,
+            id: `lanListbox-${varId}`,
             name: `lanListbox-${varId}`,
             tabindex: 0
           })
@@ -392,45 +387,96 @@
             $opt.text(newText);
           });
         };
-        setup.maplebirch.language.add('lanListbox', uniqueId, updateTexts);
-        $select.on('remove', () => setup.maplebirch.language.remove('lanListbox', uniqueId));
+        setup.maplebirch.language.add('lanListbox', updateTexts);
+        $select.on('remove', () => setup.maplebirch.language.remove('lanListbox', updateTexts));
       } catch (e) {
-        console.error('<<lanListbox>> 错误', e);
+        maplebirch.log('<<lanListbox>> 错误', 'ERROR', e);
         return this.error(`<<lanListbox>> 错误: ${e.message}`);
       }
     }
 
+    // <<radiobuttonsfrom>>
     _radiobuttonsfrom() {
       if (this.args.length < 2) return this.error('缺少参数：变量名和选项数组');
-      let varPath = this.args[0];
-      if (typeof varPath === 'string') {
-      } else if (typeof varPath === 'object' && varPath.raw) {
-        varPath = varPath.raw[0];
-      } else {
-        varPath = String(varPath);
-      }
-      const options = this.args[1];
-      if (!Array.isArray(options)) return this.error('第二个参数必须是数组');
+      const varPath = this.args[0];
+      if (typeof varPath === 'string') if (!varPath.startsWith('$_') && '$' !== varPath[0] && '_' !== varPath[0]) return this.error(`变量名 '${varPath}' 缺少sigil（$、$_ 或 _）`);
+      let options = this.args[1];
       const separator = this.args.length > 2 ? this.args[2] : ' | ';
-      const container = $('<span>').addClass('radiobuttonsfrom-container');
-      options.forEach((option, index) => {
-        const label = $('<label>').addClass('radiobuttonsfrom-label');
-        const temp = document.createElement('div');
-        let optionValue, displayText;
-        if (Array.isArray(option)) {
+      const $container = jQuery('<span>').addClass('radiobuttonsfrom-container');
+      let parsedOptions = [];
+      try {
+        if (typeof options === 'string') { parsedOptions = JSON.parse(options); }
+        else { parsedOptions = options; }
+        if (!Array.isArray(parsedOptions)) return this.error('选项参数必须是数组或有效的JSON数组字符串');
+      } catch (e) {
+        return this.error(`无法解析选项参数: ${e.message}`);
+      }
+      const hasContent = this.payload.length > 0;
+      const content = hasContent ? this.payload[0]?.contents || '' : '';
+      const macroThis = this;
+      const optionsData = [];
+      parsedOptions.forEach((option, index) => {
+        const $label = jQuery('<label>').addClass('radiobuttonsfrom-label');
+        const $temp = jQuery(document.createElement('div'));
+        let optionValue, displayData;
+        if (Array.isArray(option) && option.length >= 2) {
           optionValue = option[0];
-          displayText = option[1];
+          displayData = option[1];
         } else {
           optionValue = option;
-          displayText = option;
+          displayData = option;
         }
-        new maplebirch.SugarCube.Wikifier(temp, `<<radiobutton '${varPath}' '${optionValue.replace(/'/g, "\\'")}' autocheck>>`);
-        $(temp).children().appendTo(label);
-        label.append(displayText);
-        container.append(label);
-        if (index < options.length - 1) container.append(document.createTextNode(separator));
+        const optionInfo = { value: optionValue, data: displayData, $label: $label };
+        optionsData.push(optionInfo);
+        try {
+          const safeValue = String(optionValue).replace(/'/g, "\\'");
+          const macroStr = `<<radiobutton '${varPath}' '${safeValue}' autocheck>>`;
+          new maplebirch.SugarCube.Wikifier($temp[0], macroStr);
+          if (hasContent) {
+            $temp.find('input[type="radio"]').on('change.macros', this.createShadowWrapper(function() {
+              if (this.checked && content) maplebirch.SugarCube.Wikifier.wikifyEval(content, macroThis.passageObj);
+            }));
+          }
+          $temp.children().appendTo($label);
+          const $textContainer = jQuery('<span>').addClass('radiobuttonsfrom-text').attr('data-option-index', index);
+          $label.append($textContainer);
+          $container.append($label);
+          if (index < parsedOptions.length - 1) $container.append(document.createTextNode(separator));
+        } catch (error) {
+          maplebirch.log('radiobuttonsfrom: 处理选项时出错', 'ERROR', option, error);
+        }
       });
-      container.appendTo(this.output);
+      $container.appendTo(this.output);
+      const updateDisplayTexts = () => {
+        const currentLang = maplebirch.Language;
+        optionsData.forEach((option, index) => {
+          const $textContainer = $container.find(`.radiobuttonsfrom-text[data-option-index="${index}"]`);
+          let displayText = '';
+          if (Array.isArray(option.data)) {
+            if (option.data.length === 2 && Array.isArray(option.data[0])) {
+              const langData = option.data.find(item => item && Array.isArray(item));
+              if (langData) {
+                displayText = langData[0];
+                if (currentLang === 'CN' && langData.length > 1) displayText = langData[1];
+              }
+            } else {
+              displayText = option.data[0] || String(option.value);
+              if (currentLang === 'CN' && option.data.length > 1) displayText = option.data[1];
+            }
+          } else if (option.data && typeof option.data === 'object') {
+            displayText = option.data[currentLang] || option.data.EN || String(option.value);
+          } else {
+            displayText = String(option.data);
+          }
+          $textContainer.empty();
+          if (typeof displayText === 'string' && /<[^>]+>/.test(displayText)) { $textContainer.html(displayText); }
+          else { $textContainer.text(displayText); }
+        });
+      };
+      updateDisplayTexts();
+      setup.maplebirch.language.add('radiobuttonsfrom', updateDisplayTexts);
+      $container.on('remove', () => setup.maplebirch.language.remove('radiobuttonsfrom', updateDisplayTexts));
+      return $container[0];
     }
 
     _overlayReplace(name, type) {
@@ -461,7 +507,7 @@
         try {
           return fn.apply(this, args);
         } catch (error) {
-          console.error(`[Dynamic.task] Error in task "${name}":`, error);
+          console.error(`[Dynamic.task] Error in task '${name}':`, error);
           return null;
         }
       };
@@ -585,7 +631,7 @@
         this.core.tool.widget.defineMacro('lanButton', this._languageButton, null, false, true);
         this.core.tool.widget.defineMacro('lanLink', this._languageLink, null, false, true);
         this.core.tool.widget.defineMacro('lanListbox', this._lanListbox, ['option', 'optionsfrom'], ['optionsfrom'], true);
-        this.core.tool.widget.defineMacro('radiobuttonsfrom', this._radiobuttonsfrom);
+        this.core.tool.widget.defineMacro('radiobuttonsfrom', this._radiobuttonsfrom, null, false, true);
         this.core.tool.widget.defineMacro('maplebirchReplace', (name, type) => this._overlayReplace(name, type));
         this.core.tool.widget.defineMacro('maplebirchTextOutput', this.core.tool.text.makeMacroHandler());
         this.core.tool.widget.defineMacroS('maplebirchFrameworkVersions', this._showModVersions);

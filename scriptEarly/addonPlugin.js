@@ -5,21 +5,6 @@
   const logger = modUtils.getLogger();
   logger.log('[maplebirchMod] 开始执行');
 
-  async function modifyEffect() {
-    const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
-    const SCdata = oldSCdata.cloneSC2DataInfo();
-    const effectJavascriptPath = 'effect.js';
-    const file = SCdata.scriptFileItems.getByNameWithOrWithoutPath(effectJavascriptPath);
-    const regex = /break;\n\t{4}default:/;
-    if (regex.test(file.content)) {
-      file.content = file.content.replace(
-        regex,
-        'break;\n\t\t\t\tdefault:\n\t\t\t\t\tif (maplebirch.char.transformation.message(messageKey, { element: element, sWikifier: sWikifier, fragment: fragment, wikifier: wikifier })) break;'
-      );
-    }
-    addonReplacePatcher.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);
-  }
-
   async function modifyOptionsDateFormat() {
     const oldSCdata = modSC2DataManager.getSC2DataInfoAfterPatch();
     const SCdata = oldSCdata.cloneSC2DataInfo();
@@ -149,54 +134,28 @@
       if (addon.processed.npc || addon.queue.npc.length === 0) return;
       try {
         for (const task of addon.queue.npc) {
-          const { config } = task;
-          if (!Array.isArray(config)) { addon.core.log(`NPC 配置必须为数组格式，跳过处理`, 'WARN'); continue; }
-          config.forEach(npcConfig => {
-            if (!npcConfig || typeof npcConfig !== 'object') return;
-            if (npcConfig.data) addon.core.npc.add(npcConfig.data, npcConfig?.config ?? {}, npcConfig?.translations ?? {});
-            if (npcConfig.state) addon.core.npc.addStats(npcConfig.state);
-          });
+          const { modName, modZip, config } = task;
+          if (typeof config !== 'object' || config === null) { addon.core.log(`NPC 配置格式无效，跳过处理`, 'WARN'); continue; }
+          if (config.NamedNPC && Array.isArray(config.NamedNPC)) {
+            for (const npcConfig of config.NamedNPC) {
+              if (typeof npcConfig !== 'object' || !npcConfig) continue;
+              const [data, options, translations] = npcConfig;
+              if (data && typeof data === 'object') addon.core.npc.add(data, options ?? {}, translations ?? {});
+            }
+          }
+          if (config.Stats && typeof config.Stats === 'object') addon.core.npc.addStats(config.Stats);
+          if (config.Sidebar && Array.isArray(config.Sidebar)) {
+            const imagePaths = addon.core.npc.Sidebar.loadFromMod(modZip, config.Sidebar);
+            if (imagePaths.length > 0) await Process.#injectBSAImages(addon, modName, modZip, imagePaths);
+          }
         }
         addon.processed.npc = true;
-      } catch (/**@type {any}*/e) { addon.core.log(`NPC 配置处理失败: ${e.message}`, 'ERROR'); }
-    }
-
-    /** @param {FrameworkAddon} addon */
-    static async NPCSidebar(addon) {
-      if (addon.processed.npcSidebar || addon.queue.npcSidebar.length === 0) return;
-      try {
-        /**@type {Object<string,Set<string>>}*/const npcDisplay = {};
-        for (const task of addon.queue.npcSidebar) {
-          const { modName, modZip, config } = task;
-          if (!Array.isArray(config)) continue;
-          /**@type {string[]}*/const modImages = [];
-          config.forEach(npcSidebar => {
-            const npcName = addon.core.tool.convert(npcSidebar.name, 'capitalize');
-            if (!npcName) return;
-            if (!npcDisplay[npcName]) npcDisplay[npcName] = new Set();
-            npcSidebar.imgFile.forEach((/** @type {string} */imgPath) => {
-              const extractFileName = (/** @type {string} */path) => {
-                if (!path) return null;
-                const baseName = /** @type {string} */(path.split('/').pop());
-                return baseName.split('.')[0];
-              };
-              const fileName = extractFileName(imgPath);
-              if (fileName) {
-                npcDisplay[npcName].add(fileName);
-                modImages.push(imgPath);
-              }
-            });
-          });
-          if (modImages.length > 0) await Process.#injectBSAImages(addon, modName, modZip, modImages);
-        }
-        addon.core.npc.Sidebar.display = npcDisplay;
-        addon.processed.npcSidebar = true;
       } catch (/**@type {any}*/e) {
-        addon.core.log(`npcSidebar 处理失败: ${e.message}`, 'ERROR');
+        addon.core.log(`NPC 配置处理失败: ${e.message}`, 'ERROR');
       }
     }
 
-    /** @param {FrameworkAddon} addon @param {string} modName @param {any} modZip @param {string[]} imgPaths */
+    /** @param {FrameworkAddon} addon @param {string} modName @param {JSZip} modZip @param {string[]} imgPaths */
     static async #injectBSAImages(addon, modName, modZip, imgPaths) {
       try {
         const imgs = [];
@@ -216,11 +175,7 @@
         if (imgs.length === 0) return;
         await addonBeautySelectorAddon.registerMod(
           'BeautySelectorAddon',
-          {
-            name: 'maplebirch',
-            bootJson: { addonPlugin: [{ modName: 'BeautySelectorAddon', addonName: 'BeautySelectorAddon', params: { type: `npc-sidebar-[${modName}]` } }] },
-            imgs: imgs
-          },
+          { name: 'maplebirch', bootJson: { addonPlugin: [{ modName: 'BeautySelectorAddon', addonName: 'BeautySelectorAddon', params: { type: `npc-sidebar-[${modName}]` } }] }, imgs: imgs },
           modZip
         );
         addon.core.log(`成功注册 ${modName} 的 ${imgs.length} 个 NPC 侧边栏图片`, 'DEBUG');
@@ -258,7 +213,7 @@
       this.logger = gModUtils.getLogger();
       this.gModUtils.getAddonPluginManager().registerAddonPlugin('maplebirch', 'maplebirchAddon', this);
       this.gSC2DataManager.getModLoadController().addLifeTimeCircleHook('maplebirchFramework', this);
-      this.supportedConfigs = ['script', 'language', 'audio', 'framework', 'npc', 'shop', 'npcSidebar'];
+      this.supportedConfigs = ['script', 'language', 'audio', 'framework', 'npc', 'shop'];
       /** @type {Object<any, {modName: string, mod: any, modZip: any}>} */
       this.queue = {};
       /** @type {Object<string, boolean>} */
@@ -280,13 +235,14 @@
       this.logger.log(`[MaplebirchAddonPlugin] 初始化完成: 当前Mod对象 [${theName}]`);
     }
 
-    async #vanillaDataReplace() {
-      try { await modifyEffect(); } catch (e) { this.core.log('modifyEffect 出错', 'ERROR'); }
+    async #dataReplace() {
       try { await modifyOptionsDateFormat(); } catch (e) { this.core.log('modifyOptionsDateFormat 出错', 'ERROR'); }
+      try { await this.core.char.modifyPCModel(this); } catch (e) { this.core.log('modifyPCModel 出错', 'ERROR'); }
+      try { await this.core.char.transformation.modifyEffect(this); } catch (e) { this.core.log('modifyEffect 出错', 'ERROR'); }
       try { await this.core.state.modifyWeather.modifyWeatherJavaScript(); } catch (e) { this.core.log('modifyWeatherJavaScript 出错', 'ERROR'); }
     }
 
-    /** @param {string} addonName @param {{ name: string; bootJson: { addonPlugin: any[]; }; }} modInfo @param {any} modZip */
+    /** @param {string} addonName @param {{ name: string; bootJson: { addonPlugin: any[]; }; }} modInfo @param {JSZip} modZip */
     async registerMod(addonName, modInfo, modZip) {
       this.info.set(modInfo.name, { addonName: addonName, mod: modInfo, modZip: modZip });
       const config = modInfo.bootJson?.addonPlugin?.find(p => p.modName === 'maplebirch' && p.addonName === 'maplebirchAddon');
@@ -318,12 +274,12 @@
 
     async beforePatchModToGame() {
       await this.core.trigger(':import');
-      await this.#vanillaDataReplace();
+      await this.#dataReplace();
       await this.#processInit();
       try { await this.core.shop.beforePatchModToGame(); } catch (/**@type {any}*/e) { this.core.log(`商店数据注入失败: ${e.message}`, 'ERROR'); }
     }
 
-    /** @param {string} modName @param {any} modZip @param {string[]} files @param {boolean} isModule */
+    /** @param {string} modName @param {JSZip} modZip @param {string[]} files @param {boolean} isModule */
     async #loadFilesArray(modName, modZip, files, isModule) {
       for (const filePath of files) {
         const file = modZip.zip.file(filePath);
@@ -392,7 +348,6 @@
       try { await Process.Audio(this); } catch (/**@type {any}*/e) { this.core.log(`音频处理过程失败: ${e.message}`, 'ERROR'); }
       try { await Process.Framework(this); } catch (/**@type {any}*/e) { this.core.log(`框架处理过程失败: ${e.message}`, 'ERROR'); }
       try { await Process.NPC(this); } catch (/**@type {any}*/e) { this.core.log(`NPC处理过程失败: ${e.message}`, 'ERROR'); }
-      try { await Process.NPCSidebar(this); } catch (/**@type {any}*/e) { this.core.log(`NPC侧边栏处理过程失败: ${e.message}`, 'ERROR'); }
       try { await Process.Shop(this); } catch (/**@type {any}*/e) { this.core.log(`商店处理过程失败: ${e.message}`, 'ERROR'); }
     }
   }

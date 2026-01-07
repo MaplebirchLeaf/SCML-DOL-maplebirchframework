@@ -4,16 +4,6 @@
   'use strict';
 
   const specialWidget = [
-    `<<widget 'maplebirch-npc-model'>>
-      <div id='img-npc'>
-        <<selectmodel 'npcmodel' 'sidebar'>>
-        <<if $options.sidebarAnimations>>
-          <<animatemodel 'mainCanvas'>>
-        <<else>>
-          <<rendermodel 'mainCanvas'>>
-        <</if>>
-      </div>
-    <</widget>>`,
     `<<widget 'maplebirchTransformationMirror'>>
       <<set _modTransforms = []>>
       <<if V.maplebirch?.transformation>><<for _modName range Object.keys(V.maplebirch.transformation)>><<if V.maplebirch.transformation[_modName].level > 0>><<set _modTransforms.push(_modName)>><</if>><</for>><</if>>
@@ -90,22 +80,35 @@
         <div class='settingsToggleItemWide'>
           <<set _npcsidebarName = {}>>
           <<set setup.NPCNameList.forEach(name => T.npcsidebarName[maplebirch.autoTranslate(maplebirch.tool.convert(name, 'title'))] = name)>>
-          <label onclick='maplebirch.trigger("update")'><<checkbox '$options.maplebirch.npcsidebar.show' false true autocheck>><<lanSwitch 'NPC Sidebar Image Display' 'NPC侧边栏图像显示'>></label> |
-          <label onclick='maplebirch.trigger("update")'><<checkbox '$options.maplebirch.npcsidebar.model' false true autocheck>><<lanSwitch 'PC MODEL MODE' 'PC模型模式'>></label>
+          <label><<checkbox '$options.maplebirch.npcsidebar.show' false true autocheck>><<lanSwitch 'NPC Sidebar Image Display' 'NPC侧边栏图像显示'>></label>|
+          <label><<checkbox '$options.maplebirch.npcsidebar.model' false true autocheck>><<lanSwitch 'PC MODEL MODE' 'PC模型模式'>></label>
           <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'After enabling the display, named NPCs will show their models when nearby, with the canvas mode set to the player model' '开启显示后命名NPC在附近将显示模型，画布模式为玩家模型'>></span>">(?)</span><br>
+          <span class='gold'><<lanSwitch 'Image Position' '图像位置：'>></span><<radiobuttonsfrom '$options.maplebirch.npcsidebar.position' '[["front",["front","前置"]],["back",["back","后置"]]]'>>
+          <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'Front: Model appears in front. Back: Model appears behind.' '前置：模型显示在前面。后置：模型显示在后面。'>></span>">(?)</span><br>
+          <span class='gold'><<lanSwitch 'Skin Tone: ' '皮肤色调：'>></span><<set _npcsidebarSkinTone to ''>>
+          <<radiobuttonsfrom '_npcsidebarSkinTone' '[["",["Neutral","中性"]],["r",["Warm","暖色"]],["g",["Golden","金色"]],["y",["Olive","橄榄色"]],["b",["Cool","冷色"]]]'>><<set $options.maplebirch.npcsidebar.skin_type to _npcsidebarSkinTone + _npcsidebarSkinShade>><</radiobuttonsfrom>><br>
+          <span class='gold'><<lanSwitch 'Skin Shade: ' '肤色明暗：'>></span><<set _npcsidebarSkinShade to 'light'>>
+          <<radiobuttonsfrom '_npcsidebarSkinShade' '[["light",["Light","明亮"]],["medium",["Medium","适中"]],["dark",["Dark","暗沉"]],["gyaru",["Gyaru","辣妹"]]]'>><<set $options.maplebirch.npcsidebar.skin_type to _npcsidebarSkinTone + _npcsidebarSkinShade>><</radiobuttonsfrom>>
+          <span class='tooltip-anchor linkBlue' tooltip="<span class='teal'><<lanSwitch 'Skin Tone: The underlying tone of the skin. Cool, Warm, Golden, Olive, or Neutral. Skin Shade: The lightness or darkness of the skin surface. Gyaru is a tanned style.' '皮肤色调：皮肤的底层色调。冷色、暖色、金色、橄榄色或中性。肤色明暗：皮肤表面的明暗程度。辣妹为美黑风格。'>></span>">(?)</span><br>
+          <div class="numberslider-inline">
+            <label><span class="gold"><<lanSwitch 'Tan: ' '日晒：'>></span>
+            <<numberslider "$options.maplebirch.npcsidebar.tan" $options.maplebirch.npcsidebar.tan 0 100 1 { onInputChange: value => { Wikifier.wikifyEval("<<updatesidebarimg>>"); }, value: v => \`\${v}%\` }>>
+            </label>
+          </div>
           <<lanListbox '$options.maplebirch.npcsidebar.nnpc' autoselect>><<optionsfrom _npcsidebarName>><</lanListbox>>
           <<if $options.maplebirch.npcsidebar.nnpc>>
-            <<if !['none'].concat(Array.from(maplebirch.npc.Sidebar.display[$options.maplebirch.npcsidebar.nnpc])).includes($options.maplebirch.npcsidebar.display[$options.maplebirch.npcsidebar.nnpc])>>
+            <<set _npcsidebarSet to maplebirch.npc.Sidebar.display.get($options.maplebirch.npcsidebar.nnpc) ?? new Set()>>
+            <<if !['none'].concat(Array.from(_npcsidebarSet)).includes($options.maplebirch.npcsidebar.display[$options.maplebirch.npcsidebar.nnpc])>>
               <<set $options.maplebirch.npcsidebar.display[$options.maplebirch.npcsidebar.nnpc] = 'none'>>
             <</if>>
             <<set _fixedName = \`$options.maplebirch.npcsidebar.display.\${$options.maplebirch.npcsidebar.nnpc}\`>>
-            <<set _npcsidebarDisplay = ['none'].concat(Array.from(maplebirch.npc.Sidebar.display[$options.maplebirch.npcsidebar.nnpc]))>>
+            <<set _npcsidebarDisplay = ['none'].concat(Array.from(_npcsidebarSet))>>
             <<lanSwitch 'Graphic Selection: ' '图形选择：'>><<radiobuttonsfrom _fixedName _npcsidebarDisplay>>
           <</if>>
         </div>
       </div><hr>`,
     Cheats : `
-      <div class='settingsGrid'><<run maplebirch.trigger('update')>>
+      <div class='settingsGrid'>
         <div id='ConsoleCheat' class='settingsToggleItemWide'>
           <details class='JSCheatConsole'>
             <summary class='JSCheatConsole'><span class='light-blue'>JavaScript <<lanSwitch 'Code Cheater' '作弊器'>></span></summary>
@@ -232,9 +235,6 @@
       { srcmatch: /<<print\s*("It is "\s*\+\s*getFormattedDate\(Time\.date\)\s*\+\s*",\s*"\s*\+\s*Time\.year\s*\+\s*"\."|"今天是"\s*\+\s*Time\.year\s*\+\s*"年"\s*\+\s*getFormattedDate\(Time\.date\)\s*\+\s*"。"|ordinalSuffixOf\(Time\.monthDay\)\s*\+\s*"\s*"\s*\+\s*Time\.monthName\.slice\(0,3\)|Time\.month\s*\+\s*"月"\s*\+\s*ordinalSuffixOf\(Time\.monthDay\)\s*\+\s*"日")\s*>>/, to: '<<= maplebirch.state.TimeManager.updateTimeLanguage("JournalTime")>>' },
       { src: '<br>\n<</widget>>', applybefore: '<br><hr>\n\t<<maplebirchJournal>>\n' },
     ],
-    'Widgets Img': [
-      { src: '<div id="img">', applybefore: '<<maplebirch-npc-model>>\n\t' },
-    ],
     'Widgets Mirror': [
       { src: '<</if>>\n\t\t<<if ![', to: '<</if>>\n\t\t<<maplebirchTransformationMirror>>\n\t\t<<if ![' },
       { src: '<<tficon $_icon>>', to: '<<= maplebirch.char.transformation.icon>>' },
@@ -252,7 +252,7 @@
     ]
   };
 
-  maplebirch.once(':framework-init', (/** @type {any} */ data) => {
+  maplebirch.once(':framework-init', (/**@type {frameworks}*/data) => {
     Object.assign(data, {
       specialWidget,
       default: defaultData,

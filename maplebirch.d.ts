@@ -1,6 +1,5 @@
 declare global {
   interface Window {
-    StartConfig: typeof StartConfig;
     jQuery: typeof jQuery;
     $: typeof $;
     DateTime: typeof DateTime;
@@ -9,6 +8,8 @@ declare global {
     lanSwitch: typeof lanSwitch;
     between: typeof between;
   }
+
+  const JSZip: any;
 
   interface Math {
     clamp(value: number, min: number, max: number): number;
@@ -726,21 +727,30 @@ declare global {
   }
 
   class CharacterManager {
-    tool: tools;
+    core: MaplebirchCore;
     log: (message: string, level?: string, ...objects: any[]) => void;
-    transformation: { inject: () => void };
-    constructor();
-    #renderCharacter(): Promise<void>;
-    #renderOverlay(): Promise<void>;
-    #adjustCanvasSize(container: HTMLElement): void;
+    transformation: Transformation;
+    constructor(core: MaplebirchCore);
+    modifyPCModel(manager: any): Promise<void>;
+    use(...args: any[]): this;
+    process(type: 'pre' | 'post', options: any): void;
     render(): Promise<void>;
-    preInit(): Promise<void>;
     Init(): void;
     loadInit(): void;
+    get ZIndices(): any;
+  }
+
+  class Transformation {
+    add(name: string, type: 'physical'|'special', options: any): this;
+    inject(): void;
+    modifyEffect(manager: any): Promise<void>;
+    message(key: string, tools: { element: Function, wikifier: Function }): boolean;
+    get icon(): string;
+    setTransform(name: string, level: number | null): void;
   }
 
   class NPCManager {
-    lang: LanguageManager;
+    core: MaplebirchCore;
     tool: tools;
     log: (message: string, level?: string, ...objects: any[]) => void;
     data: Map<string, { Data: NamedNPC; Config: NPCConfig }>;
@@ -858,7 +868,7 @@ declare global {
     static add(...configs: NPCClothesConfig[]): void;
     static init(manager: { log: (msg: string, level?: string) => void }): void;
     importNPCClothesData(modName: string, filePath: string): Promise<boolean>;
-    #processClothesData(data: any): boolean;
+    #clothesData(data: any): boolean;
   }
 
   interface NPCClothingItem { over_upper?: any; over_lower?: any; upper?: any; lower?: any; under_upper?: any; under_lower?: any; over_head?: any; head?: any; face?: any; neck?: any; legs?: any; feet?: any; genital?: any; [key: string]: any }
@@ -937,7 +947,9 @@ declare global {
     static setup: (manager: any) => void;
   }
 
-  class NPCSidebar { init(force?: boolean): void; static get ZIndices(): any; display: object }
+  class NPCSidebar { init(force?: boolean): void; static get ZIndices(): any; display: Map 
+    loadFromMod: (modZip:JSZip, npcNames:string) => string[];
+  }
 
   class CombatManager {
     constructor(core: MaplebirchCore);

@@ -5,7 +5,7 @@
     "cn": "秋枫白桦框架"
   },
   "alias": ["Simple Frameworks"], 
-  "version": "2.7.2",
+  "version": "2.7.3",
   "imgFileList": [],
   "styleFileList": ["styles/maplebirch-styles.css"],
   "scriptFileList": [
@@ -24,7 +24,7 @@
     "scriptEarly/Utils/modifyWeather.js",
     "scriptEarly/Utils/FrameworksUtils.js",
     "scriptEarly/Utils/NPC-clothes.js",
-    "scriptEarly/Utils/NPC-model.js",
+    "scriptEarly/Utils/NPCSidebar.js",
     "scriptEarly/Utils/Transformation.js",
     "scriptEarly/modules/TimeState.js",
     "scriptEarly/modules/Tools.js",

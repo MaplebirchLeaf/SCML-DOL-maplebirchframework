@@ -1,11 +1,79 @@
+// @ts-check
+/// <reference path='../../maplebirch.d.ts' />
 (async() => {
   'use strict';
 
   class CharacterManager {
+    /** @param {MaplebirchCore} core */
     constructor(core) {
       this.core = core;
       this.log = core.tool.createLog('char');
-      core.trigger(':char-init', this);
+      /**@type {Object<string,any>}*/
+      this.handlers = { pre: [], post: [] };
+      this.layers = {};
+      this.core.trigger(':char-init', this);
+      this.core.once(':defineSugarcube', () => {
+				const model = Renderer.CanvasModels.main;
+				if (!model?.layers) return;
+				const originalLayers = { ...model.layers };
+				Object.defineProperty(model, 'layers', {
+					get: () => this.core.tool.merge(originalLayers, this.layers, { 
+						mode: 'merge', 
+						filterFn: (/**@type {any}*/key, /**@type {null} */value, /**@type {number}*/depth) => depth > 3 || value == null ? false : true 
+					}),
+					enumerable: true,
+					configurable: true
+				});
+			})
+    }
+
+    get ZIndices() {
+      return ZIndices;
+    }
+
+    /** @param {FrameworkAddon} manager */
+    async modifyPCModel(manager) {
+      const oldSCdata = manager.gSC2DataManager.getSC2DataInfoAfterPatch();
+			const SCdata = oldSCdata.cloneSC2DataInfo();
+			const file = SCdata.scriptFileItems.getByNameWithOrWithoutPath('canvasmodel-main.js');
+			const regex1 = /},\n\tpostprocess/;
+      const regex2 = /},\n\tlayers/;
+      if (regex1.test(file.content)) file.content = file.content.replace(regex1,'\tmaplebirch.char.process("pre", options);\n\t},\n\tpostprocess');
+      if (regex2.test(file.content)) file.content = file.content.replace(regex2,'\tmaplebirch.char.process("post", options);\n\t},\n\tlayers');
+			manager.addonReplacePatcher.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);
+    }
+
+    /** @param {any[]} args */
+    use(...args) {
+      if (args.length === 0) { this.log('use 调用无参数', 'WARN'); return this; }
+      if (args.length === 2) {
+        const [type, fn] = args;
+        if ((type === 'pre' || type === 'post') && typeof fn === 'function') { this.handlers[type].push(fn); }
+        else { this.log(`use 参数类型错误: ${typeof type}, ${typeof fn}`, 'ERROR'); }
+        return this;
+      }
+      if (args.length === 1 && args[0] && typeof args[0] === 'object') {
+        const obj = args[0];
+        this.layers = this.core.tool.merge(
+          this.layers, 
+          obj, { 
+						mode: 'merge',
+						filterFn: (/**@type {any}*/key, /**@type {null}*/value, /**@type {number}*/depth) => depth > 3 || value == null ? false : true  
+					}
+        );
+        return this;
+      }
+      this.log(`use 调用格式错误: ${args}`, 'ERROR');
+      return this;
+    }
+
+    /** @param {string} type @param {any} options */
+    process(type, options) {
+      const handlers = this.handlers[type] || [];
+      for (const fn of handlers) {
+        try { fn(options); } 
+        catch (/**@type {any}*/e) { this.log(`${type}process 错误: ${e.message}`, 'ERROR'); }
+      }
     }
 
     /* 渲染角色到容器 */
@@ -116,12 +184,12 @@
       overlay.appendChild(rightContainer);
     }
 
-    /* 调整canvas尺寸 */
+    /** 调整canvas尺寸 @param {{ querySelectorAll: (arg0: string) => any; clientWidth: any; clientHeight: any; }} container */
     #adjustCanvasSize(container) {
       const canvases = container.querySelectorAll('.maplebirch-canvas');
       const containerWidth = container.clientWidth;
       const containerHeight = container.clientHeight;
-      canvases.forEach(canvas => {
+      canvases.forEach((/**@type {{ width: any; clientWidth: any; height: any; clientHeight: any; style: { width: string; height: string; position: string; top: string; left: string; transform: string; }; }}*/canvas) => {
         // 获取原始尺寸
         const originalWidth = canvas.width || canvas.clientWidth;
         const originalHeight = canvas.height || canvas.clientHeight;
@@ -144,10 +212,12 @@
 
     Init() {
       this.core.on('characterRender', async () => await this.render());
+      // @ts-ignore
       this.transformation.inject();
     }
 
     loadInit() {
+      // @ts-ignore
       this.transformation.inject();
     }
   }

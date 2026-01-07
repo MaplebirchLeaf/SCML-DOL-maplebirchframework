@@ -78,7 +78,7 @@
       if (Object.keys(npcConfig).length === 0) npcConfig.love = { maxValue: 50 };
       /**@type {any} */const newNPC = new NamedNPC(manager, npcData);
       for (const statName in manager.customStats) if (manager.customStats.hasOwnProperty(statName) && npcData[statName] === undefined) newNPC[statName] = 0;
-      if (typeof translationsData === 'object') for (const key in translationsData) if (translationsData.hasOwnProperty(key)) manager.lang.translations.set(key, translationsData[key]);
+      if (typeof translationsData === 'object') for (const key in translationsData) if (translationsData.hasOwnProperty(key)) manager.core.lang.translations.set(key, translationsData[key]);
       manager.data.set(npcName, { Data: newNPC, Config: npcConfig });
       manager.log(`成功注入NPC: ${npcName}`, 'DEBUG');
       return true;
@@ -339,7 +339,7 @@
       return true;
     }
 
-    /** @param {{ NPCNameList: any[]; data: any; log: (arg0: string, arg1: string) => void; }} manager */
+    /** @param {NPCManager} manager */
     function onUpdate(manager) {
       let addedCount = 0;
       let skippedCount = 0;
@@ -366,7 +366,7 @@
           const enName = parts[0].trim();
           const cnName = parts[1].trim();
           // @ts-ignore
-          if (enName && cnName) maplebirch.lang.translations.set(enName, { EN: enName, CN: cnName });
+          if (enName && cnName) manager.core.lang.translations.set(enName, { EN: enName, CN: cnName });
         }
       }
       manager.log(`更新完成: 添加 ${addedCount} 个NPC, 跳过 ${skippedCount} 个重复NPC`, 'DEBUG');
@@ -744,7 +744,6 @@
     /** @param {MaplebirchCore} core */
     constructor(core) {
       this.core = core;
-      this.lang = core.lang;
       this.tool = core.tool;
       this.log = this.tool.createLog('npc');
       this.data = new Map();
@@ -777,8 +776,8 @@
         Alex: [() => V.farm_stage >= 7,() => V.alex_countdown === undefined],
         Gwylan: [() => V.gwylanSeen.includes('partners') || V.gwylanSeen.includes('romance')]
       };
-      core.trigger(':npc-init', this);
-      core.once(':passagestart',() => {
+      this.core.trigger(':npc-init', this);
+      this.core.once(':passagestart',() => {
         if (['Start', 'Downgrade Waiting Room'].includes(core.state.Passage?.title)) return;
         this.injectModNPCs();
       });
@@ -837,7 +836,7 @@
         if (statsObject.hasOwnProperty(statName)) {
           const statConfig = statsObject[statName];
           const clonedConfig = this.tool.clone(statConfig);
-          this.customStats[statName] = this.customStats[statName] ? this.#mergeConfigs(this.customStats[statName], clonedConfig) : clonedConfig;
+          this.customStats[statName] = this.customStats[statName] ? this.tool.merge(this.customStats[statName], clonedConfig, { mode: 'merge' }) : clonedConfig;
         }
       }
     }
@@ -882,14 +881,6 @@
       this.NamedNPC.setup(this);
       // @ts-ignore
       this.Schedules.init(this);
-      // @ts-ignore
-      this.Sidebar.init(false);
-    }
-
-    /** @param {any} base @param {any} mod */
-    #mergeConfigs(base, mod) {
-      const filterFn = (/**@type {any}*/key, /**@type {any}*/ value, /**@type {any}*/ depth) => {return Object.prototype.hasOwnProperty.call(mod, key);}
-      return this.tool.merge(base, mod, {mode: 'replace', filterFn});
     }
 
     /** @param {any} npcConfig */
@@ -902,7 +893,7 @@
           const configClone = this.tool.clone(modConfig);
           ['loveAlias','loveInterest','romance'].forEach(key => delete configClone[key]);
           if (Config[npcName]) {
-            Config[npcName] = this.#mergeConfigs(Config[npcName], configClone);
+            Config[npcName] = this.tool.merge(Config[npcName], configClone, { mode: 'merge' });
             this.log(`合并NPC配置: ${npcName}`, 'DEBUG');
           } else {
             Config[npcName] = configClone;
@@ -924,7 +915,7 @@
           const position = customConfig.position;
           delete customConfig.position;
           if (statDefaults[statName]) {
-            statDefaults[statName] = this.#mergeConfigs(statDefaults[statName], customConfig);
+            statDefaults[statName] = this.tool.merge(statDefaults[statName], customConfig, { mode: 'merge' });
           } else {
             statDefaults[statName] = customConfig;
           }
@@ -955,6 +946,11 @@
       try { this.core.combat.Speech.init(); } catch {};
     }
 
+    preInit() {
+      // @ts-ignore
+      this.Sidebar.init(this);
+    }
+
     Init() {
       NPCUtils.setupNpcData(this, 'init');
       isPossibleLoveInterest = (name) => NPCUtils.isPossibleLoveInterest(this, name);
@@ -974,5 +970,5 @@
     }
   }
 
-  await maplebirch.register('npc', new NPCManager(maplebirch), ['var']);
+  await maplebirch.register('npc', new NPCManager(maplebirch), ['char']);
 })();

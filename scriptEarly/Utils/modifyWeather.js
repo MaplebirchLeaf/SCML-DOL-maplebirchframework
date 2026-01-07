@@ -60,8 +60,7 @@
     async modifyWeatherJavaScript() {
       const oldSCdata = this.modSC2DataManager.getSC2DataInfoAfterPatch();
       const SCdata = oldSCdata.cloneSC2DataInfo();
-      const weatherJavascriptPath = '00-layer-manager.js';
-      const file = SCdata.scriptFileItems.getByNameWithOrWithoutPath(weatherJavascriptPath);
+      const file = SCdata.scriptFileItems.getByNameWithOrWithoutPath('00-layer-manager.js');
       try {
         const regex = /const\s+layer\s*=\s*new\s+Weather\.Renderer\.Layer\(([^)]+)\);/;
         if (regex.test(file.content)) {
@@ -77,5 +76,5 @@
     }
   }
 
-  maplebirch.once(':state-init', (/** @type {TimeStateManager} */ data) => Object.assign(data, { modifyWeather: new modifyWeather(maplebirch, modSC2DataManager, addonReplacePatcher) }));
+  maplebirch.once(':state-init', (/**@type {TimeStateManager}*/ data) => Object.assign(data, { modifyWeather: new modifyWeather(maplebirch, modSC2DataManager, addonReplacePatcher) }));
 })();

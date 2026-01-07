@@ -5,7 +5,7 @@ var maplebirch = (() => {
   const frameworkVersion = modUtils.getMod('maplebirch').version;
   const lastUpdate = '2026.01.02';
   const lastModifiedBy = '楓樺葉';
-  const DEBUGMODE = true;
+  const DEBUGMODE = false;
 
   const ModuleState = {
     PENDING:   0,

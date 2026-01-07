@@ -18,10 +18,9 @@
   }
 
 	class Transformation {
-		/** @param {{ log: any; core: MaplebirchCore; }} manager */
+		/** @param {CharacterManager} manager */
 		constructor(manager) {
-			this.lang = manager.core.lang;
-			this.tool = manager.core.tool;
+			this.manager = manager;
 			this.log = manager.log;
 			/**@type {Map<string, Entry>}*/
 			this.config = new Map();
@@ -57,20 +56,39 @@
 			return maplebirch.SugarCube.Wikifier.wikifyEval('<<' + widget + (args.length ? ' ' + args.join(' ') : '') + '>>');
 		}
 
+		/** @param {FrameworkAddon} manager */
+		async modifyEffect(manager) {
+			const oldSCdata = manager.gSC2DataManager.getSC2DataInfoAfterPatch();
+			const SCdata = oldSCdata.cloneSC2DataInfo();
+			const file = SCdata.scriptFileItems.getByNameWithOrWithoutPath('effect.js');
+			const regex = /errors.pushUnique\(messageKey\);/;
+			if (regex.test(file.content)) {
+				file.content = file.content.replace(
+					regex,
+					'if (maplebirch.char.transformation.message(messageKey, { element: element, sWikifier: sWikifier, fragment: fragment, wikifier: wikifier })) break;\n\t\t\t\t\terrors.pushUnique\(messageKey\);'
+				);
+			}
+			manager.addonReplacePatcher.gModUtils.replaceFollowSC2DataInfo(SCdata, oldSCdata);
+		}
+
+
 		/**
 		 * @param {string} name
 		 * @param {string} type
-		 * @param {{ parts: any; traits: any; decay: any; decayConditions: any; suppress: any; suppressConditions: any; translations: any; defaultOptions: () => {}; preprocess: (opts: any) => void; layers: { [s: string]: any; } | ArrayLike<any>; }} options
+		 * @param {{ parts: { [x: string]: any; name: string; tfRequired: number; }[]; traits: { [x: string]: any; name: string; tfRequired: number; }[] | undefined; decay: boolean; decayConditions: (() => boolean)[]; suppress: boolean; suppressConditions: ((sourceName: string) => boolean)[]; pre: any; post: any; layers: any; translations: { [x: string]: string; }; }} options
 		 */
 		add(name, type, options) {
 			const entry = new Entry(type, options.parts, options.traits, options);
 			this.config.set(name, entry);
 			if (type === 'physical' && options.decay !== false && !this.decayConditions[name]) this.decayConditions[name] = options.decayConditions ?? [() => V.maplebirch.transformation[name].build >= 1];
 			if (type === 'physical' && options.suppress !== false && !this.suppressConditions[name]) this.suppressConditions[name] = options.suppressConditions ?? [(/**@type {string}*/sourceName) => sourceName !== name];
+			if (options.pre && typeof options.pre === 'function') this.manager.use('pre', options.pre);
+			if (options.post && typeof options.post === 'function') this.manager.use('post', options.post);
+			if (options.layers && typeof options.layers === 'object') this.manager.use(options.layers);
 			if (typeof options.translations === 'object') {
 				for (const key in options.translations) {
 					if (options.translations.hasOwnProperty(key)) {
-						try { this.lang.translations.set(key, options.translations[key]); }
+						try { this.manager.core.lang.translations.set(key, options.translations[key]); }
 						catch (/**@type {any}*/error) { this.log(`设置翻译键失败: ${key} - ${error.message}`, 'ERROR'); }
 					}
 				}
@@ -84,7 +102,7 @@
 		}
 
 		_update() {
-			const base = this.tool.clone(setup.transformations);
+			const base = this.manager.core.tool.clone(setup.transformations);
 			/**@type {Array<{name:string;[x: string]:any}>}*/
 			const injected = [];
 			for (const [name, entry] of this.config) {
@@ -225,8 +243,6 @@
 					this.#wikifier('angelTransform', V.angel);
 				} else if (V.fallenangel >= 2) {
 					this.#wikifier('fallenButNotOut', V.fallenangel);
-				} else {
-					for (const [name, entry] of this.config) if (entry.type === 'special') this.updateTransform(name);
 				}
 			}
 			// 动物转化
@@ -269,7 +285,7 @@
 			}
 			// 其它类型
 			for (const [name, entry] of this.config) {
-				if (entry.type === 'special' || entry.type === 'physical') continue;
+				if (entry.type === 'physical') continue;
 				this.updateTransform(name);
 			}
 		}
@@ -394,5 +410,5 @@
 		}
 	}
 
-	maplebirch.once(':char-init', (/**@type {{ log: any; core: MaplebirchCore; }}*/ data) => Object.assign(data, { transformation: new Transformation(data) }));
+	maplebirch.once(':char-init', (/**@type {CharacterManager}*/data) => Object.assign(data, { transformation: new Transformation(data) }));
 })();
